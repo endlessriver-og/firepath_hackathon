@@ -7,7 +7,9 @@ import MapFrame from './MapFrame';
 import { describeHazard, hazardNames, nextSteps, summarizePlace } from './preparedness';
 import { PERMIT_PORTAL, businessPermitTypes, categories, hazardSeverity, permitTypes, queryRecommendations } from './readiness';
 import { drillEvents } from './playbooks';
+import { eventQuestions } from './permit-catalog';
 import { AddressPanel, BusinessDetails, BusinessProfile, HouseholdForm } from './onboarding';
+import { Toggle } from './ui';
 import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, Section, SeverityBadge, Tag, Title, color, s } from './ui';
 
 const EVERBRIDGE = 'https://www.glendaleca.gov/Everbridge';
@@ -163,6 +165,64 @@ export function Alerts({ me, onChange }) {
   </>;
 }
 
+// Plain-language search across the City of Glendale's full permit catalog (crawled from Glendale Permits).
+function PermitSearch({ me }) {
+  const [q, setQ] = useState(''), [result, setResult] = useState(null);
+  const audience = me.user.type === 'business' ? 'business' : 'resident';
+  useEffect(() => {
+    if (q.trim().length < 3) { setResult(null); return; }
+    const timer = setTimeout(() => api('GET', `/api/permits/search?q=${encodeURIComponent(q)}&audience=${audience}`).then(setResult).catch(() => setResult(null)), 250);
+    return () => clearTimeout(timer);
+  }, [q]);
+  return <>
+    <Field label="What are you planning?" value={q} onChangeText={setQ} placeholder={audience === 'business' ? 'e.g., outdoor dining, block party, sign, propane' : 'e.g., new roof, ADU, solar, remove an oak tree'} autoCapitalize="none" />
+    {result && <View>
+      {result.permits.length === 0 ? <Caption>No City permit type matches. Try other words, or ask the City's Permit Services Center.</Caption> : result.permits.slice(0, 5).map(p => <Card key={p.name} style={{ marginTop: 8, padding: 14 }}>
+        <Text style={{ color: color.ink, fontSize: 15, fontWeight: '800' }}>{p.name}</Text>
+        {p.matched.length > 0 && <Text style={{ color: color.muted, fontSize: 13, marginTop: 4 }}>Work class: {p.matched.slice(0, 3).join(' · ')}</Text>}
+        {p.hazards.includes('wildfire') && me.hazards && describeHazard('wildfire', me.hazards.wildfire).tone === 'mapped' && <Text style={{ color: color.warm, fontSize: 12, marginTop: 4 }}>Your address is in a mapped fire zone; ask about wildfire-related rules.</Text>}
+      </Card>)}
+      {result.licenses.length > 0 && <Caption>Matching business license types: {result.licenses.join(', ')}</Caption>}
+      <Caption>Official names from the City's permit catalog (Glendale Permits, crawled {result.crawledAt?.slice(0, 10)}). Search for them when you apply.</Caption>
+      <Link onPress={() => Linking.openURL(PERMIT_PORTAL)}>Open Glendale Permits ↗</Link>
+    </View>}
+  </>;
+}
+
+// Event planner: a few yes/no questions -> the City permits an event likely needs, with fire-zone notes.
+function EventPlanner({ me }) {
+  const [open, setOpen] = useState(false), [name, setName] = useState(''), [attendees, setAttendees] = useState(''), [answers, setAnswers] = useState({});
+  const [plan, setPlan] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false);
+  async function build() {
+    setBusy(true); setError(''); setCopied(false);
+    try { setPlan(await api('POST', '/api/me/permits/event', { name, attendees: Number(attendees) || 0, answers })); } catch (e) { setError(e.message); } finally { setBusy(false); }
+  }
+  if (!open) return <Card style={{ borderColor: color.green, borderWidth: 1.5 }}>
+    <Tag>New</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '800' }}>Plan an event</Text>
+    <Muted style={{ marginTop: 4 }}>{me.user.type === 'business' ? 'Hosting a sidewalk sale, tasting, festival or filming?' : 'Block party, fair or big gathering?'} Answer six questions to get the City permits you likely need.</Muted>
+    <Button kind="outline" onPress={() => setOpen(true)}>Start</Button>
+  </Card>;
+  return <Card style={{ borderColor: color.green, borderWidth: 1.5 }}>
+    <Text style={{ color: color.ink, fontSize: 17, fontWeight: '800' }}>Plan an event</Text>
+    <Field label="Event name" value={name} onChangeText={setName} placeholder="e.g., Harvest fair" maxLength={100} />
+    <Field label="Expected attendance" value={attendees} onChangeText={t => setAttendees(t.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="e.g., 250" maxLength={7} />
+    {eventQuestions.map(([key, label]) => <Toggle key={key} label={label} value={Boolean(answers[key])} onChange={v => { setPlan(null); setAnswers(current => ({ ...current, [key]: v })); }} />)}
+    <ErrorText>{error}</ErrorText>
+    <Button busy={busy} onPress={build}>Get my permit list</Button>
+    {plan && <View style={{ marginTop: 14 }}>
+      <Tag>{`Likely City permits · ${plan.items.length}`}</Tag>
+      {plan.items.map(i => <View key={`${i.type}-${i.workClass}`} style={{ paddingVertical: 8, borderTopWidth: 1, borderColor: color.line }}>
+        <Text style={{ color: color.ink, fontWeight: '700' }}>{i.type}{i.workClass && !i.type.includes(i.workClass) ? ` · ${i.workClass}` : ''}</Text>
+        <Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{i.why}</Text>
+      </View>)}
+      {plan.notes.map(n => <Text key={n} style={{ color: /CAL FIRE/.test(n) ? color.warm : color.ink, lineHeight: 20, marginTop: 8 }}>• {n}</Text>)}
+      <Button kind="outline" onPress={async () => { await Clipboard.setStringAsync(plan.summary); setCopied(true); }}>{copied ? 'Copied ✓' : 'Copy summary'}</Button>
+      <Button onPress={() => Linking.openURL(plan.portal)}>Apply in Glendale Permits ↗</Button>
+    </View>}
+    <Link onPress={() => { setOpen(false); setPlan(null); }}>Close</Link>
+  </Card>;
+}
+
 export function Permits({ me, top }) {
   const [type, setType] = useState(null), [description, setDescription] = useState('');
   const [guide, setGuide] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false);
@@ -185,6 +245,9 @@ export function Permits({ me, top }) {
   </>;
   return <>
     <Title>Permits</Title>
+    <PermitSearch me={me} />
+    <EventPlanner me={me} />
+    <Section>Guided projects</Section>
     <Muted>Pick a project. We'll list what the City usually asks for, flag anything your address's hazard maps change, and prepare a summary to paste into the City's portal.</Muted>
     {(me.user.type === 'business' ? businessPermitTypes : permitTypes).map(t => <Pressable key={t.id} accessibilityRole="radio" accessibilityState={{ selected: type === t.id }} onPress={() => setType(t.id)} style={[s.card, type === t.id && { borderColor: color.green, borderWidth: 2 }]}>
       <Text style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{t.title}</Text><Caption style={{ marginTop: 4 }}>{t.permit}</Caption>

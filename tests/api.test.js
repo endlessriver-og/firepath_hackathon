@@ -227,3 +227,23 @@ test('public address check works without an account, stores nothing, and is rate
   for (let i = 0; i < 20; i++) status = (await call('POST', '/api/public/check', { address: '1613 Glencoe Way' })).status;
   assert.equal(status, 429);
 });
+
+import { readFileSync as readCatalog } from 'node:fs';
+test('permit catalog search and event plan use the City catalog and the address hazards', async () => {
+  const permitCatalog = JSON.parse(readCatalog(new URL('../src/glendale-permits.json', import.meta.url)));
+  const store = { data: { users: {}, sessions: {} }, save() {} };
+  const handle = createApi({ store, permitCatalog, fetchAlerts: async () => [], lookupHazards: async () => sparr });
+  const call = async (method, path, body, token) => { const req = { method, headers: token ? { authorization: `Bearer ${token}` } : {}, async *[Symbol.asyncIterator]() { if (body) yield JSON.stringify(body); } }; const res = { writeHead(s) { this.status = s; }, end(t) { this.body = JSON.parse(t); } }; await handle(req, res, new URL(path, 'http://localhost')); return res; };
+  const search = (await call('GET', '/api/permits/search?q=block%20party')).body;
+  assert.equal(search.permits[0].name, 'PW - ROW - Street Use');
+  assert.ok(permitCatalog.permitTypes.length > 50, 'crawled catalog present');
+  assert.deepEqual((await call('GET', '/api/permits/search?q=bakery&audience=business')).body.licenses, ['BAKERY PRODUCTS']);
+  const token = await signup(call);
+  await call('POST', '/api/me/address', { address: '1613 Glencoe Way' }, token);
+  const plan = (await call('POST', '/api/me/permits/event', { name: 'Harvest fair', attendees: 600, answers: { commercial: true, tents: true, flame: true, publicWay: true } }, token)).body;
+  const names = plan.items.map(i => `${i.type} / ${i.workClass}`);
+  for (const expected of ['Commercial Special Event Permit / Special Event', 'PW - ROW - Street Use / Street Use', 'Fire General / Tent/Canopy', 'Fire General / Open Flame/Candle']) assert.ok(names.includes(expected), expected);
+  assert.ok(plan.notes.some(n => /CAL FIRE High/.test(n)), 'open flame in a mapped fire zone is flagged');
+  assert.ok(plan.notes.some(n => /security, medical and traffic/.test(n)));
+  assert.match(plan.summary, /Harvest fair, about 600 people/);
+});

@@ -76,6 +76,8 @@ Address verification has two levels:
 - **Matched:** the City geocoder confirms the address.
 - **Verified by mail:** the resident enters a 6-digit code. In production it would be printed on a mailed postcard; locally it appears in a labeled demo mailbox. Set `FIREPATH_DEMO_MAILBOX=0` to hide it.
 
+**Permit catalog.** `scripts/crawl-permits.mjs` saves the City's public permit catalog to `src/glendale-permits.json`: every permit type and work class, plus business license types, crawled read-only and unauthenticated from the Glendale Permits (Tyler EnerGov Self Service) public search API. `src/permit-catalog.js` provides plain-language search and an event planner. FirePath never submits to the City portal.
+
 **Businesses** use the same accounts, address verification, map and alerts, and add their own profile (occupancy, hazardous materials, sprinklers, key contact, assembly point), steps, badges, permits (HMBP, fire operational permit, tenant improvement, sign, MEP) and responder brief. See `buildBusinessRecommendations` in `src/readiness.js` and `PUT /api/me/business`.
 
 The **Map** tab embeds `map.html`, a Leaflet map of real GIS zone polygons built by `npm run map:build` (`scripts/build-map-layers.py`: clip to the city boundary, simplify, and tag each polygon with its source's severity class). Wildfire and flood use the classes their sources define. Fault, liquefaction, landslide and dam inundation are shown as "in mapped zone" with no invented score. The default **Combined** view is a graded ~150 m grid, like a heatmap: each square sums the mapped layers with illustrative weights, wildfire decays outward from High/Very High zones, and tapping any spot shows its breakdown. It is labeled a FirePath planning index, not an official risk score.

@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { buildRecommendations, businessKinds, hazardSeverity, businessPermitTypes, hazmatKinds, permitGuide, permitTypes, queryRecommendations, readiness, recommendationsFor } from '../src/readiness.js';
 import { buildResponderSummary } from '../src/responder.js';
 import { buildPlaybook, drillEvents } from '../src/playbooks.js';
+import { planEvent, searchLicenses, searchPermits } from '../src/permit-catalog.js';
 import { hazardNames } from '../src/preparedness.js';
 import { checkPassword, hashPassword, newCode, newToken, tokenKey } from './auth.mjs';
 
@@ -24,7 +25,7 @@ function occupancy(h) {
 
 const playbookFor = (user, event) => buildPlaybook(event, { type: user.type, household: user.household || {}, business: user.business || {}, hazards: user.hazards, done: user.done || {} });
 
-export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, combinedIndex = () => null, demoMailbox = true, now = () => Date.now() }) {
+export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, combinedIndex = () => null, permitCatalog = { permitTypes: [], businessLicenseTypes: [] }, demoMailbox = true, now = () => Date.now() }) {
   const { data } = store;
   const failures = new Map(); // email -> [timestamps] of failed logins, in memory only
   const alertCache = new Map();
@@ -246,6 +247,14 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       return { body: { address: result.location.matched_address || address, lat: result.location.lat, lon: result.location.lon, layers, combined: combinedIndex(result.location.lat, result.location.lon), preview, checkedAt: new Date(now()).toISOString() } };
     },
 
+    // Plain-language search over the City of Glendale permit catalog (crawled by scripts/crawl-permits.mjs).
+    'GET /api/permits/search': async (req, body, url) => {
+      throttle(req, 300);
+      const q = text(url.searchParams.get('q'), 120);
+      const audience = oneOf(url.searchParams.get('audience'), ['resident', 'business', 'events']) || null;
+      return { body: { query: q, permits: searchPermits(permitCatalog, q, { audience }).map(({ score, ...t }) => t), licenses: audience === 'business' ? searchLicenses(permitCatalog, q) : [], source: permitCatalog.source, crawledAt: permitCatalog.crawledAt, portal: permitCatalog.portal } };
+    },
+
     'GET /api/address/suggest': async (req, body, url) => {
       session(req);
       if (!geocoder) return { body: { suggestions: [] } };
@@ -296,6 +305,15 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       const guide = permitGuide(text(body.type, 20), { profile: user, household: user.type === 'business' ? user.business : user.household, hazards: user.hazards, description: text(body.description, 500) });
       if (!guide) fail(404, 'Unknown project type.');
       return { body: guide };
+    },
+
+    'POST /api/me/permits/event': async (req, body) => {
+      const user = session(req);
+      const answers = Object.fromEntries(['commercial', 'publicWay', 'tents', 'flame', 'fireworks', 'filming'].map(k => [k, body.answers?.[k] === true]));
+      const attendees = Math.min(Math.max(Number.parseInt(body.attendees, 10) || 0, 0), 1_000_000);
+      const plan = planEvent(permitCatalog, answers, { hazards: user.hazards, attendees });
+      const summary = [`Event: ${text(body.name, 100) || 'unnamed event'}${attendees ? `, about ${attendees} people` : ''}`, `Location: ${user.address || 'not set'}`, `Organizer: ${user.type === 'business' ? `${user.business?.name || 'business'} · ${user.name}` : user.name}`, 'Likely City of Glendale permits:', ...plan.items.map(i => `- ${i.type}${i.workClass && !i.type.includes(i.workClass) ? ` (${i.workClass})` : ''}`), 'Prepared with FirePath. Not a City submission; confirm requirements with the City of Glendale.'].join('\n');
+      return { body: { ...plan, summary, portal: permitCatalog.portal, crawledAt: permitCatalog.crawledAt } };
     },
 
     'GET /api/me/responder': async req => {

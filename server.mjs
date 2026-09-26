@@ -38,7 +38,7 @@ function combinedIndex(lat, lon) {
   const inCell = best && Math.sqrt(bestD) * 111_000 <= combined.grid_m;
   return { score: inCell ? best[2] : 0, max: combined.max, parts: inCell ? best[3].split(',').map(code => ({ label: combined.labels[code], points: combined.weights[code] })) : [] };
 }
-const api = createApi({ store: openStore(process.env.FIREPATH_DATA || resolve(root, 'data/firepath-dev.json')), lookupHazards: lookup, fetchAlerts: fetchNwsAlerts, geocoder: createGeocoder(), combinedIndex, demoMailbox: process.env.FIREPATH_DEMO_MAILBOX !== '0' });
+const api = createApi({ store: openStore(process.env.FIREPATH_DATA || resolve(root, 'data/firepath-dev.json')), lookupHazards: lookup, fetchAlerts: fetchNwsAlerts, geocoder: createGeocoder(), combinedIndex, permitCatalog: JSON.parse(readFileSync(resolve(root, 'src/glendale-permits.json'), 'utf8')), demoMailbox: process.env.FIREPATH_DEMO_MAILBOX !== '0' });
 // The Expo dev server (port 8081) calls this API cross-origin with a bearer token; no cookies are used.
 const devOrigin = /^http:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+):8081$/;
 
