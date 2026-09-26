@@ -145,7 +145,7 @@ function Drill({ me, onChange }) {
   const finish = async () => { setBusy(true); try { if (!me.done.drill) onChange(await api('PUT', '/api/me/tasks', { id: 'drill', done: true })); setEvent(null); setPlaybook(null); } catch (err) { setError(err.message); } finally { setBusy(false); } };
   return <>
     <Muted>Pick an alert type to see the plan FirePath would build for {me.user.type === 'business' ? 'your business' : 'your household'} if it were real.{me.done.drill ? ' You have completed a drill.' : ' Finishing one checks off the drill step.'}</Muted>
-    <Chips value={event} options={drillEvents.map(e => [e, e.replace(' Warning', '').replace(' Alert', '')])} onChange={open} />
+    <Select label="Alert to practice" placeholder="Choose an alert" value={event} options={drillEvents.map(e => [e, e.replace(' Warning', '').replace(' Alert', '')])} onChange={open} />
     <ErrorText>{error}</ErrorText>
     {event && !playbook && !error && <Muted style={{ marginTop: 10 }}>Building your plan…</Muted>}
     {playbook && <Card style={{ borderColor: '#E3C98E', backgroundColor: '#FFFCF3' }}>
@@ -258,7 +258,7 @@ function EventPlanner({ me }) {
   return <Card style={{ borderColor: color.green, borderWidth: 1.5 }}>
     <Text style={{ color: color.ink, fontSize: 17, fontWeight: '800' }}>Plan an event</Text>
     <Field label="Event name" value={name} onChangeText={setName} placeholder="e.g., Harvest fair" maxLength={100} />
-    <Segment label="Where?" value={where} options={[['mine', me.user.type === 'business' ? 'At my business' : 'At my home'], ['other', 'Another location']]} onChange={v => { setPlan(null); setWhere(v); }} />
+    <Select label="Where?" value={where} options={[['mine', me.user.type === 'business' ? 'At my business' : 'At my home'], ['other', 'Another location']]} onChange={v => { setPlan(null); setWhere(v); }} />
     {where === 'other' && <AddressSearch label="Event address" value={location} onChangeText={t => { setLocation(t); setLocationKey(null); setPlan(null); }} onPick={(t, key) => { setLocation(t); setLocationKey(key); }} onSubmit={() => {}} suggestPath="/api/public/suggest" />}
     <Field label="Expected attendance" value={attendees} onChangeText={t => setAttendees(t.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="e.g., 250" maxLength={7} />
     {eventQuestions.map(([key, label]) => <Toggle key={key} label={label} value={Boolean(answers[key])} onChange={v => { setPlan(null); setAnswers(current => ({ ...current, [key]: v })); }} />)}
