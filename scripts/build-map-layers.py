@@ -103,6 +103,39 @@ def combined_index(city, by_key):
     return {'grid_m': GRID_M, 'weights': WEIGHTS, 'labels': LABELS, 'max': max((c[2] for c in cells), default=0), 'cells': cells}
 
 
+# --- City & neighborhood layers (not hazards) ---------------------------------------------------
+# Zoning grouped into five readable categories; the exact zone comes from the City's live service
+# when someone taps a parcel. School zones are 500 ft around each school (CA Vehicle Code 22352).
+def zoning_category(desc):
+    d = (desc or '').upper()
+    if any(k in d for k in ('OPEN SPACE', 'SPECIAL RECREATION', 'CEMETERY')): return 'open', 'Open space and recreation'
+    if any(k in d for k in ('INDUSTRIAL', 'MIXED USE', 'TRANSPORTATION')): return 'industrial', 'Industrial and mixed use'
+    if any(k in d for k in ('RESTRICTED RESIDENTIAL', 'LOW DENSITY')): return 'house', 'Houses (low density)'
+    if 'RESIDENTIAL' in d and 'COMMERCIAL' not in d: return 'multi', 'Apartments and multi-family'
+    return 'commercial', 'Commercial and downtown'
+
+
+def civic_layers(snap, city):
+    lat0 = city.centroid.y
+    kx, ky = 111_320 * np.cos(np.radians(lat0)), 110_540
+    out = {}
+    groups = {}
+    for f in json.load(open(snap / 'zoning.geojson'))['features']:
+        key, label = zoning_category((f['properties'] or {}).get('ZONE_DESC'))
+        groups.setdefault((key, label), []).append(shape(f['geometry']).buffer(0))
+    out['zoning'] = [{'type': 'Feature', 'properties': {'level': key, 'label': label}, 'geometry': rounded(unary_union(geoms).simplify(SIMPLIFY, preserve_topology=True))} for (key, label), geoms in groups.items()]
+    out['fire_districts'] = [{'type': 'Feature', 'properties': {'level': 'zone', 'label': f"Fire station district {f['properties'].get('Fire_Distr')}", 'district': f['properties'].get('Fire_Distr')}, 'geometry': rounded(shape(f['geometry']).buffer(0).simplify(SIMPLIFY, preserve_topology=True))} for f in json.load(open(snap / 'fire_station_districts.geojson'))['features']]
+    out['neighborhoods'] = [{'type': 'Feature', 'properties': {'level': 'zone', 'label': f['properties'].get('NAME')}, 'geometry': rounded(shape(f['geometry']).buffer(0).simplify(SIMPLIFY, preserve_topology=True))} for f in json.load(open(snap / 'neighborhood_zones.geojson'))['features']]
+    out['parks'] = [{'type': 'Feature', 'properties': {'level': 'zone', 'label': (f['properties'].get('NAME_ALF') or 'Park').title()}, 'geometry': rounded(shape(f['geometry']).buffer(0).simplify(SIMPLIFY, preserve_topology=True))} for f in json.load(open(snap / 'parks.geojson'))['features']]
+    zones = []
+    for f in json.load(open(snap / 'schools.geojson'))['features']:
+        pt = shape(f['geometry'])
+        circle = scale(scale(pt, xfact=kx, yfact=ky, origin=(0, 0)).buffer(152.4, quad_segs=8), xfact=1 / kx, yfact=1 / ky, origin=(0, 0))
+        zones.append({'type': 'Feature', 'properties': {'level': 'zone', 'label': f"Within 500 ft of {(f['properties'] or {}).get('SCHOOL') or 'a school'}"}, 'geometry': rounded(circle)})
+    out['school_zones'] = zones
+    return out
+
+
 def main():
     snap = latest_snapshot()
     OUT.mkdir(parents=True, exist_ok=True)
@@ -128,6 +161,11 @@ def main():
         features = [{'type': 'Feature', 'properties': {'name': (f['properties'] or {}).get(name_field) or kind, 'kind': kind}, 'geometry': rounded(shape(f['geometry']))} for f in json.load(open(snap / f'{key}.geojson'))['features']]
         json.dump({'type': 'FeatureCollection', 'features': features}, open(OUT / f'{key}.geojson', 'w'), separators=(',', ':'))
         manifest['places'][key] = {'kind': kind, 'features': len(features)}
+    manifest['civic'] = {}
+    for key, features in civic_layers(snap, city).items():
+        json.dump({'type': 'FeatureCollection', 'features': features}, open(OUT / f'{key}.geojson', 'w'), separators=(',', ':'))
+        manifest['civic'][key] = {'features': len(features), 'bytes': (OUT / f'{key}.geojson').stat().st_size}
+        print(f"{key:15} {len(features):4} features {manifest['civic'][key]['bytes'] / 1024:8.0f} KB")
     combined = combined_index(city, by_key)
     json.dump(combined, open(OUT / 'combined.json', 'w'), separators=(',', ':'))
     manifest['combined'] = {'cells': len(combined['cells']), 'grid_m': GRID_M, 'max': combined['max']}

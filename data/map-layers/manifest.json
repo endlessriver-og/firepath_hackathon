@@ -51,6 +51,28 @@
    "features": 27
   }
  },
+ "civic": {
+  "zoning": {
+   "features": 5,
+   "bytes": 473948
+  },
+  "fire_districts": {
+   "features": 10,
+   "bytes": 14422
+  },
+  "neighborhoods": {
+   "features": 37,
+   "bytes": 26483
+  },
+  "parks": {
+   "features": 43,
+   "bytes": 15736
+  },
+  "school_zones": {
+   "features": 27,
+   "bytes": 23441
+  }
+ },
  "combined": {
   "cells": 3240,
   "grid_m": 150,

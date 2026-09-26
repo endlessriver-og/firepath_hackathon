@@ -8,6 +8,7 @@ import { createCombinedIndex } from '../server/combined.mjs';
 import { createGeocoder } from '../server/geocode.mjs';
 import { createCityRecords } from '../server/city-records.mjs';
 import { createParcels } from '../server/parcels.mjs';
+import { createNeighborhood } from '../server/neighborhood.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const store = openBlobStore();
@@ -23,7 +24,7 @@ async function lookupHazards(payload) {
 const api = createApi({
   store, lookupHazards, fetchAlerts: fetchNwsAlerts, geocoder: createGeocoder(),
   combinedIndex: createCombinedIndex(resolve(root, 'data/map-layers/combined.json')),
-  cityRecords: createCityRecords(), parcelAt: createParcels(),
+  cityRecords: createCityRecords(), parcelAt: createParcels(), neighborhoodAt: createNeighborhood({ layerRoot: resolve(root, 'data/map-layers') }),
   permitCatalog: JSON.parse(readFileSync(resolve(root, 'src/glendale-permits.json'), 'utf8')),
   demoMailbox: process.env.FIREPATH_DEMO_MAILBOX !== '0',
 });

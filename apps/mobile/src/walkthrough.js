@@ -67,9 +67,10 @@ export const criteria = [
     evidence: [
       'Any Glendale address resolves through the City\'s own geocoder and is checked against 7 state and federal hazard maps.',
       'Permits, inspections and parcel numbers come live from the City\'s public permit portal; all 75 City permit types were crawled.',
+      'Tap any building on the 3D map: the LA County parcel, the City\'s zoning, fire station district, nearby schools and permit history for that exact lot.',
       'Live National Weather Service alerts, accounts with hashed passwords, and mailed-code address verification.',
       'Runs on web, and bundles for iOS and Android; ESP32 firmware compiles and its protocol is tested end to end.',
-      '36 automated tests. Not yet tested on a physical phone or a real ESP32 board.',
+      '43 automated tests. Not yet tested on a physical phone or a real ESP32 board.',
     ] },
   { name: 'Social and local impact', weight: 20, question: 'How does this solution benefit the local community?',
     answer: 'It gives every Glendale household and business a plan for their exact address and the people in it, and gives responders the facts that change what they do on arrival.',
