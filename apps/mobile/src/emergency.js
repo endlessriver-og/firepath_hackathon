@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 import { emergencyGuide, emergencySituations } from './playbooks';
 import { Caption, Link, Muted, color } from './ui';
+import { BuiltFrom } from './tabs';
 
 // "Emergency now": pick what is happening, get a short list for this household or business.
 // Calm, large targets, 911 first. Works signed out with general guidance.
@@ -31,6 +32,7 @@ export function EmergencyNow({ me, onClose }) {
   return <>
     <Link style={{ marginTop: 0 }} onPress={() => setId(null)}>← Something else</Link>
     <Text style={{ fontSize: 28, fontWeight: '800', color: color.ink, marginTop: 10 }}>{guide.title}</Text>
+    <BuiltFrom me={me} />
     {call911}
     <View style={{ marginTop: 10 }}>
       {guide.steps.map((step, i) => <View key={step.text} style={{ flexDirection: 'row', gap: 12, paddingVertical: 11, borderBottomWidth: 1, borderColor: color.line }}>

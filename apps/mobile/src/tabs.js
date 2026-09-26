@@ -11,11 +11,12 @@ import { eventQuestions } from './permit-catalog';
 import { hazardViewers, resourceGroups, RESOURCES_CHECKED } from './resources';
 import { businessPosterPrintout, householdPlanPrintout, standardPrintout, standardPrintouts } from './printouts';
 import { printHtml } from './print';
+import { connect as connectDevice, sendToDevice, subscribe as subscribeDevice } from './device';
 import { AddressCheck, CityRecords } from './landing';
 import { eventTemplates, venues, VENUE_NOTE } from './venues';
 import { AddressPanel, AddressSearch, BusinessDetails, BusinessProfile, HouseholdForm } from './onboarding';
 import { Toggle } from './ui';
-import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, ProgressRing, Section, Segment, Select, SeverityBadge, Tag, Title, color, s } from './ui';
+import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, Collapsible, ProgressRing, Section, Segment, Select, SeverityBadge, Tag, Title, color, s } from './ui';
 
 const EVERBRIDGE = 'https://www.glendaleca.gov/Everbridge';
 const KNOW_YOUR_ZONE = 'https://www.glendaleca.gov/government/departments/fire-department/other-links/emergency-preparedness-response/know-your-zone';
@@ -65,7 +66,7 @@ export function Home({ me, onChange, go }) {
       <View style={{ flex: 1 }}>
         <Text style={{ color: '#CFE3DA', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>YOUR CHECKLIST</Text>
         <Text style={{ color: '#FFF', fontSize: 20, fontWeight: '800', marginTop: 2 }}>{done} of {total} done</Text>
-        <Text style={{ color: '#CFE3DA', fontSize: 13, marginTop: 4 }}>{done === total ? 'All done. Review your plan every few months.' : 'Work down the list; the most important steps come first.'}</Text>
+        {personalFacts(me).length ? <BuiltFrom me={me} light /> : <Text style={{ color: '#CFE3DA', fontSize: 13, marginTop: 4 }}>{done === total ? 'All done. Review your plan every few months.' : 'Work down the list; the most important steps come first.'}</Text>}
       </View>
     </Card>
 
@@ -82,6 +83,7 @@ export function Home({ me, onChange, go }) {
     <Section>Next on your list</Section>
     {next.map(task => <TaskCard key={task.id} task={task} number={ordered.indexOf(task) + 1} done={false} busy={busy === task.id} onToggle={toggle} />)}
     <Link onPress={() => go('Plan')}>See the full checklist ({total}) →</Link>
+    <Collapsible icon="🔗" title="How FirePath connects" summary="Maps, City records, alerts, your household and your devices"><Muted style={{ marginTop: 10 }}>See every data source and device, and which are live today.</Muted><Link onPress={() => go('Systems')}>Open →</Link></Collapsible>
     <Section>Public resources</Section>
     <Resources compact />
   </>;
@@ -129,6 +131,7 @@ function Playbook({ playbook, drill }) {
 }
 
 function Drill({ me, onChange }) {
+  const device = useDevice();
   const [event, setEvent] = useState(null), [playbook, setPlaybook] = useState(null), [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const open = e => { setEvent(e); setPlaybook(null); setError(''); api('GET', `/api/me/playbook?event=${encodeURIComponent(e)}`).then(setPlaybook).catch(err => setError(err.message)); };
   const finish = async () => { setBusy(true); try { if (!me.done.drill) onChange(await api('PUT', '/api/me/tasks', { id: 'drill', done: true })); setEvent(null); setPlaybook(null); } catch (err) { setError(err.message); } finally { setBusy(false); } };
@@ -141,7 +144,9 @@ function Drill({ me, onChange }) {
     {playbook && <Card style={{ borderColor: '#E3C98E', backgroundColor: '#FFFCF3' }}>
       <Text style={{ alignSelf: 'flex-start', backgroundColor: color.goldBg, color: color.gold, fontWeight: '900', fontSize: 11, letterSpacing: 1, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>DRILL · NOT A REAL ALERT</Text>
       <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>If a {event} covered your address</Text>
+      <BuiltFrom me={me} />
       <Playbook playbook={playbook} drill />
+      {device.connected && <Button kind="outline" onPress={() => sendToDevice({ kind: 'drill', hazard: playbook.kind, severity: 'drill', text: `DRILL: ${event}. Not a real alert.` }).catch(e => setError(e.message))}>Sound the in-home device</Button>}
       <Button busy={busy} onPress={finish}>{me.done.drill ? 'Close drill' : 'Finish drill'}</Button>
     </Card>}
   </>;
@@ -173,7 +178,7 @@ export function Alerts({ me, onChange }) {
           <Muted style={{ marginTop: 4 }}>{a.headline}</Muted>
           {a.instruction ? <Text style={{ color: color.ink, marginTop: 8, lineHeight: 20 }}>{a.instruction}</Text> : null}
           <Caption>Until {time(a.expires)}</Caption>
-          {a.playbook && <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: color.warmLine }}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>Your plan for this alert</Text><Playbook playbook={a.playbook} /></View>}
+          {a.playbook && <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: color.warmLine }}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>Your plan for this alert</Text><BuiltFrom me={me} /><Playbook playbook={a.playbook} /></View>}
         </Card>)}
     <Caption>Source: National Weather Service (api.weather.gov). Weather alerts only: they are not City evacuation orders.</Caption>
     <Drill me={me} onChange={onChange} />
@@ -182,6 +187,7 @@ export function Alerts({ me, onChange }) {
     <Card><Tag>Official</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>Sign up with the City of Glendale</Text><Muted>Evacuation orders and City emergency messages come from the City's Everbridge system. FirePath does not receive them yet.</Muted><Link onPress={() => Linking.openURL(EVERBRIDGE)}>Sign up with the City ↗</Link><Link onPress={() => Linking.openURL(KNOW_YOUR_ZONE)}>Know your evacuation zone ↗</Link></Card>
     <CityDataCallout id="alertFeed" />
     <CityDataCallout id="evacuationZones" />
+    <DeviceCard />
     <Card><Tag>Local test only</Tag><Muted>Sends a notification from this device to itself. It is not an emergency alert.</Muted><Button kind="outline" onPress={testNotification}>Send test notification</Button></Card>
     <Caption>For an emergency, follow official instructions. Call 911 for immediate danger.</Caption>
   </>;
@@ -437,4 +443,102 @@ export function PrintSheets({ me }) {
     </View>)}
     <ErrorText>{error}</ErrorText>
   </>;
+}
+
+
+// In-home device (ESP32 prototype) status + controls. Shared by Alerts, drills and the systems page.
+export function useDevice() {
+  const [device, setDevice] = useState({ supported: false, connected: false, events: [] });
+  useEffect(() => subscribeDevice(setDevice), []);
+  return device;
+}
+
+export function DeviceCard({ initiallyOpen }) {
+  const device = useDevice();
+  const [error, setError] = useState('');
+  const run = async fn => { setError(''); try { await fn(); } catch (e) { if (e?.name !== 'NotFoundError') setError(e.message); } };
+  const last = device.events[0];
+  return <Collapsible icon="📟" initiallyOpen={initiallyOpen} title="In-home alert device" summary={device.connected ? `Connected${last ? ` · last: ${last.type}${last.kind ? ` (${last.kind})` : ''}` : ''}` : device.supported ? 'Not connected · USB prototype' : 'Prototype · connect from desktop Chrome'}>
+    <Muted style={{ marginTop: 10 }}>An ESP32 speaker for people who might miss a phone alert. It sounds for drills and tests you send, and reports its own smoke-sensor readings. It is not a certified alarm; keep your smoke and CO alarms.</Muted>
+    {!device.connected ? <Button kind="outline" disabled={!device.supported} onPress={() => run(connectDevice)}>Connect USB device</Button>
+      : <Button kind="outline" onPress={() => run(() => sendToDevice({ kind: 'test', text: 'FirePath test. Not an emergency.' }))}>Send a test sound</Button>}
+    {device.events.length > 0 && <View style={{ marginTop: 10 }}>{device.events.map((e, i) => <Text key={i} style={{ color: color.muted, fontSize: 12 }}>{e.at} · {e.type === 'ack' ? 'device confirmed it sounded' : e.type === 'ready' ? 'device ready' : e.type === 'sensor' ? `smoke sensor ${e.active ? 'triggered' : 'clear'} (${e.value})` : e.type === 'sent' ? `sent ${e.kind}` : e.type}</Text>)}</View>}
+    <ErrorText>{error}</ErrorText>
+  </Collapsible>;
+}
+
+// How the pieces connect: data in -> FirePath -> people and devices, each marked Live / Prototype / Needs City.
+const SYSTEMS = [
+  ['Data coming in', [
+    ['CAL FIRE, FEMA, CGS, DWR and USGS hazard maps', 'live', 'Dated snapshot, checked for every address'],
+    ['National Weather Service alerts', 'live', 'Checked live for each registered address'],
+    ['City of Glendale address list (geocoder)', 'live', 'Autocomplete and address matching'],
+    ['Glendale Permits: catalog, permits, inspections, parcel', 'live', 'Public records per address'],
+    ['City emergency alert feed (Everbridge)', 'city', 'Would push City alerts with steps for each household'],
+    ['Evacuation zones (Genasys)', 'city', 'Would match every order to the exact address'],
+    ['Dispatch (CAD) and road closures', 'city', 'Would send consented notes en route and suggest open routes'],
+  ]],
+  ['FirePath in the middle', [
+    ['Address and parcel as the shared key', 'live', 'The same key City departments already use'],
+    ['Household and business profiles with consent', 'prototype', 'Who needs help, pets, hazardous materials, contacts'],
+    ['Playbook engine', 'live', 'Turns any alert or emergency into steps for this household'],
+    ['Permit matcher and event packages', 'live', 'Plain words to the City permit catalog'],
+  ]],
+  ['Out to people and devices', [
+    ['Phone and web app', 'prototype', 'Checklist, map, alerts, emergency steps'],
+    ['Printed sheets on the fridge or break room', 'live', 'Custom plans that work with no power or signal'],
+    ['In-home alert device (ESP32)', 'prototype', 'Sounds for drills and tests over USB today'],
+    ['Responder brief', 'prototype', 'Ready for a CAD connection; nothing is sent today'],
+  ]],
+];
+const BADGE = { live: ['LIVE', '#1D5B4D', '#E6EFE9'], prototype: ['PROTOTYPE', '#8A5A12', '#F6E6C8'], city: ['NEEDS CITY', '#2E5A88', '#EAF1F8'] };
+
+export function Systems({ go }) {
+  const device = useDevice();
+  return <>
+    <Link style={{ marginTop: 0 }} onPress={() => go('Home')}>← Home</Link>
+    <Title style={{ marginTop: 10 }}>How FirePath connects</Title>
+    <Muted>One address-keyed record links public data, your household and your devices, so every alert turns into steps for the people actually there.</Muted>
+    {SYSTEMS.map(([group, items], gi) => <View key={group}>
+      <Section>{group}</Section>
+      {items.map(([name, status, what]) => { const [label, fg, bg] = BADGE[status]; const deviceLive = name.startsWith('In-home') && device.connected; return (
+        <View key={name} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderColor: color.line }}>
+          <View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{name}</Text><Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{deviceLive ? 'Connected now over USB' : what}</Text></View>
+          <Text style={{ fontSize: 10, fontWeight: '900', letterSpacing: 0.8, color: deviceLive ? '#1D5B4D' : fg, backgroundColor: deviceLive ? '#E6EFE9' : bg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overflow: 'hidden' }}>{deviceLive ? 'CONNECTED' : label}</Text>
+        </View>); })}
+      {gi < SYSTEMS.length - 1 && <Text style={{ textAlign: 'center', color: color.green, fontSize: 20, marginTop: 8 }}>↓</Text>}
+    </View>)}
+    <DeviceCard />
+    <Caption>Live: working now with real data. Prototype: built and demonstrable, not in production. Needs City: waits on a City data connection.</Caption>
+  </>;
+}
+
+
+// The facts a plan was built from, so personalization is visible: "High fire zone · 3 people · Rosa may need help · 2 dogs".
+export function personalFacts(me) {
+  if (!me) return [];
+  const facts = [];
+  if (me.hazards) for (const item of summarizePlace(me.hazards).mapped) facts.push(item.key === 'wildfire' ? `${hazardSeverity('wildfire', me.hazards.wildfire).label} fire zone` : item.name);
+  if (me.user.type === 'business') {
+    const b = me.business || {};
+    if (b.employees) facts.push(`${b.employees} staff`);
+    if ((b.hazmat || []).length) facts.push('hazardous materials on site');
+    if (b.assembly) facts.push('assembly point set');
+  } else {
+    const h = me.household || {};
+    if (h.people) facts.push(`${h.people} ${h.people === 1 ? 'person' : 'people'}`);
+    for (const m of (h.members || []).filter(m => m.needsHelp || m.ageGroup === 'senior')) facts.push(`${m.name} may need help`);
+    if ((h.members || []).some(m => m.ageGroup === 'child')) facts.push('kids at home');
+    for (const p of h.pets || []) facts.push(`${p.count > 1 ? `${p.count} ` : ''}${p.kind}`);
+    if (h.meetNear || h.meetFar) facts.push('meeting places set');
+  }
+  return facts;
+}
+
+export function BuiltFrom({ me, light }) {
+  const facts = personalFacts(me);
+  if (!facts.length) return null;
+  return <Text accessibilityLabel={`Built for you from: ${facts.join(', ')}`} style={{ fontSize: 12, lineHeight: 18, marginTop: 8, color: light ? '#CFE3DA' : color.muted }}>
+    <Text style={{ fontWeight: '800', color: light ? '#FFF' : color.green }}>Built for you from: </Text>{facts.join(' · ')}
+  </Text>;
 }

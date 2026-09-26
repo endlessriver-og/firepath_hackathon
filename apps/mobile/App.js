@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { api, loadSession, saveSession } from './src/api';
 import { AboutYou, AddressPanel, BusinessDetails, BusinessProfile, HouseholdForm } from './src/onboarding';
-import { Actions, Alerts, Home, MapTab, Permits, Profile } from './src/tabs';
+import { Actions, Alerts, Home, MapTab, Permits, Profile, Systems } from './src/tabs';
 import { Landing } from './src/landing';
 import { EmergencyNow } from './src/emergency';
 import { Button, ErrorText, color } from './src/ui';
@@ -69,6 +69,7 @@ export default function App() {
     <ScrollView key={emergency ? 'sos' : tab} ref={scroller} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       {emergency && <EmergencyNow me={me} onClose={() => setEmergency(false)} />}
       {!emergency && tab === 'Home' && <Home me={me} onChange={setMe} go={go} />}
+      {!emergency && tab === 'Systems' && <Systems go={go} />}
       {!emergency && tab === 'Map' && <MapTab me={me} layers={layers} setLayers={setLayers} top={top} />}
       {!emergency && tab === 'Plan' && <Actions me={me} onChange={setMe} />}
       {!emergency && tab === 'Alerts' && <Alerts me={me} onChange={setMe} />}
