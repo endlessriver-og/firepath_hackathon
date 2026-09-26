@@ -39,6 +39,7 @@ export function AddressCheck({ onResult, showPreview = false, label }) {
     finally { setBusy(false); }
   }
   const mapped = result?.layers.filter(l => l.level === 'zone' || (typeof l.level === 'number' && l.level > 0)) || [];
+  const unavailable = result?.layers.filter(l => l.level === 'unknown').length || 0;
   return <>
     <AddressSearch label={label || t('land.addr')} placeholder={t('land.placeholder')} value={address} onChangeText={setAddress} onPick={check} onSubmit={() => check()} suggestPath="/api/public/suggest" settled={checked} hint={t('land.addrHint')} />
     <ErrorText>{error}</ErrorText>
@@ -48,7 +49,8 @@ export function AddressCheck({ onResult, showPreview = false, label }) {
     {result && <>
       <Card style={{ backgroundColor: color.green, borderColor: color.green }}>
         <Text style={{ color: '#CFE3DA', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>{result.address}</Text>
-        <Text style={{ color: '#FFF', fontSize: 22, fontWeight: '800', marginTop: 6 }}>{mapped.length ? `${mapped.length} of 7 hazard maps include this address` : 'None of the 7 hazard maps include this address'}</Text>
+        <Text style={{ color: '#FFF', fontSize: 22, fontWeight: '800', marginTop: 6 }}>{mapped.length ? `${mapped.length} map${mapped.length === 1 ? '' : 's'} show a zone at this address` : 'No checked map shows a zone here'}</Text>
+        {unavailable > 0 && <Text style={{ color: '#CFE3DA', marginTop: 4 }}>{unavailable} map{unavailable === 1 ? '' : 's'} could not be checked.</Text>}
         <Text style={{ color: '#CFE3DA', marginTop: 6 }}>Outside a mapped zone does not mean risk-free.</Text>
       </Card>
       <CityRecords records={result.records} />
