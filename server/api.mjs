@@ -7,8 +7,8 @@ import { checkPassword, hashPassword, newCode, newToken, tokenKey } from './auth
 
 const SESSION_DAYS = 30, CODE_DAYS = 14, MAX_CODE_ATTEMPTS = 5;
 const DAY = 86_400_000;
-class HttpError extends Error { constructor(status, message) { super(message); this.status = status; } }
-const fail = (status, message) => { throw new HttpError(status, message); };
+class HttpError extends Error { constructor(status, message, extra) { super(message); this.status = status; this.extra = extra; } }
+const fail = (status, message, extra) => { throw new HttpError(status, message, extra); };
 const text = (value, max) => typeof value === 'string' ? value.trim().slice(0, max) : '';
 const oneOf = (value, options) => options.includes(value) ? value : undefined;
 
@@ -20,7 +20,7 @@ function occupancy(h) {
   return `${h.people} ${h.people === 1 ? 'person' : 'people'}: ${parts.join(', ')}${help ? `; ${help} may need help leaving` : ''}`;
 }
 
-export function createApi({ store, lookupHazards, fetchAlerts, demoMailbox = true, now = () => Date.now() }) {
+export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, demoMailbox = true, now = () => Date.now() }) {
   const { data } = store;
   const failures = new Map(); // email -> [timestamps] of failed logins, in memory only
   const alertCache = new Map();
@@ -156,9 +156,20 @@ export function createApi({ store, lookupHazards, fetchAlerts, demoMailbox = tru
       const user = session(req);
       const address = text(body.address, 200);
       if (address.length < 5) fail(400, 'Enter a Glendale street address.');
-      let result;
-      try { result = await lookupHazards({ address }); } catch { fail(422, 'That address could not be matched in Glendale. Check the street number and name.'); }
+      let result, matched = null;
+      if (geocoder) {
+        // FirePath's own City-geocoder step (normalization, suggestions, "did you mean"), then a coordinate lookup.
+        try { matched = await geocoder.resolve(address, text(body.magicKey, 200) || undefined); }
+        catch (e) {
+          if (e.candidates) fail(422, 'That address matches more than one place in Glendale. Pick one:', { candidates: e.candidates });
+          if (e.streetOnly) fail(422, 'Only the street matched. Add the house number.');
+          fail(503, 'The City address service did not respond. Try again in a moment.');
+        }
+        if (!matched) fail(422, 'No Glendale address matched. Check the house number and street, e.g. "613 E Broadway".');
+      }
+      try { result = await lookupHazards(matched ? { lat: matched.lat, lon: matched.lon } : { address }); } catch { fail(422, 'That address could not be matched in Glendale. Check the street number and name.'); }
       if (!result?.location?.in_city) fail(422, 'That address is outside the Glendale pilot area.');
+      if (matched) result.location = { ...result.location, matched_address: matched.address, score: matched.score };
       Object.assign(user, {
         address: result.location.matched_address || address,
         lat: result.location.lat, lon: result.location.lon,
@@ -200,6 +211,13 @@ export function createApi({ store, lookupHazards, fetchAlerts, demoMailbox = tru
       user.verification = null;
       store.save();
       return { body: view(user) };
+    },
+
+    'GET /api/address/suggest': async (req, body, url) => {
+      session(req);
+      if (!geocoder) return { body: { suggestions: [] } };
+      try { return { body: { suggestions: await geocoder.suggest(text(url.searchParams.get('q'), 120)) } }; }
+      catch { return { body: { suggestions: [], unavailable: true } }; }
     },
 
     'PUT /api/me/tasks': async (req, body) => {
@@ -282,7 +300,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, demoMailbox = tru
       ({ status = 200, body } = await handler(req, parsed && typeof parsed === 'object' ? parsed : {}, url));
     } catch (error) {
       status = error instanceof HttpError ? error.status : error instanceof SyntaxError ? 400 : 500;
-      body = { error: error instanceof HttpError ? error.message : status === 400 ? 'Invalid request.' : 'Something went wrong.' };
+      body = { error: error instanceof HttpError ? error.message : status === 400 ? 'Invalid request.' : 'Something went wrong.', ...(error.extra || {}) };
     }
     res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
     res.end(JSON.stringify(body));

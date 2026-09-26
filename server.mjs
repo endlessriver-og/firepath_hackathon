@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import { resolve, extname, sep } from 'node:path';
 import { createApi, fetchNwsAlerts } from './server/api.mjs';
 import { openStore } from './server/store.mjs';
+import { createGeocoder } from './server/geocode.mjs';
 
 const root = resolve(import.meta.dirname);
 const srcRoot = resolve(root, 'src');
@@ -27,7 +28,7 @@ function lookup(payload) {
   });
 }
 
-const api = createApi({ store: openStore(process.env.FIREPATH_DATA || resolve(root, 'data/firepath-dev.json')), lookupHazards: lookup, fetchAlerts: fetchNwsAlerts, demoMailbox: process.env.FIREPATH_DEMO_MAILBOX !== '0' });
+const api = createApi({ store: openStore(process.env.FIREPATH_DATA || resolve(root, 'data/firepath-dev.json')), lookupHazards: lookup, fetchAlerts: fetchNwsAlerts, geocoder: createGeocoder(), demoMailbox: process.env.FIREPATH_DEMO_MAILBOX !== '0' });
 // The Expo dev server (port 8081) calls this API cross-origin with a bearer token; no cookies are used.
 const devOrigin = /^http:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+):8081$/;
 

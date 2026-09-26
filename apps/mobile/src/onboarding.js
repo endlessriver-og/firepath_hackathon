@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { api, saveSession } from './api';
 import { summarizePlace } from './preparedness';
@@ -75,8 +75,16 @@ export function AddressPanel({ me, onChange, onDone, onboarding }) {
   const [editing, setEditing] = useState(!me.address);
   const [busy, setBusy] = useState(''), [error, setError] = useState('');
   const [mailbox, setMailbox] = useState(null), [code, setCode] = useState('');
-  const run = async (key, fn) => { setBusy(key); setError(''); try { await fn(); } catch (e) { setError(e.message); } finally { setBusy(''); } };
-  const lookup = () => run('lookup', async () => { onChange(await api('POST', '/api/me/address', { address })); setEditing(false); setMailbox(null); });
+  const [suggestions, setSuggestions] = useState([]), [candidates, setCandidates] = useState([]), [picked, setPicked] = useState('');
+  const run = async (key, fn) => { setBusy(key); setError(''); try { await fn(); } catch (e) { setError(e.message); setCandidates(e.data?.candidates || []); } finally { setBusy(''); } };
+  const lookup = (text = address, magicKey) => run('lookup', async () => { setSuggestions([]); setCandidates([]); onChange(await api('POST', '/api/me/address', { address: text, magicKey })); setEditing(false); setMailbox(null); });
+  // City geocoder suggestions as the user types (debounced; skipped right after a suggestion is picked).
+  useEffect(() => {
+    if (!editing || address.trim().length < 4 || address === picked) { setSuggestions([]); return; }
+    const timer = setTimeout(() => api('GET', `/api/address/suggest?q=${encodeURIComponent(address)}`).then(r => setSuggestions(r.suggestions || [])).catch(() => setSuggestions([])), 250);
+    return () => clearTimeout(timer);
+  }, [address, editing]);
+  const pick = item => { setAddress(item.text); setPicked(item.text); setSuggestions([]); lookup(item.text, item.magicKey); };
   const mail = () => run('mail', async () => { const result = await api('POST', '/api/me/address/mail'); setMailbox(result.demoMailbox); onChange(result); });
   const verify = () => run('verify', async () => { onChange(await api('POST', '/api/me/address/verify', { code })); setMailbox(null); setCode(''); });
   const a = me.address;
@@ -87,9 +95,14 @@ export function AddressPanel({ me, onChange, onDone, onboarding }) {
     {onboarding && <Title>{me.user.type === 'business' ? 'Where is the business?' : 'Where is home?'}</Title>}
     {editing ? <>
       <Muted>We check your address against seven state and federal hazard maps.</Muted>
-      <Field label="Glendale street address" hint="Sent to the City of Glendale's address lookup (geocoder) to find the map point." value={address} onChangeText={setAddress} placeholder="e.g., 1613 Glencoe Way" autoComplete="street-address" onSubmitEditing={lookup} maxLength={200} />
+      <Field label="Glendale street address" hint="Sent to the City of Glendale's address lookup (geocoder) to find the map point." value={address} onChangeText={setAddress} placeholder="Start typing, e.g., 1613 Glencoe" autoComplete="off" onSubmitEditing={() => lookup()} maxLength={200} />
+      {suggestions.length > 0 && <View accessibilityRole="list" style={{ backgroundColor: '#FFF', borderWidth: 1, borderColor: '#D5DDD5', borderRadius: 12, marginTop: 4, overflow: 'hidden' }}>
+        {suggestions.map((item, i) => <Pressable key={item.text} accessibilityRole="button" accessibilityLabel={`Use ${item.text}`} onPress={() => pick(item)} style={{ padding: 13, borderTopWidth: i ? 1 : 0, borderColor: color.line }}><Text style={{ color: color.ink }}>{item.text}</Text></Pressable>)}
+        <Caption style={{ marginTop: 0, padding: 8, paddingTop: 4 }}>Suggestions from the City of Glendale address list</Caption>
+      </View>}
       <ErrorText>{error}</ErrorText>
-      <Button busy={busy === 'lookup'} disabled={address.trim().length < 5} onPress={lookup}>Find my address</Button>
+      {candidates.length > 0 && <View style={{ marginTop: 6 }}>{candidates.map(c => <Button key={c} kind="outline" style={{ marginTop: 8 }} onPress={() => { setAddress(c); setPicked(c); lookup(c); }}>{c}</Button>)}</View>}
+      <Button busy={busy === 'lookup'} disabled={address.trim().length < 5} onPress={() => lookup()}>Find my address</Button>
       {busy === 'lookup' && <Caption>Checking the City's address points and seven hazard maps. This can take up to 20 seconds.</Caption>}
       {a && <Link onPress={() => setEditing(false)}>Cancel</Link>}
     </> : <>

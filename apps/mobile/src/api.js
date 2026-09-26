@@ -27,6 +27,6 @@ export async function api(method, path, body) {
     throw Object.assign(new Error('Cannot reach the FirePath server. Is `npm start` running?'), { status: 0 });
   }
   const json = await response.json().catch(() => ({}));
-  if (!response.ok) throw Object.assign(new Error(json.error || `Request failed (${response.status})`), { status: response.status });
+  if (!response.ok) throw Object.assign(new Error(json.error || `Request failed (${response.status})`), { status: response.status, data: json });
   return json;
 }

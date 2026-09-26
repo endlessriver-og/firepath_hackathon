@@ -152,3 +152,37 @@ test('business accounts get their own profile, steps, badges, permits and respon
   const resident = await signup(call, 'r@example.test');
   assert.equal((await call('PUT', '/api/me/business', { name: 'x' }, resident)).status, 400);
 });
+
+test('address step uses the City geocoder: suggestions, did-you-mean, street-only and coordinate lookup', async () => {
+  let lookedUp = null;
+  const geocoder = {
+    suggest: async q => [{ text: `1613 GLENCOE WAY, GLENDALE, CA, 91208`, magicKey: 'k1' }].filter(() => q.length >= 3),
+    resolve: async (text, key) => {
+      if (/^613 broadway$/i.test(text)) throw Object.assign(new Error('ambiguous'), { candidates: ['613 E BROADWAY, GLENDALE, 91205', '613 W BROADWAY, GLENDALE, 91204'] });
+      if (/^glencoe way$/i.test(text)) throw Object.assign(new Error('street'), { streetOnly: true });
+      if (/fake/i.test(text)) return null;
+      return { address: '1613 GLENCOE WAY, GLENDALE, CA, 91208', lat: 34.199, lon: -118.2306, score: key ? 100 : 86 };
+    },
+  };
+  const store = { data: { users: {}, sessions: {} }, save() {} };
+  const handle = createApi({ store, geocoder, fetchAlerts: async () => [], lookupHazards: async p => { lookedUp = p; return { location: { lat: p.lat, lon: p.lon, in_city: true, matched_address: null }, hazards: sparr.hazards }; } });
+  const call = async (method, path, body, token) => { const req = { method, headers: token ? { authorization: `Bearer ${token}` } : {}, async *[Symbol.asyncIterator]() { if (body) yield JSON.stringify(body); } }; const res = { writeHead(s) { this.status = s; }, end(t) { this.body = JSON.parse(t); } }; await handle(req, res, new URL(path, 'http://localhost')); return res; };
+  const token = await signup(call);
+  assert.equal((await call('GET', '/api/address/suggest?q=1613 glenc', null, token)).body.suggestions[0].magicKey, 'k1');
+  assert.equal((await call('GET', '/api/address/suggest?q=x', null)).status, 401, 'suggestions need a session');
+  const ambiguous = await call('POST', '/api/me/address', { address: '613 Broadway' }, token);
+  assert.equal(ambiguous.status, 422);
+  assert.equal(ambiguous.body.candidates.length, 2);
+  assert.match((await call('POST', '/api/me/address', { address: 'Glencoe Way' }, token)).body.error, /house number/);
+  assert.match((await call('POST', '/api/me/address', { address: '1 Fake St' }, token)).body.error, /No Glendale address/);
+  const ok = await call('POST', '/api/me/address', { address: '1613 Glencoe' }, token);
+  assert.equal(ok.body.address.text, '1613 GLENCOE WAY, GLENDALE, CA, 91208');
+  assert.deepEqual(lookedUp, { lat: 34.199, lon: -118.2306 }, 'hazards are checked by coordinates, not by re-geocoding');
+});
+
+import { normalizeAddress } from '../server/geocode.mjs';
+test('address normalization abbreviates words and strips city, state and ZIP', () => {
+  assert.equal(normalizeAddress('1601 West Mountain Street, Glendale, CA 91201'), '1601 W Mountain St');
+  assert.equal(normalizeAddress('613 east broadway'), '613 E broadway');
+  assert.equal(normalizeAddress('2211 N. Verdugo Road, Montrose'), '2211 N Verdugo Rd');
+});
