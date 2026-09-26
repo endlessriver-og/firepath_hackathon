@@ -28,7 +28,7 @@ export function CityRecords({ records, initiallyOpen }) {
   </Collapsible>;
 }
 
-export function AddressCheck({ onResult, showPreview = true, label }) {
+export function AddressCheck({ onResult, showPreview = false, label }) {
   const { t } = useI18n();
   const [address, setAddress] = useState('');
   const [result, setResult] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [candidates, setCandidates] = useState([]), [checked, setChecked] = useState('');
@@ -49,14 +49,14 @@ export function AddressCheck({ onResult, showPreview = true, label }) {
       <Card style={{ backgroundColor: color.green, borderColor: color.green }}>
         <Text style={{ color: '#CFE3DA', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>{result.address}</Text>
         <Text style={{ color: '#FFF', fontSize: 22, fontWeight: '800', marginTop: 6 }}>{mapped.length ? `${mapped.length} of 7 hazard maps include this address` : 'None of the 7 hazard maps include this address'}</Text>
-        {result.combined && <Text style={{ color: '#CFE3DA', marginTop: 6 }}>Combined planning index: <Text style={{ color: '#FFF', fontWeight: '800' }}>{result.combined.score} of {result.combined.max}</Text>{result.combined.parts.length ? ` (${result.combined.parts.map(p => `${p.label} +${p.points}`).join(', ')})` : ''}</Text>}
-        {!mapped.length && <Text style={{ color: '#CFE3DA', marginTop: 6 }}>Not being in a mapped zone is not the same as no risk. Earthquakes affect all of Glendale.</Text>}
+        <Text style={{ color: '#CFE3DA', marginTop: 6 }}>Outside a mapped zone does not mean risk-free.</Text>
       </Card>
       <CityRecords records={result.records} />
       <MapFrame src={`${apiBase()}/map.html?layers=combined&label=This%20address&lat=${result.lat}&lon=${result.lon}`} style={{ height: 320, borderRadius: 17, marginTop: 12, borderWidth: 1, borderColor: color.line }} />
-      <Section>Layer by layer</Section>
+      <Section>Seven hazard maps</Section>
+      <Caption style={{ marginTop: 0 }}>✓ In mapped zone · ○ Outside mapped zone · ? Map unavailable. These are planning maps, not live alerts.</Caption>
       {result.layers.map(l => <View key={l.key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderColor: color.line }}>
-        <View><Text style={{ color: color.ink, fontWeight: '700' }}>{l.name}</Text>{hazardViewers[l.key] && <Text accessibilityRole="link" style={{ color: '#086B56', fontSize: 12, marginTop: 2 }} onPress={() => Linking.openURL(hazardViewers[l.key].url)}>Official map ↗</Text>}</View><SeverityBadge severity={l} />
+        <View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{l.name}</Text>{hazardViewers[l.key] && <Text accessibilityRole="link" style={{ color: '#086B56', fontSize: 12, marginTop: 2 }} onPress={() => Linking.openURL(hazardViewers[l.key].url)}>Official map ↗</Text>}</View><Text style={{ color: l.level === 'zone' || (typeof l.level === 'number' && l.level > 0) ? color.warm : color.green, fontWeight: '800', fontSize: 12 }}>{l.level === 'zone' || (typeof l.level === 'number' && l.level > 0) ? '✓ In zone' : l.level === 'unknown' ? '? Unavailable' : '○ Outside zone'}</Text>
       </View>)}
       <Caption>Planning maps from CAL FIRE, FEMA, the California Geological Survey, California DWR and USGS, checked {result.checkedAt.slice(0, 10)}. Not live incidents or evacuation orders.</Caption>
       {showPreview && result.preview.length > 0 && <><Section>Where to start</Section>
@@ -71,6 +71,7 @@ export function Landing({ onSignedIn, onEmergency, onWalkthrough }) {
   const { t, lang } = useI18n();
   const [result, setResult] = useState(null);
   const [signup, setSignup] = useState(null); // null | { type, mode }
+  const [languageOpen, setLanguageOpen] = useState(false);
 
   if (signup) return <>
     <Link style={{ marginTop: 0 }} onPress={() => setSignup(null)}>← Back to the address check</Link>
@@ -79,31 +80,30 @@ export function Landing({ onSignedIn, onEmergency, onWalkthrough }) {
   </>;
 
   return <>
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Text style={{ fontSize: 15, fontWeight: '900', letterSpacing: 2, color: color.green }}>FIREPATH</Text>
-      <Text accessibilityRole="button" onPress={onEmergency} style={{ backgroundColor: '#B3261A', color: '#FFF', fontWeight: '800', fontSize: 12, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, overflow: 'hidden' }}>{t('head.emergency')}</Text></View>
-    <LanguageBar />
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: color.green, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#FFF', fontSize: 22, fontWeight: '900' }}>↗</Text></View><Text style={{ flex: 1, fontSize: 19, fontWeight: '900', letterSpacing: 1, color: color.green }}>FirePath</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel="Language and text size" onPress={() => setLanguageOpen(!languageOpen)}><Text style={{ color: color.green, fontSize: 20, padding: 5 }}>🌐</Text></Pressable>
+      <Text accessibilityRole="button" onPress={onEmergency} style={{ backgroundColor: '#B3261A', color: '#FFF', fontWeight: '800', fontSize: 12, borderRadius: 10, paddingHorizontal: 11, paddingVertical: 8, overflow: 'hidden' }}>{t('head.emergency')}</Text></View>
+    {languageOpen && <LanguageBar />}
     <Text style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 22 }}>{t('land.title')}</Text>
     <Muted style={{ marginTop: 8, fontSize: 16 }}>{t('land.sub')}</Muted>
-    {onWalkthrough && <Pressable accessibilityRole="button" onPress={onWalkthrough} style={{ marginTop: 14, backgroundColor: '#12302A', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-      <Text style={{ fontSize: 22 }}>▶</Text>
-      <View style={{ flex: 1 }}><Text style={{ color: '#FFF', fontWeight: '800', fontSize: 15 }}>{t('land.tour')}</Text><Text style={{ color: '#CFE3DA', fontSize: 12, marginTop: 2 }}>{t('land.tourSub')}</Text></View>
-    </Pressable>}
     <HeroIllustration height={112} />
     <AddressCheck onResult={setResult} />
     {result && <>
       <Card style={{ borderColor: color.green, borderWidth: 2, marginTop: 22 }}>
         <Tag>Free preparedness plan · City permit fees may apply</Tag>
-        <Text style={{ color: color.ink, fontSize: 20, fontWeight: '800' }}>Get a plan for this address</Text>
-        <Muted style={{ marginTop: 6 }}>Register to get a step-by-step checklist for your household, live weather alerts with steps for your household, practice drills, and help with permits.</Muted>
-        <Button onPress={() => setSignup({ type: 'resident', mode: 'signup' })}>I live here: create my plan</Button>
-        <Button kind="outline" onPress={() => setSignup({ type: 'business', mode: 'signup' })}>I run a business here</Button>
+        <Text style={{ color: color.ink, fontSize: 20, fontWeight: '800' }}>Register this address</Text>
+        <Muted style={{ marginTop: 6 }}>Save a plan, get relevant alerts and find City permits.</Muted>
+        <Button onPress={() => setSignup({ type: 'resident', mode: 'signup' })}>Register my home</Button>
+        <Button kind="outline" onPress={() => setSignup({ type: 'business', mode: 'signup' })}>Register my business</Button>
       </Card>
     </>}
     <Link onPress={() => setSignup({ type: 'resident', mode: 'login' })} style={{ marginTop: 22 }}>{t('land.signin')}</Link>
     {!result && <Link onPress={() => setSignup({ type: 'resident', mode: 'signup' })}>{t('land.create')}</Link>}
     <View style={{ backgroundColor: '#E6EFE9', borderRadius: 14, padding: 14, marginTop: 18 }}><Text style={{ color: color.ink, fontSize: 15, fontWeight: '700' }}>☎ {t('land.help')}</Text>{lang !== 'en' && <Caption>{t('set.unreviewed')}</Caption>}</View>
-    <Section>{t('land.resources')}</Section>
-    <Resources compact />
+    {onWalkthrough && <Pressable accessibilityRole="button" onPress={onWalkthrough} style={{ marginTop: 14, backgroundColor: '#12302A', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <Text style={{ fontSize: 22 }}>▶</Text><Text style={{ color: '#FFF', fontWeight: '800', fontSize: 15 }}>{t('land.tour')}</Text>
+    </Pressable>}
+    <Collapsible icon="📚" title={t('land.resources')} summary="Official alerts, zones and help"><Resources compact /></Collapsible>
     <Caption style={{ marginTop: 18 }}>{t('land.disclaimer')}</Caption>
   </>;
 }
