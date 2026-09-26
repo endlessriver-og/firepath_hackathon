@@ -1,44 +1,34 @@
-# Physical controller contract
+# In-home notification prototype
 
-## Minimum demo hardware
+The photo from the hardware planning session proposes a polycarbonate case, MQ-2 sensor at ESP32 GPIO33, buzzer at GPIO12, USB power, and cellular backup using SIM800L or SIM7600 after Wi-Fi fails. `examples/esp32_preparedness/esp32_preparedness.ino` implements the first USB version. Arduino sketches are compiled as **C++** by the ESP32 Arduino core; the code has C-like syntax and no third-party libraries.
 
-One USB-connected ESP32/Arduino controller, two momentary buttons, and two or three LEDs. The buttons represent detector events at `KITCHEN` and `WEST_HALL`. Each LED represents a notifier location (`ROOM_A`, `ROOM_B`, `ROOM_C`). A speaker or small audio module is optional. The browser itself can speak the messages for the first live run.
+## Wiring and bring-up
 
-Open the dashboard in **Chrome or Edge on localhost** and click **Connect serial hardware**. Select the controller's USB serial port. The connection runs at **115200 baud**, one JSON object per newline. There is no cloud broker or Wi-Fi requirement.
+1. Connect the MQ-2 module's analog output to GPIO33. ESP32 GPIO is **3.3 V maximum**: many MQ-2 breakout boards are powered at 5 V and can output up to 5 V. Check the module and use a suitable divider or level shifter before connecting the ADC pin. Share ground.
+2. Connect the buzzer control to GPIO12. If its current exceeds the pin rating, use a transistor and a suitable external supply. GPIO12 is a boot strap pin on some ESP32 boards; if startup fails, move the buzzer to a suitable different output pin in the sketch.
+3. Power by USB, open serial at 115200, and allow the MQ-2 to warm up. The hard-coded threshold is for bench demonstration and must be calibrated; it has no safety meaning.
+4. In a desktop Chromium browser on localhost, open **Alerts & device → Connect USB device**. Choose the ESP32 port. Click **Send demo alert**: the board beeps for three seconds. A threshold crossing sends a sensor message to the browser.
 
-## Controller to browser
+## Line-delimited JSON contract
 
-Send one line when the kitchen button is pressed:
-
-```json
-{"type":"hazard","node":"KITCHEN","active":true}
-```
-
-Send another when the west hall button is pressed:
+Board to browser (local sensor observation):
 
 ```json
-{"type":"hazard","node":"WEST_HALL","active":true}
+{"type":"sensor","sensor":"mq2","active":true,"value":2200}
 ```
 
-Set `active` to `false` to clear a hazard. Repeated reports of an unchanged state have no effect. Invalid JSON and unknown nodes are ignored. Valid names are `KITCHEN`, `WEST_HALL`, and all the node IDs in `src/model.js`.
-
-## Browser to controller
-
-Each state update produces **one line per notifier**. Example:
+Browser to board (explicit simulation):
 
 ```json
-{"type":"guidance","node":"ROOM_A","mode":"alert","message_id":"ALERT_ROOM_A_EAST_EXIT_KITCHEN_WEST_HALL","exit":"EAST_EXIT","path":["ROOM_A","WEST_JUNCTION","CENTER","EAST_JUNCTION","EAST_HALL","EAST_EXIT"],"text":"Fire alert. Leave Bedroom A. Turn left at the hallway. Continue to the east exit. Avoid the west hall.","language":"en"}
+{"type":"alert","hazard":"wildfire","severity":"warning","text":"Demo only. Check official Glendale alerts for real instructions.","source":"demo"}
 ```
 
-Message IDs encode mode, room, exit, and active hazards, for example `DRILL_ROOM_A_WEST_EXIT`, `ALERT_ROOM_A_WEST_EXIT_KITCHEN`, and `ALERT_ROOM_A_EAST_EXIT_KITCHEN_WEST_HALL`. This makes each spoken clip distinguishable by ID. `STANDBY` means turn off indicators and do not play audio; `NO_ROUTE` means there is no confirmed route. On the physical controller, route the command to the indicated node, light its LED in drill/alert state, and play a cached clip for `message_id` if audio hardware is available. For the first version, an LED plus the browser's spoken guidance is enough to demonstrate the feedback loop. Do not assume an ESP32 can read arbitrary text aloud without a separate playback or synthesis component.
+Each JSON object ends in `\n`. The firmware uses a narrow string match for the fixed demo command; production firmware needs structured parsing, signed/verified alert sources, deduplication, and fail-safe behavior. Sensor events do not become official city alerts, and the app never automatically notifies authorities.
 
-If you generate ElevenLabs clips, `audio/device-manifest.json` maps `language:message_id` to an MP3 filename. Copy those MP3s to whichever audio player you use, then map the same identifiers in firmware. No API call is required when a button is pressed.
+## Cellular fallback design
 
-## Fast integration sequence
+The whiteboard proposes a SIM800L/SIM7600 module for Wi-Fi failure. **Cellular failover is not implemented.** First prove a USB buzzer and event loop. For a later version, choose a modem supported by the local carrier and its bands, provision a SIM/data plan, supply the modem's peak current from a separate regulated rail, and test outages with the primary network disconnected. Define an authenticated official alert ingest path before a real notification can trigger the buzzer. Keep the City's Everbridge and evacuation-zone channels as the source of incident instructions.
 
-1. Flash the sample ESP32 sketch or send the two event lines from your own controller.
-2. Connect the browser and press Kitchen. Confirm **kitchen fire** appears on the map and three guidance commands appear on USB serial.
-3. Press West hall. Confirm **Bedroom A → East exit** in the dashboard and that its message ID changes to `ALERT_ROOM_A_EAST_EXIT_KITCHEN_WEST_HALL`.
-4. If serial permissions or hardware fail, run the identical scenario with the on-screen buttons. The route engine and demo do not depend on hardware.
+MQ-2 is a general combustible gas/smoke-sensitive module with warmup and calibration limitations; this prototype is **not** a certified smoke alarm or life-safety device. Retain approved smoke and CO alarms.
 
-The sample sketch uses buttons on GPIO 18/19 with internal pull-ups and LEDs on GPIO 25/26/27 via appropriate resistors. Adapt pin assignments and voltage to the available board. The controller is strictly a simulation; it must not be wired into an actual alarm panel.
+The earlier room-by-room fire-routing bridge is documented in [FIRE_LAB.md](FIRE_LAB.md).

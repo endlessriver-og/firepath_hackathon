@@ -1,25 +1,52 @@
 import http from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
 import { resolve, extname, sep } from 'node:path';
 
 const root = resolve(import.meta.dirname);
 const srcRoot = resolve(root, 'src');
 const audioRoot = resolve(root, 'audio');
 const port = Number(process.env.PORT || 5173);
+const python = process.env.GLENDALE_GIS_PYTHON || 'python3';
 const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg' };
+
+function lookup(payload) {
+  return new Promise((resolveLookup, reject) => {
+    const child = spawn(python, [resolve(root, 'scripts/lookup-hazards.py')], { stdio: ['pipe', 'pipe', 'ignore'] });
+    let output = '';
+    const timer = setTimeout(() => child.kill(), 45000);
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', chunk => { output += chunk; if (output.length > 250000) child.kill(); });
+    child.on('error', reject);
+    child.on('close', code => { clearTimeout(timer); try { const data = JSON.parse(output); if (code === 0) resolveLookup(data); else reject(new Error(data.error)); } catch { reject(new Error('GIS lookup is unavailable. Install the Glendale GIS snapshot; see README.')); } });
+    child.stdin.end(JSON.stringify(payload));
+  });
+}
 
 http.createServer(async (req, res) => {
   try {
     const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
-    if (pathname !== '/' && !pathname.startsWith('/src/') && !pathname.startsWith('/audio/')) throw new Error('Outside public assets');
+    if (pathname === '/api/hazards' && req.method === 'POST') {
+      let body = '';
+      for await (const chunk of req) { body += chunk; if (body.length > 1024) throw new Error('Request too large'); }
+      const data = JSON.parse(body);
+      const address = typeof data.address === 'string' ? data.address.trim() : '';
+      const coordinates = Number.isFinite(data.lat) && Number.isFinite(data.lon) && data.lat >= -90 && data.lat <= 90 && data.lon >= -180 && data.lon <= 180;
+      if ((address.length >= 5 && address.length <= 200) === coordinates) throw new Error('Provide one Glendale street address or latitude and longitude.');
+      const result = await lookup(address ? { address } : { lat: data.lat, lon: data.lon });
+      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(result)); return;
+    }
+    if (req.method !== 'GET') throw new Error('Not found');
+    if (pathname !== '/' && pathname !== '/fire-lab.html' && !pathname.startsWith('/src/') && !pathname.startsWith('/audio/')) throw new Error('Outside public assets');
     const file = resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname));
-    if (file !== resolve(root, 'index.html') && !file.startsWith(srcRoot + sep) && !file.startsWith(audioRoot + sep)) throw new Error('Invalid path');
+    if (![resolve(root, 'index.html'), resolve(root, 'fire-lab.html')].includes(file) && !file.startsWith(srcRoot + sep) && !file.startsWith(audioRoot + sep)) throw new Error('Invalid path');
     const info = await stat(file);
     if (!info.isFile()) throw new Error('Not a file');
     res.writeHead(200, { 'content-type': mime[extname(file)] || 'application/octet-stream', 'cache-control': 'no-store' });
     res.end(await readFile(file));
-  } catch {
-    res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
-    res.end('Not found');
+  } catch (error) {
+    const api = req.url?.startsWith('/api/');
+    res.writeHead(api ? 400 : 404, { 'content-type': api ? 'application/json; charset=utf-8' : 'text/plain; charset=utf-8' });
+    res.end(api ? JSON.stringify({ error: error.message || 'Lookup unavailable' }) : 'Not found');
   }
 }).listen(port, () => console.log(`FirePath running at http://localhost:${port}`));
