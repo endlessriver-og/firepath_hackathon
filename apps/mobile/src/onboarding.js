@@ -4,14 +4,15 @@ import { api, saveSession } from './api';
 import { summarizePlace } from './preparedness';
 import { businessKinds, hazmatKinds } from './readiness';
 import MapPanel from './MapPanel';
-import { Button, Caption, Card, CityDataCallout, ErrorText, Field, Link, Muted, Section, Segment, Step, Tag, Title, Toggle, color, s } from './ui';
+import { Button, Caption, Card, CityDataCallout, ErrorText, Field, Link, Muted, Section, Segment, Select, Step, Tag, Title, Toggle, color, s } from './ui';
 
 export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'resident' }) {
   const [mode, setMode] = useState(initialMode);
-  const [form, setForm] = useState({ name: '', email: '', password: '', type: initialType });
+  const [form, setForm] = useState({ name: '', email: '', password: '', type: initialType, businessName: '', businessKind: null });
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const set = patch => setForm(current => ({ ...current, ...patch }));
   async function submit() {
+    if (mode === 'signup' && form.type === 'business' && (!form.businessName.trim() || !form.businessKind)) return setError('Enter the business name and choose its type.');
     setBusy(true); setError('');
     try {
       const result = await api('POST', mode === 'signup' ? '/api/account/signup' : '/api/account/login', mode === 'signup' ? form : { email: form.email, password: form.password });
@@ -26,6 +27,10 @@ export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'reside
     <View style={[s.segment, { marginTop: 22 }]}>{[['signup', 'Create account'], ['login', 'Sign in']].map(([key, label]) =>
       <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: mode === key }} onPress={() => { setMode(key); setError(''); }} style={[s.segmentItem, mode === key && s.segmentOn]}><Text style={[s.segmentText, mode === key && { color: color.ink }]}>{label}</Text></Pressable>)}</View>
     {mode === 'signup' && <Segment label="I'm setting up" value={form.type} options={[['resident', 'My home'], ['business', 'A business']]} onChange={type => set({ type })} />}
+    {mode === 'signup' && form.type === 'business' && <>
+      <Field label="Business name" value={form.businessName} onChangeText={businessName => set({ businessName })} placeholder="e.g., Glencoe Bakery" maxLength={100} />
+      <Select label="Type of business" value={form.businessKind} options={businessKinds} placeholder="Choose one" onChange={businessKind => set({ businessKind })} />
+    </>}
     {mode === 'signup' && <Field label={form.type === 'business' ? 'Your name (key contact)' : 'Your name'} value={form.name} onChangeText={name => set({ name })} placeholder="First and last name" autoComplete="name" maxLength={80} />}
     <Field label="Email" value={form.email} onChangeText={email => set({ email })} placeholder="you@example.com" autoCapitalize="none" autoComplete="email" keyboardType="email-address" maxLength={200} />
     <Field label="Password" hint={mode === 'signup' ? 'At least 8 characters.' : null} value={form.password} onChangeText={password => set({ password })} secureTextEntry autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} onSubmitEditing={submit} maxLength={200} />
@@ -182,8 +187,7 @@ export function BusinessProfile({ me, onSaved, onboarding }) {
     {onboarding ? <Title>Tell us about the business</Title> : <Section>Business profile</Section>}
     <Muted>Occupancy and building facts shape your plan and what responders would see first.</Muted>
     <Field label="Business name" value={form.name} onChangeText={name => set({ name })} placeholder="e.g., Glencoe Bakery" maxLength={100} />
-    <Text style={[s.fieldLabel, { marginTop: 16 }]}>Type of business</Text>
-    <View style={[s.chips, { marginTop: 0 }]}>{businessKinds.map(([key, label]) => <Pressable key={key} accessibilityRole="radio" accessibilityState={{ selected: form.kind === key }} onPress={() => set({ kind: key })} style={[s.chip, form.kind === key && s.chipOn]}><Text style={[s.chipText, form.kind === key && { color: '#FFF' }]}>{label}</Text></Pressable>)}</View>
+    <Select label="Type of business" value={form.kind} options={businessKinds} onChange={kind => set({ kind })} />
     <View style={{ flexDirection: 'row', gap: 8 }}>
       <Field style={{ flex: 1 }} label="Staff on a typical day" value={form.employees} onChangeText={digits('employees')} keyboardType="number-pad" placeholder="12" maxLength={4} />
       <Field style={{ flex: 1 }} label="Peak visitors" value={form.visitors} onChangeText={digits('visitors')} keyboardType="number-pad" placeholder="40" maxLength={5} />

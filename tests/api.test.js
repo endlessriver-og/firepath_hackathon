@@ -135,7 +135,9 @@ test('alerts come only from the injected official source and fail closed', async
 
 test('business accounts get their own profile, steps, badges, permits and responder brief', async () => {
   const { call } = setup();
-  const res = await call('POST', '/api/account/signup', { email: 'owner@example.test', password: 'correct-horse', name: 'Sam Owner', type: 'business' });
+  assert.equal((await call('POST', '/api/account/signup', { email: 'x@example.test', password: 'correct-horse', name: 'Sam', type: 'business' })).status, 400, 'business needs a name and type');
+  const res = await call('POST', '/api/account/signup', { email: 'owner@example.test', password: 'correct-horse', name: 'Sam Owner', type: 'business', businessName: 'Glencoe Bakery', businessKind: 'restaurant' });
+  assert.equal(res.body.business.name, 'Glencoe Bakery');
   const token = res.body.token;
   assert.equal(res.body.user.type, 'business');
   await call('POST', '/api/me/address', { address: '1613 Glencoe Way' }, token);
@@ -272,4 +274,28 @@ test('event plan can target another address and uses that site\'s hazards', asyn
   assert.equal(away.location, '613 E BROADWAY');
   assert.ok(!away.notes.some(n => /CAL FIRE/.test(n)), 'off-site event uses the off-site hazards');
   assert.equal((await call('GET', '/api/me', null, token)).body.address.text, '1613 GLENCOE WAY, GLENDALE, CA, 91208', 'registered address unchanged');
+});
+
+test('venue package: night market at Artsakh Paseo vs Brand Park, with alcohol and food', async () => {
+  const permitCatalog = JSON.parse(readCatalog(new URL('../src/glendale-permits.json', import.meta.url)));
+  const civicLookup = JSON.parse(readCatalog(new URL('../src/sample-location.json', import.meta.url)));
+  const store = { data: { users: {}, sessions: {} }, save() {} };
+  const handle = createApi({ store, permitCatalog, fetchAlerts: async () => [], lookupHazards: async p => p.lat > 34.18 ? sparr : civicLookup });
+  const call = async (method, path, body, token) => { const req = { method, headers: token ? { authorization: `Bearer ${token}` } : {}, async *[Symbol.asyncIterator]() { if (body) yield JSON.stringify(body); } }; const res = { writeHead(s) { this.status = s; }, end(t) { this.body = JSON.parse(t); } }; await handle(req, res, new URL(path, 'http://localhost')); return res; };
+  const list = (await call('GET', '/api/venues')).body;
+  assert.ok(list.venues.some(v => v.id === 'artsakh') && list.templates.some(t => t.id === 'night-market'));
+  const token = await signup(call);
+  const answers = { commercial: true, tents: true, flame: true, food: true, sound: true, alcohol: true };
+  const artsakh = (await call('POST', '/api/me/venues/package', { venueId: 'artsakh', name: 'Night Market', date: '2026-10-17', start: '17:00', end: '22:00', attendees: 800, answers }, token)).body;
+  const names = artsakh.items.map(i => i.type);
+  assert.ok(names.includes('PW - ROW - Street Use'), 'paseo is a public way');
+  assert.ok(artsakh.outside.some(o => /ABC/.test(o.name)) && artsakh.outside.some(o => /food/.test(o.name)));
+  assert.ok(artsakh.timeline.some(t => /ABC/.test(t.what)));
+  assert.match(artsakh.note, /has not set this up/);
+  assert.match(artsakh.summary, /Night Market at Artsakh Avenue Paseo/);
+  assert.ok(!artsakh.notes.some(n => /CAL FIRE/.test(n)));
+  const brand = (await call('POST', '/api/me/venues/package', { venueId: 'brand-park', answers }, token)).body;
+  assert.ok(brand.notes.some(n => /CAL FIRE/.test(n)), 'foothill venue flags open flame');
+  assert.ok(brand.outside.some(o => /park facility/.test(o.name)));
+  assert.equal((await call('POST', '/api/me/venues/package', { venueId: 'moon' }, token)).status, 404);
 });

@@ -5,11 +5,13 @@ import { buildRecommendations, businessKinds, hazardSeverity, businessPermitType
 import { buildResponderSummary } from '../src/responder.js';
 import { buildPlaybook, drillEvents } from '../src/playbooks.js';
 import { planEvent, searchLicenses, searchPermits } from '../src/permit-catalog.js';
+import { eventTemplates, venuePackage, venues } from '../src/venues.js';
 import { hazardNames } from '../src/preparedness.js';
 import { checkPassword, hashPassword, newCode, newToken, tokenKey } from './auth.mjs';
 
 const SESSION_DAYS = 30, CODE_DAYS = 14, MAX_CODE_ATTEMPTS = 5;
 const DAY = 86_400_000;
+const VENUE_NOTE_LINE = 'Prepared with FirePath from an example venue package. Not a City submission; confirm requirements with the City of Glendale.';
 class HttpError extends Error { constructor(status, message, extra) { super(message); this.status = status; this.extra = extra; } }
 const fail = (status, message, extra) => { throw new HttpError(status, message, extra); };
 const text = (value, max) => typeof value === 'string' ? value.trim().slice(0, max) : '';
@@ -29,6 +31,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
   const { data } = store;
   const failures = new Map(); // email -> [timestamps] of failed logins, in memory only
   const alertCache = new Map();
+  const venueHazards = new Map(); // venue id -> hazard lookup (venues are fixed points, so cache for the process)
   const publicHits = new Map(); // ip -> timestamps; public checks are capped per visitor, in memory only
   function throttle(req, limit) {
     const ip = req.socket?.remoteAddress || 'local';
@@ -89,8 +92,11 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail(400, 'Enter a valid email address.');
       if (typeof body.password !== 'string' || body.password.length < 8 || body.password.length > 200) fail(400, 'Use a password of at least 8 characters.');
       if (!name) fail(400, 'Enter your name.');
+      const isBusiness = body.type === 'business';
+      const businessName = text(body.businessName, 100), businessKind = oneOf(body.businessKind, businessKinds.map(([k]) => k));
+      if (isBusiness && (!businessName || !businessKind)) fail(400, 'Enter the business name and choose its type.');
       if (Object.values(data.users).some(u => u.email === email)) fail(409, 'An account with that email already exists. Sign in instead.');
-      const user = { id: randomUUID(), email, name, type: body.type === 'business' ? 'business' : 'resident', passwordHash: hashPassword(body.password), createdAt: new Date(now()).toISOString(), household: {}, business: {}, done: {} };
+      const user = { id: randomUUID(), email, name, type: body.type === 'business' ? 'business' : 'resident', passwordHash: hashPassword(body.password), createdAt: new Date(now()).toISOString(), household: {}, business: isBusiness ? { name: businessName, kind: businessKind } : {}, done: {} };
       data.users[user.id] = user;
       const token = startSession(user);
       store.save();
@@ -305,6 +311,23 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       const guide = permitGuide(text(body.type, 20), { profile: user, household: user.type === 'business' ? user.business : user.household, hazards: user.hazards, description: text(body.description, 500) });
       if (!guide) fail(404, 'Unknown project type.');
       return { body: guide };
+    },
+
+    // Example City-configured venues with pre-set permit packages (see src/venues.js).
+    'GET /api/venues': async () => ({ body: { venues: venues.map(({ id, name, where, about, kind, url }) => ({ id, name, where, about, kind, url })), templates: eventTemplates } }),
+
+    'POST /api/me/venues/package': async (req, body) => {
+      const user = session(req);
+      const venue = venues.find(v => v.id === text(body.venueId, 40));
+      if (!venue) fail(404, 'Unknown venue.');
+      if (!venueHazards.has(venue.id)) { try { venueHazards.set(venue.id, (await lookupHazards({ lat: venue.lat, lon: venue.lon })).hazards); } catch { venueHazards.set(venue.id, null); } }
+      const answers = Object.fromEntries(['commercial', 'tents', 'flame', 'fireworks', 'filming', 'alcohol', 'food', 'sound'].map(k => [k, body.answers?.[k] === true]));
+      const time = t => /^\d{2}:\d{2}$/.test(t || '') ? t : '';
+      const input = { answers, attendees: Math.min(Math.max(Number.parseInt(body.attendees, 10) || 0, 0), 1_000_000), start: time(body.start), end: time(body.end) };
+      const pkg = venuePackage(permitCatalog, venue.id, input, venueHazards.get(venue.id));
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(body.date || '') ? body.date : '';
+      const summary = [`Event: ${text(body.name, 100) || 'unnamed event'} at ${venue.name} (${venue.where})`, `When: ${date || 'date not set'}${input.start ? `, ${input.start}` : ''}${input.end ? ` to ${input.end}` : ''}${input.attendees ? `, about ${input.attendees} people` : ''}`, `Organizer: ${user.type === 'business' ? `${user.business?.name || 'business'} · ${user.name}` : user.name}`, 'City of Glendale permits:', ...pkg.items.map(i => `- ${i.type}${i.workClass && !i.type.includes(i.workClass) ? ` (${i.workClass})` : ''}`), ...(pkg.outside.length ? ['Other agencies:', ...pkg.outside.map(o => `- ${o.name} (${o.who})`)] : []), VENUE_NOTE_LINE].join('\n');
+      return { body: { ...pkg, summary, hazardsChecked: Boolean(venueHazards.get(venue.id)), portal: permitCatalog.portal } };
     },
 
     'POST /api/me/permits/event': async (req, body) => {

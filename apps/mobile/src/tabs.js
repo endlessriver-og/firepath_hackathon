@@ -12,9 +12,10 @@ import { hazardViewers, resourceGroups, RESOURCES_CHECKED } from './resources';
 import { businessPosterPrintout, householdPlanPrintout, standardPrintout, standardPrintouts } from './printouts';
 import { printHtml } from './print';
 import { AddressCheck } from './landing';
+import { eventTemplates, venues, VENUE_NOTE } from './venues';
 import { AddressPanel, AddressSearch, BusinessDetails, BusinessProfile, HouseholdForm } from './onboarding';
 import { Toggle } from './ui';
-import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, Section, Segment, SeverityBadge, Tag, Title, color, s } from './ui';
+import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, Section, Segment, Select, SeverityBadge, Tag, Title, color, s } from './ui';
 
 const EVERBRIDGE = 'https://www.glendaleca.gov/Everbridge';
 const KNOW_YOUR_ZONE = 'https://www.glendaleca.gov/government/departments/fire-department/other-links/emergency-preparedness-response/know-your-zone';
@@ -234,6 +235,61 @@ function EventPlanner({ me }) {
   </Card>;
 }
 
+// City event venues with pre-set permit packages (example configuration; see src/venues.js).
+const VENUE_QUESTIONS = [['commercial', 'Ticketed or run by a business'], ['tents', 'Tents, booths or a stage'], ['food', 'Food vendors'], ['flame', 'Cooking or open flame'], ['alcohol', 'Alcohol served'], ['sound', 'Amplified sound or music'], ['filming', 'Commercial filming']];
+const HOURS = Array.from({ length: 36 }, (_, i) => { const h = 6 + Math.floor(i / 2), m = i % 2 ? '30' : '00'; const v = `${String(h).padStart(2, '0')}:${m}`; return [v, `${((h + 11) % 12) + 1}:${m} ${h < 12 ? 'AM' : 'PM'}`]; });
+
+function VenuePlanner({ me }) {
+  const [venueId, setVenueId] = useState(null), [templateId, setTemplateId] = useState(null);
+  const [form, setForm] = useState({ name: '', date: '', start: '17:00', end: '21:00', attendees: '', answers: {} });
+  const [pkg, setPkg] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false);
+  const set = patch => { setPkg(null); setForm(current => ({ ...current, ...patch })); };
+  const useTemplate = id => { setTemplateId(id); const t = eventTemplates.find(x => x.id === id); if (t) set({ answers: { ...t.answers }, start: t.start, end: t.end, name: form.name || t.name }); };
+  const venue = venues.find(v => v.id === venueId);
+  async function build() {
+    setBusy(true); setError(''); setCopied(false);
+    try { setPkg(await api('POST', '/api/me/venues/package', { venueId, ...form, attendees: Number(form.attendees) || 0 })); } catch (e) { setError(e.message); } finally { setBusy(false); }
+  }
+  return <Card style={{ borderColor: '#2E5A88', borderWidth: 1.5 }}>
+    <Tag>City event venues · example</Tag>
+    <Text style={{ color: color.ink, fontSize: 17, fontWeight: '800' }}>Host at a City venue</Text>
+    <Muted style={{ marginTop: 4 }}>Pick a venue and an event type. The package lists the City permits, other agencies and a timeline.</Muted>
+    <Select label="Venue" value={venueId} placeholder="Choose a venue" options={venues.map(v => [v.id, v.name])} onChange={id => { setVenueId(id); setPkg(null); }} />
+    {venue && <Caption>{venue.where}. {venue.about}</Caption>}
+    {venue && <>
+      <Select label="Type of event" value={templateId} placeholder="Choose a starting point" options={eventTemplates.map(t => [t.id, t.name])} onChange={useTemplate} />
+      <Field label="Event name" value={form.name} onChangeText={name => set({ name })} placeholder="e.g., Artsakh Night Market" maxLength={100} />
+      <Field label="Date" hint="YYYY-MM-DD" value={form.date} onChangeText={date => set({ date: date.replace(/[^\d-]/g, '') })} placeholder="2026-10-17" maxLength={10} />
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={{ flex: 1 }}><Select label="Starts" value={form.start} options={HOURS} onChange={start => set({ start })} /></View>
+        <View style={{ flex: 1 }}><Select label="Ends" value={form.end} options={HOURS} onChange={end => set({ end })} /></View>
+      </View>
+      <Field label="Expected attendance" value={form.attendees} onChangeText={t => set({ attendees: t.replace(/\D/g, '') })} keyboardType="number-pad" placeholder="e.g., 800" maxLength={7} />
+      {VENUE_QUESTIONS.map(([key, label]) => <Toggle key={key} label={label} value={Boolean(form.answers[key])} onChange={v => set({ answers: { ...form.answers, [key]: v } })} />)}
+      <ErrorText>{error}</ErrorText>
+      <Button busy={busy} onPress={build}>Build my package</Button>
+    </>}
+    {pkg && <View style={{ marginTop: 16 }}>
+      <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{form.name || 'Your event'} · {pkg.venue.name}</Text>
+      <Tag>{`City of Glendale permits · ${pkg.items.length}`}</Tag>
+      {pkg.items.map(i => <View key={`${i.type}-${i.workClass}`} style={{ paddingVertical: 8, borderTopWidth: 1, borderColor: color.line }}>
+        <Text style={{ color: color.ink, fontWeight: '700' }}>{i.type}{i.workClass && !i.type.includes(i.workClass) ? ` · ${i.workClass}` : ''}</Text>
+        <Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{i.why}</Text>
+      </View>)}
+      {pkg.outside.length > 0 && <><Text style={[s.tag, { marginTop: 14 }]}>OTHER AGENCIES</Text>
+        {pkg.outside.map(o => <Pressable key={o.name} accessibilityRole="link" onPress={() => Linking.openURL(o.url)} style={{ paddingVertical: 8, borderTopWidth: 1, borderColor: color.line }}>
+          <Text style={{ color: '#086B56', fontWeight: '700' }}>{o.name} ↗</Text><Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{o.who}. {o.why}</Text>
+        </Pressable>)}</>}
+      <Text style={[s.tag, { marginTop: 14 }]}>TIMELINE</Text>
+      {pkg.timeline.map(t => <View key={t.when + t.what} style={{ flexDirection: 'row', gap: 10, paddingVertical: 6 }}><Text style={{ width: 110, color: color.green, fontWeight: '800', fontSize: 12 }}>{t.when}</Text><Text style={{ flex: 1, color: color.ink }}>{t.what}</Text></View>)}
+      {pkg.notes.map(n => <Text key={n} style={{ color: /CAL FIRE/.test(n) ? color.warm : color.ink, lineHeight: 20, marginTop: 8 }}>• {n}</Text>)}
+      <View style={s.callout}><Text style={s.calloutTag}>EXAMPLE PACKAGE</Text><Text style={s.calloutText}>{VENUE_NOTE}</Text></View>
+      <Button kind="outline" onPress={async () => { await Clipboard.setStringAsync(pkg.summary); setCopied(true); }}>{copied ? 'Copied ✓' : 'Copy package summary'}</Button>
+      <Button onPress={() => Linking.openURL(pkg.portal)}>Apply in Glendale Permits ↗</Button>
+    </View>}
+  </Card>;
+}
+
 export function Permits({ me, top }) {
   const [type, setType] = useState(null), [description, setDescription] = useState('');
   const [guide, setGuide] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false);
@@ -257,6 +313,7 @@ export function Permits({ me, top }) {
   return <>
     <Title>Permits</Title>
     <PermitSearch me={me} />
+    <VenuePlanner me={me} />
     <EventPlanner me={me} />
     <Section>Guided projects</Section>
     <Muted>Pick a project. We'll list what the City usually asks for, flag anything your address's hazard maps change, and prepare a summary to paste into the City's portal.</Muted>

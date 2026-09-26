@@ -1,5 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { cityData } from './city-data';
 
 export const color = { bg: '#F5F6F1', ink: '#17372E', green: '#1D5B4D', muted: '#53655E', line: '#E2E8E1', soft: '#E6EFE9', warm: '#B4502B', warmBg: '#FFF9F5', warmLine: '#E9C2AE', gold: '#8A5A12', goldBg: '#F6E6C8', blue: '#2E5A88', blueBg: '#EAF1F8' };
@@ -32,6 +33,20 @@ export function Field({ label, hint, style, ...input }) {
 export function Segment({ label, value, options, onChange }) {
   return <View style={s.field}><Text style={s.fieldLabel}>{label}</Text><View style={s.segment}>{options.map(([key, text]) =>
     <Pressable key={key} accessibilityRole="radio" accessibilityState={{ selected: value === key }} onPress={() => onChange(key)} style={[s.segmentItem, value === key && s.segmentOn]}><Text style={[s.segmentText, value === key && { color: color.ink }]}>{text}</Text></Pressable>)}</View></View>;
+}
+
+// Dropdown (preferred over pill selectors). options: [[value, label], ...]
+export function Select({ label, hint, value, options, onChange, placeholder }) {
+  return <View style={s.field}>
+    <Text style={s.fieldLabel}>{label}</Text>
+    {hint ? <Text style={s.hint}>{hint}</Text> : null}
+    <View style={s.select}>
+      <Picker accessibilityLabel={label} selectedValue={value ?? ''} onValueChange={v => onChange(v === '' ? null : v)} style={s.picker} dropdownIconColor={color.green}>
+        {placeholder ? <Picker.Item label={placeholder} value="" color="#8A9A93" /> : null}
+        {options.map(([key, text]) => <Picker.Item key={key} label={text} value={key} />)}
+      </Picker>
+    </View>
+  </View>;
 }
 
 export function Toggle({ label, detail, value, onChange }) {
@@ -82,6 +97,8 @@ export const s = StyleSheet.create({
   fieldLabel: { color: color.ink, fontWeight: '700', marginBottom: 6 },
   hint: { color: '#64756E', fontSize: 12, lineHeight: 17, marginBottom: 6 },
   input: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#D5DDD5', borderRadius: 12, padding: 13, fontSize: 15, color: color.ink },
+  select: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#D5DDD5', borderRadius: 12, overflow: 'hidden' },
+  picker: { height: 48, borderWidth: 0, backgroundColor: 'transparent', color: color.ink, fontSize: 15, paddingHorizontal: 10 },
   segment: { flexDirection: 'row', backgroundColor: '#E4E9E2', borderRadius: 12, padding: 3 },
   segmentItem: { flex: 1, paddingVertical: 11, alignItems: 'center', borderRadius: 10 },
   segmentOn: { backgroundColor: '#FFF' },
