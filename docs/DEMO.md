@@ -1,5 +1,12 @@
 # Three-minute preparedness demo
 
+## Judge path (about 90 seconds)
+
+On the signed-out `/app/` page tap **See FirePath in 90 seconds**, then **See the 90-second story**. A fictional household is created automatically. Five stops show its address and household, mapped hazards, an alert drill, personalized emergency steps, and the City partnership opportunity. **Explore the full walkthrough** keeps the ten-stop version available. The City records, 3D map, permit planner and hardware are optional follow-up demonstrations. Rehearse the exact steps on the device judges will use.
+
+**Permit costs:** Search, event plans, example venue packages and project guides now show a fee status beside each likely permit and link to Glendale's current Citywide Fee Schedule. The public permit catalog does not provide a reliable total for each application; the City must quote project-specific fees. Other agencies may charge separately. Do not describe a displayed unknown as a $0 fee or a firm estimate.
+
+
 **Public link for judges:** `npm run public` builds the app, starts the server (keeping the Mac awake) and opens an HTTPS tunnel through localhost.run over SSH. It prints a `https://….lhr.life` URL; `/` opens the app, and the original web workspace is at `/classic`. The URL changes whenever the tunnel restarts, and it only works while this Mac is on and connected. Public endpoints are rate-limited per visitor using the forwarded IP. The Cloudflare quick tunnel was tried first but the venue network blocks its port 7844.
 
 **Languages and accessibility:** a Language dropdown (English, Armenian, Spanish, Korean) and a Text size dropdown (Normal, Large, Extra large) sit at the top of the public page, in Emergency, and under Profile → Settings. Translated so far: navigation, the public page, the Home checklist card and the whole Emergency screen, including personalized earthquake, evacuation and power-outage steps. Weather-emergency steps show in English with a notice. Emergency steps can be **read aloud** in the chosen language. Translations are FirePath's own and are labelled "not yet reviewed by a native speaker". The public page tells people they can call 2-1-1 for help from a person.
