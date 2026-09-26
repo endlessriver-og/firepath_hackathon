@@ -69,7 +69,7 @@ export function Home({ me, onChange, go }) {
       <View style={{ flex: 1 }}>
         <Text style={{ color: '#CFE3DA', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>{t('home.checklist')}</Text>
         <Text style={{ color: '#FFF', fontSize: 20, fontWeight: '800', marginTop: 2 }}>{t('home.done', { done, total })}</Text>
-        {personalFacts(me).length ? <BuiltFrom me={me} light /> : <Text style={{ color: '#CFE3DA', fontSize: 13, marginTop: 4 }}>{done === total ? 'All done. Review your plan every few months.' : 'Work down the list; the most important steps come first.'}</Text>}
+        <Text style={{ color: '#CFE3DA', fontSize: 13, marginTop: 4 }}>{done === total ? 'All done. Review your plan in a few months.' : 'Start with the steps below.'}</Text>
       </View>
     </Card>
 
@@ -105,7 +105,7 @@ export function Actions({ me, onChange, sub, setSub }) {
   return <>
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
       <ProgressRing percent={me.readiness.score} size={72} stroke={8} />
-      <View style={{ flex: 1 }}><Title style={{ marginBottom: 2 }}>Checklist</Title><Muted>{complete} of {ordered.length} done. Built from your address and profile.</Muted></View>
+      <View style={{ flex: 1 }}><Title style={{ marginBottom: 2 }}>Checklist</Title><Muted>{complete} of {ordered.length} done</Muted></View>
     </View>
     <SubTabs value={sub || 'todo'} options={[['todo', 'Checklist'], ['print', 'Print & post']]} onChange={setSub} />
     {sub === 'print' ? <PrintSheets me={me} /> : <>
@@ -131,7 +131,7 @@ function Playbook({ playbook, drill }) {
       {group.steps.map(step => { const key = `${group.label}:${step.text}`; const on = Boolean(checked[key]); return (
         <Pressable key={key} accessibilityRole="checkbox" accessibilityState={{ checked: on }} onPress={() => setChecked(current => ({ ...current, [key]: !current[key] }))} style={{ flexDirection: 'row', gap: 10, paddingVertical: 8, borderTopWidth: 1, borderColor: color.line }}>
           <Text style={{ width: 22, color: color.green, fontWeight: '900', fontSize: 16 }}>{on ? '☑' : '☐'}</Text>
-          <View style={{ flex: 1 }}><Text style={{ color: color.ink, lineHeight: 20, textDecorationLine: on ? 'line-through' : 'none' }}>{step.text}</Text><Text style={{ color: '#7A8A83', fontSize: 11, marginTop: 2 }}>{step.why}</Text></View>
+          <View style={{ flex: 1 }}><Text style={{ color: color.ink, lineHeight: 20, textDecorationLine: on ? 'line-through' : 'none' }}>{step.text}</Text></View>
         </Pressable>); })}
     </View>)}
     {drill && <Caption>{Object.keys(checked).filter(k => checked[k]).length} of {playbook.groups.reduce((n, g) => n + g.steps.length, 0)} steps walked through</Caption>}
@@ -151,7 +151,6 @@ function Drill({ me, onChange }) {
     {playbook && <Card style={{ borderColor: '#E3C98E', backgroundColor: '#FFFCF3' }}>
       <Text style={{ alignSelf: 'flex-start', backgroundColor: color.goldBg, color: color.gold, fontWeight: '900', fontSize: 11, letterSpacing: 1, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>DRILL · NOT A REAL ALERT</Text>
       <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>If a {event} covered your address</Text>
-      <BuiltFrom me={me} />
       <Playbook playbook={playbook} drill />
       {device.connected && <Button kind="outline" onPress={() => sendToDevice({ kind: 'drill', hazard: playbook.kind, severity: 'drill', text: `DRILL: ${event}. Not a real alert.` }).catch(e => setError(e.message))}>Sound the in-home device</Button>}
       <Button busy={busy} onPress={finish}>{me.done.drill ? 'Close drill' : 'Finish drill'}</Button>
@@ -186,7 +185,7 @@ export function Alerts({ me, onChange, sub, setSub }) {
             <Muted style={{ marginTop: 4 }}>{a.headline}</Muted>
             {a.instruction ? <Text style={{ color: color.ink, marginTop: 8, lineHeight: 20 }}>{a.instruction}</Text> : null}
             <Caption>Until {time(a.expires)}</Caption>
-            {a.playbook && <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: color.warmLine }}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>Your plan for this alert</Text><BuiltFrom me={me} /><Playbook playbook={a.playbook} /></View>}
+            {a.playbook && <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: color.warmLine }}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>Your plan for this alert</Text><Playbook playbook={a.playbook} /></View>}
           </Card>)}
       <Card><Tag>Official</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>City evacuation orders come from the City</Text><Muted>Sign up for Glendale's Citizen Alert and look up your evacuation zone. FirePath does not receive City orders yet.</Muted><Link onPress={() => Linking.openURL(EVERBRIDGE)}>Sign up for City alerts ↗</Link><Link onPress={() => Linking.openURL(KNOW_YOUR_ZONE)}>Know your evacuation zone ↗</Link></Card>
       <Collapsible icon="🧩" title="What City data would add" summary="Live orders matched to your address"><CityDataCallout id="alertFeed" /><CityDataCallout id="evacuationZones" /></Collapsible>
@@ -364,10 +363,9 @@ export function Permits({ me, top, sub, setSub }) {
     {sub === 'events' && <><VenuePlanner me={me} /><EventPlanner me={me} /></>}
     {sub === 'projects' && <>
     <Muted style={{ marginTop: 12 }}>Pick a project. We'll list what the City usually asks for, flag anything your address's hazard maps change, and prepare a summary to paste into the City's portal.</Muted>
-    {(me.user.type === 'business' ? businessPermitTypes : permitTypes).map(t => <Pressable key={t.id} accessibilityRole="radio" accessibilityState={{ selected: type === t.id }} onPress={() => setType(t.id)} style={[s.card, type === t.id && { borderColor: color.green, borderWidth: 2 }]}>
-      <Text style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{t.title}</Text><Caption style={{ marginTop: 4 }}>{t.permit}</Caption><PermitPrice />
-    </Pressable>)}
+    <Select label="Your project" value={type} placeholder="Choose a project" options={(me.user.type === 'business' ? businessPermitTypes : permitTypes).map(t => [t.id, t.title])} onChange={v => { setType(v); setGuide(null); }} />
     {type && <>
+      <Card><Text style={{ color: color.ink, fontWeight: '700' }}>{(me.user.type === 'business' ? businessPermitTypes : permitTypes).find(t => t.id === type)?.permit}</Text><PermitPrice /></Card>
       <Field label="Describe the project (optional)" value={description} onChangeText={setDescription} placeholder="e.g., add a 200 sq ft bedroom at the back" multiline maxLength={500} />
       <ErrorText>{error}</ErrorText>
       <Button busy={busy} onPress={build}>Get my permit checklist</Button>
@@ -389,7 +387,7 @@ export function Profile({ me, onChange, onSignOut, sub, setSub }) {
     {tab === 'address' && <View style={{ marginTop: 8 }}><AddressPanel me={me} onChange={onChange} /></View>}
     {tab === 'responders' && <>
       <Muted style={{ marginTop: 12 }}>{brief?.shareWithResponders ? 'You have consented to sharing this once a City connection exists. Nothing is sent today.' : 'Sharing is off. Nothing is sent today either way.'}</Muted>
-      {brief && <Card><Tag>What a responder would see</Tag><Text selectable style={{ color: color.ink, fontFamily: 'Courier', fontSize: 12, lineHeight: 18 }}>{brief.brief}</Text></Card>}
+      {brief && <Card><Tag>Responder preview</Tag>{String(brief.brief || '').split(/\n+/).filter(Boolean).map((line, i) => <Text key={i} selectable style={{ color: color.ink, fontSize: 13, lineHeight: 21, marginTop: 10 }}>{line}</Text>)}</Card>}
       <CityDataCallout id="cad" />
     </>}
     <Button kind="outline" onPress={onSignOut} style={{ marginTop: 28 }}>Sign out</Button>
@@ -407,29 +405,27 @@ export function MapTab({ me, layers, setLayers, top }) {
     return rank(a) - rank(b);
   }) : [];
   const [other, setOther] = useState(false);
-  const mode = <Chips value={other ? 'other' : 'mine'} options={[['mine', me.user.type === 'business' ? 'My business' : 'My home'], ['other', 'Check another address']]} onChange={v => setOther(v === 'other')} />;
+  const mode = <Select label="Address" value={other ? 'other' : 'mine'} options={[['mine', me.user.type === 'business' ? 'My business' : 'My home'], ['other', 'Check another address']]} onChange={v => setOther(v === 'other')} />;
   if (other) return <>
     <Title>Check any address</Title>
     {mode}
-    <Muted style={{ marginTop: 10 }}>Look up an event site, a relative's home or a place you are thinking of moving. This does not change your registered address and is not saved.</Muted>
+    <Muted style={{ marginTop: 10 }}>Check another address without changing yours.</Muted>
     <AddressCheck showPreview={false} />
   </>;
   return <>
     <Title>Hazard map</Title>
     {mode}
-    <Select label="View" value={view3d ? '3d' : '2d'} options={[['2d', 'Flat map (fastest)'], ['3d', '3D street view: terrain and buildings']]} onChange={v => setView3d(v === '3d')} />
-    <Muted style={{ marginTop: 4 }}>{view3d ? 'Drag to pan, right-drag or two fingers to tilt and turn. Pick a layer at the top of the map.' : 'Tap a filter on the map, or a layer below, to shade its zones across Glendale.'}</Muted>
-    <MapFrame key={src} src={src} style={{ height: 460, borderRadius: 17, marginTop: 12, borderWidth: 1, borderColor: color.line }} />
+    <MapFrame key={src} src={src} style={{ height: 560, borderRadius: 17, marginTop: 12, borderWidth: 1, borderColor: color.line }} />
+    <Select label="Map view" value={view3d ? '3d' : '2d'} options={[['2d', 'Flat map'], ['3d', '3D terrain']]} onChange={v => setView3d(v === '3d')} />
+    <Caption>Tap the map to inspect a location. Shading shows planning zones, not live incidents.</Caption>
     {me.hazards ? <>
-      <Section>At your address</Section>
+      <Collapsible icon="🗺" title="At your address" summary="✓ In zone · ○ Outside zone · ? Unavailable">
       {order.map(key => { const sev = hazardSeverity(key, me.hazards[key]); const meta = me.hazards[key]?._meta || {}; const on = layers.includes(key); return (
         <Pressable key={key} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => { setLayers([key]); top?.(); }} style={[s.card, on && { borderColor: color.green, borderWidth: 2 }]}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>{hazardNames[key]}</Text><SeverityBadge severity={sev} /></View>
-          <Muted>{describeHazard(key, me.hazards[key]).detail}</Muted>
-          {sev.scale ? <Caption>{sev.scale}</Caption> : null}
-          <Caption style={{ marginTop: 4 }}>{meta.source || 'Unknown source'} · checked {meta.as_of ? meta.as_of.slice(0, 10) : 'unknown'} · {on ? 'showing on map' : 'tap to show on map'}</Caption>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}><Text style={{ color: color.ink, fontSize: 15, fontWeight: '800' }}>{hazardNames[key]}</Text><Text style={{ color: describeHazard(key, me.hazards[key]).tone === 'mapped' ? color.warm : color.green, fontWeight: '800', fontSize: 12 }}>{describeHazard(key, me.hazards[key]).tone === 'mapped' ? '✓ In zone' : describeHazard(key, me.hazards[key]).tone === 'unknown' ? '? Unavailable' : '○ Outside zone'}</Text></View>
           {hazardViewers[key] && <Link style={{ marginTop: 6 }} onPress={() => Linking.openURL(hazardViewers[key].url)}>Official map: {hazardViewers[key].name} ↗</Link>}
         </Pressable>); })}
+      </Collapsible>
     </> : <Card><Muted>Register your address to see how each layer rates at your home.</Muted></Card>}
     <CityDataCallout id="evacuationZones" />
     <CityDataCallout id="closures" />
