@@ -10,7 +10,7 @@ import { Actions, Alerts, Home, MapTab, Permits, Profile, Systems } from './src/
 import { Landing } from './src/landing';
 import { EmergencyNow } from './src/emergency';
 import { TourOverlay, WalkthroughHub } from './src/tour';
-import { TOUR_STEPS } from './src/walkthrough';
+import { TOUR_STEPS, QUICK_TOUR_STEPS } from './src/walkthrough';
 import { I18nProvider, useI18n } from './src/i18n';
 import { Button, ErrorText, color } from './src/ui';
 
@@ -34,10 +34,12 @@ function App() {
   const [subs, setSubs] = useState({});            // selected sub-tab per page
   const sub = subs[tab], setSub = v => setSubs(current => ({ ...current, [tab]: v }));
   const [tour, setTour] = useState(null);          // walkthrough step index, null when not touring
+  const [tourMode, setTourMode] = useState('quick');
+  const tourSteps = tourMode === 'quick' ? QUICK_TOUR_STEPS : TOUR_STEPS;
   const [hub, setHub] = useState(false);           // signed-out walkthrough hub
   const [demoBusy, setDemoBusy] = useState(false), [demoError, setDemoError] = useState('');
-  const goTour = i => { const stepDef = TOUR_STEPS[i]; setTour(i); setEmergency(Boolean(stepDef.emergency)); setTab(stepDef.tab); if (stepDef.sub) setSubs(current => ({ ...current, [stepDef.tab]: stepDef.sub })); };
-  async function startTour() {
+  const goTour = (i, mode = tourMode) => { const stepDef = (mode === 'quick' ? QUICK_TOUR_STEPS : TOUR_STEPS)[i]; setTourMode(mode); setTour(i); setEmergency(Boolean(stepDef.emergency)); setTab(stepDef.tab); if (stepDef.sub) setSubs(current => ({ ...current, [stepDef.tab]: stepDef.sub })); };
+  async function startTour(mode = 'quick') {
     setDemoError('');
     if (!me) {
       setDemoBusy(true);
@@ -45,7 +47,7 @@ function App() {
       catch (e) { setDemoError(e.message); setDemoBusy(false); return; }
       setDemoBusy(false);
     }
-    goTour(0);
+    goTour(0, mode);
   } // checked on the public page before sign-up
   const go = (next, withLayers) => { if (withLayers) setLayers(withLayers); setTab(next); };
   const [error, setError] = useState('');
@@ -102,7 +104,7 @@ function App() {
       {!emergency && tab === 'Permits' && <Permits me={me} top={top} sub={sub} setSub={setSub} />}
       {!emergency && tab === 'Profile' && <Profile me={me} onChange={setMe} onSignOut={signOut} sub={sub} setSub={setSub} />}
     </ScrollView>
-    {tour !== null && <TourOverlay index={tour} onBack={() => goTour(Math.max(tour - 1, 0))} onNext={() => goTour(Math.min(tour + 1, TOUR_STEPS.length - 1))} onExit={() => { setTour(null); setEmergency(false); setTab('Home'); }} />}
+    {tour !== null && <TourOverlay steps={tourSteps} index={tour} onBack={() => goTour(Math.max(tour - 1, 0))} onNext={() => goTour(Math.min(tour + 1, tourSteps.length - 1))} onExit={() => { setTour(null); setEmergency(false); setTab('Home'); }} />}
     <View style={styles.nav}>{TABS.map(([item, icon, key]) => {
       const on = tab === item && !emergency;
       const go = () => { setEmergency(false); setTab(item); };
