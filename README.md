@@ -58,3 +58,9 @@ Mapped layers: CAL FIRE wildfire severity, FEMA flood zones, fault, liquefaction
 6. Expand beyond Glendale only after adding verified jurisdiction-specific sources and rules.
 
 The prototype never replaces emergency instructions, certified alarms, or professional advice about insurance or property risk. Call 911 for immediate danger.
+
+### Native resident prototype
+
+`apps/mobile` is an Expo iOS/Android prototype with a sample preparedness plan, a native map pin, cached source-labelled hazard summaries and a **local demo** phone notification. It has no live alert delivery or account service. The web responder experience remains a training prototype; see [mobile safety and integration plan](docs/MOBILE_AND_SAFETY.md).
+
+Run `npm run mobile:sync` after changing the shared sample or task engine, then `cd apps/mobile && npm install && npx expo start`. Use a phone with Expo Go for the local demo. Android and iOS production maps and remote push require platform configuration and development builds.
