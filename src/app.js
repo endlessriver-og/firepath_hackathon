@@ -1,4 +1,5 @@
 import { hazardNames, describeHazard, buildTasks } from './preparedness.js';
+import { buildResponderSummary } from './responder.js';
 const $ = id => document.getElementById(id);
 const escape = input => String(input ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const keys = Object.keys(hazardNames);
@@ -6,6 +7,13 @@ let profile = {}, hazards = null, serial = null;
 try { profile = JSON.parse(localStorage.getItem('firepath-prep-profile') || '{}'); } catch {}
 let done = {};
 try { done = JSON.parse(localStorage.getItem('firepath-prep-done') || '{}'); } catch {}
+let responderDraft = {};
+try { responderDraft = JSON.parse(localStorage.getItem('firepath-responder-draft') || '{}'); } catch {}
+const responderFields = { parcelId: 'parcel-id', occupants: 'occupants', pets: 'responder-pets', assistance: 'responder-assistance', access: 'access-note', utilities: 'utilities-note' };
+
+function renderResponder() {
+  $('responder-summary').textContent = buildResponderSummary(profile, responderDraft, hazards);
+}
 
 function renderHazards() {
   $('hazard-grid').innerHTML = keys.map((key, index) => {
@@ -32,7 +40,9 @@ function render() {
   $('home-type').value = profile.homeType || 'house';
   $('pets').checked = Boolean(profile.pets);
   $('assistance').checked = Boolean(profile.assistance);
+  for (const [key, id] of Object.entries(responderFields)) $(id).value = responderDraft[key] || '';
   renderHazards(); renderTasks();
+  renderResponder();
 }
 $('task-grid').addEventListener('change', event => {
   const id = event.target.dataset.task;
@@ -54,6 +64,7 @@ $('example-point').addEventListener('click', async () => {
     $('plan-intro').textContent = 'Illustrative checklist for the sample point and the household choices above.';
     $('form-status').textContent = 'Sample snapshot loaded. Enter your own location to build your plan.';
     renderHazards(); renderTasks();
+    renderResponder();
     $('hazards').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch { $('form-status').textContent = 'Could not load the sample map snapshot.'; }
 });
@@ -78,12 +89,31 @@ $('profile-form').addEventListener('submit', async event => {
     $('hazard-intro').textContent = `Mapped layers for ${name}. Check each layer's source and date.`;
     $('plan-intro').textContent = 'Your household checklist, with extra steps when a relevant mapped zone is present.';
     $('form-status').textContent = 'Map layers checked. Your action plan is ready below.';
-    renderHazards(); renderTasks();
+    renderHazards(); renderTasks(); renderResponder();
     $('hazards').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
-    hazards = null; renderHazards(); renderTasks();
+    hazards = null; renderHazards(); renderTasks(); renderResponder();
     $('form-status').textContent = error.message || 'Lookup unavailable. Review the local GIS setup.';
   } finally { button.disabled = false; }
+});
+$('responder-form').addEventListener('submit', event => {
+  event.preventDefault();
+  responderDraft = Object.fromEntries(Object.entries(responderFields).map(([key, id]) => [key, $(id).value.trim()]));
+  responderDraft.updatedAt = new Date().toLocaleString();
+  localStorage.setItem('firepath-responder-draft', JSON.stringify(responderDraft));
+  renderResponder();
+  $('responder-status').textContent = 'Saved on this device only. No city system received this draft.';
+});
+$('clear-responder').addEventListener('click', () => {
+  responderDraft = {};
+  localStorage.removeItem('firepath-responder-draft');
+  $('responder-form').reset();
+  renderResponder();
+  $('responder-status').textContent = 'Local responder draft deleted.';
+});
+$('copy-responder').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('responder-summary').textContent); $('responder-status').textContent = 'Draft copied. It has not been sent to any city system.'; }
+  catch { $('responder-status').textContent = 'Clipboard unavailable in this browser.'; }
 });
 $('connect-device').addEventListener('click', async () => {
   if (!('serial' in navigator)) { $('device-status').textContent = 'Web Serial requires a supported desktop browser on localhost or HTTPS.'; return; }

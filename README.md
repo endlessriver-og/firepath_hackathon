@@ -1,6 +1,6 @@
 # FirePath — preparedness for where you live
 
-A Glendale pilot that combines mapped local hazards, a household checklist, official alert links, and an optional USB in-home notification demo. The old fire-routing experiment remains at `/fire-lab.html`.
+A Glendale pilot that combines mapped local hazards, a household checklist, official alert links, a local-only draft of useful property facts for possible responder workflows, and an optional USB in-home notification demo. The old fire-routing experiment remains at `/fire-lab.html`.
 
 ## Quick start
 
@@ -36,14 +36,16 @@ Mapped layers: CAL FIRE wildfire severity, FEMA flood zones, fault, liquefaction
 - Deterministic tasks for a go bag, contact plan, official notifications and earthquake readiness, plus relevant mapped-zone and household tasks.
 - Official [Glendale Everbridge](https://www.glendaleca.gov/Everbridge), [Know Your Zone](https://www.glendaleca.gov/government/departments/fire-department/other-links/emergency-preparedness-response/know-your-zone), and City emergency-alert links. The app does **not** receive live city alerts or send push notifications.
 - Simulated alert over Web Serial to an ESP32; Arduino-framework C++ sketch with MQ-2 input on GPIO33 and buzzer output on GPIO12. See [hardware wiring and limits](docs/HARDWARE.md).
+- Resident-entered property facts and an illustrative, copyable responder text summary. This draft stays in browser storage; it does not connect to dispatch, CAD, or City systems. See the [City integration hypothesis](docs/CITY_INTEGRATION.md).
 - Earlier simulated interior fire routing at `/fire-lab.html`, with its own [bridge protocol](docs/FIRE_LAB.md).
 
 ## Next build targets
 
 1. Validate geocoding and source-layer interpretations with Glendale emergency staff; add household-review language and accessibility support.
-2. Integrate a licensed, authenticated real alert feed with alert ID, source, geography, expiry, cancellation and test modes. Do not turn GIS hazard polygons into an active incident feed.
-3. Add opt-in browser/mobile notification delivery and verified address-to-alert-area matching.
-4. Finish enclosure, power budget, modem/carrier selection and measured SIM800L/SIM7600 failover; pilot the in-home buzzer as a companion to certified alarms and official channels.
-5. Expand beyond Glendale only after adding verified jurisdiction-specific sources and rules.
+2. Work with City GIS and dispatch teams on verified parcel matching, permit-zone definitions, floor-plan access, consent, provenance, and a short CAD-compatible summary. See [open City questions](docs/CITY_INTEGRATION.md).
+3. Integrate a licensed, authenticated real alert feed with alert ID, source, geography, expiry, cancellation and test modes. Do not turn GIS hazard polygons into an active incident feed.
+4. Add opt-in browser/mobile notification delivery and verified address-to-alert-area matching.
+5. Finish enclosure, power budget, modem/carrier selection and measured SIM800L/SIM7600 failover; pilot the in-home buzzer as a companion to certified alarms and official channels.
+6. Expand beyond Glendale only after adding verified jurisdiction-specific sources and rules.
 
 The prototype never replaces emergency instructions, certified alarms, or professional advice about insurance or property risk. Call 911 for immediate danger.
