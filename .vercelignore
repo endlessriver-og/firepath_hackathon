@@ -1,6 +1,6 @@
 # Never upload local accounts, the Python venv or installed modules.
-data/*
-!data/map-layers/
+data/*.json
+data/*.tmp
 .venv
 node_modules
 apps/mobile/node_modules
