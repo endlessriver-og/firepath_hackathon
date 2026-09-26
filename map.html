@@ -17,12 +17,13 @@
   .chip .sw { width: 10px; height: 10px; border-radius: 3px; }
   .chip[disabled] { opacity: .45; cursor: default; }
   #map { flex: 1; min-height: 240px; }
-  #legend { background: #FFF; border-top: 1px solid var(--line); padding: 10px 14px 12px; font-size: 12px; line-height: 1.45; max-height: 38%; overflow-y: auto; }
+  #legend { background: #FFF; border-top: 1px solid var(--line); padding: 10px 14px 12px; font-size: 12px; line-height: 1.45; max-height: 16%; overflow-y: auto; }
   #legend h2 { font-size: 11px; letter-spacing: .08em; margin: 0 0 6px; color: #367363; }
   .row { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
   .row .sw { width: 14px; height: 14px; border-radius: 3px; flex: none; }
   .note { color: var(--muted); margin-top: 6px; }
-  .leaflet-popup-content { font: 13px/1.4 -apple-system, sans-serif; }
+  .leaflet-popup-content { font: 13px/1.4 -apple-system, sans-serif; max-height: 145px; overflow-y: auto; }
+  @media (max-width: 500px) { .leaflet-popup { max-width: min(260px, 72vw); } #legend { max-height: 14%; } }
 </style>
 </head>
 <body>
@@ -106,7 +107,7 @@ function renderFilters() {
 }
 
 function renderLegend() {
-  const combinedRow = active.has('combined') ? `<h2>COMBINED PLANNING INDEX</h2><div class="row"><span class="sw" style="width:120px;background:${COMBINED.color}"></span>lower → higher</div><div class="note">Adds up the mapped layers at each ~150 m square (wildfire counts more, and also fades out from High/Very high zones because embers travel). Tap any spot to see its breakdown. A FirePath index with illustrative weights, not an official risk score.</div>` : '';
+  const combinedRow = active.has('combined') ? `<h2>COMBINED PLANNING INDEX</h2><div class="row"><span class="sw" style="width:120px;background:${COMBINED.color}"></span>lower → higher</div><div class="note">Tap for a breakdown. Illustrative FirePath index, not an official risk score.</div>` : '';
   const rows = [...active].filter(k => LAYERS[k]).map(k => {
     const spec = LAYERS[k];
     return `<h2>${spec.name.toUpperCase()}</h2>` + Object.entries(spec.levels).map(([lvl, label]) => `<div class="row"><span class="sw" style="background:${spec.colors[lvl]}"></span>${label}</div>`).join('') + (['fault', 'liquefaction', 'landslide', 'dam_inundation'].includes(k) ? '<div class="note">This map has no severity levels; being inside the zone is the signal.</div>' : '');
