@@ -43,6 +43,20 @@ $('task-grid').addEventListener('change', event => {
 });
 $('address').addEventListener('input', () => { if ($('address').value.trim()) { $('latitude').value = ''; $('longitude').value = ''; } });
 for (const id of ['latitude', 'longitude']) $(id).addEventListener('input', () => { if ($(id).value.trim()) $('address').value = ''; });
+$('example-point').addEventListener('click', async () => {
+  try {
+    const response = await fetch('./src/sample-location.json');
+    if (!response.ok) throw new Error('Sample unavailable');
+    const sample = await response.json();
+    hazards = sample.hazards;
+    profile = { housing: $('housing').value, homeType: $('home-type').value, pets: $('pets').checked, assistance: $('assistance').checked };
+    $('hazard-intro').textContent = 'Sample public map point near Glendale Civic Center (34.1466, -118.2483). This is not your home.';
+    $('plan-intro').textContent = 'Illustrative checklist for the sample point and the household choices above.';
+    $('form-status').textContent = 'Sample snapshot loaded. Enter your own location to build your plan.';
+    renderHazards(); renderTasks();
+    $('hazards').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch { $('form-status').textContent = 'Could not load the sample map snapshot.'; }
+});
 $('profile-form').addEventListener('submit', async event => {
   event.preventDefault();
   const address = $('address').value.trim(), latText = $('latitude').value.trim(), lonText = $('longitude').value.trim();

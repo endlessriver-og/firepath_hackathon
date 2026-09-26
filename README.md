@@ -12,6 +12,8 @@ npm start
 
 Open <http://localhost:5173>. The general checklist, household preferences, official links, and simulated hardware alert work immediately. Run `npm test` for the deterministic models.
 
+Click **Try sample location** to see seven real map-layer results for a public point near Glendale Civic Center without installing Python GIS dependencies. The sample is a dated snapshot and is explicitly labeled as an example, not your address.
+
 ## Enable real mapped hazard lookup
 
 The seven Glendale map layers come from [HackerFund's Glendale GIS MCP project](https://github.com/HackerFund/GlendaleGisMcp). It is a separate GPL-3.0-or-later package; this repository invokes it as a Python process and does not vendor its source. Install the package and download its map snapshot using its current README instructions, in a Python environment of your choice. For example, with `uv` installed:
