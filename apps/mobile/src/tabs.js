@@ -179,7 +179,7 @@ export function Alerts({ me, onChange, sub, setSub }) {
         : error ? <ErrorText>{error}</ErrorText>
         : !feed ? <Muted style={{ marginTop: 12 }}>Checking the National Weather Service…</Muted>
         : feed.unavailable ? <Card><Muted>The National Weather Service could not be reached. Check official channels directly.</Muted><Link onPress={load}>Try again</Link></Card>
-        : feed.alerts.length === 0 ? <Card><Tag>All clear from the weather service</Tag><Muted>No active National Weather Service alerts include your address as of {time(feed.checkedAt)}.</Muted><Link onPress={load}>Refresh</Link></Card>
+        : feed.alerts.length === 0 ? <Card><Tag>No active NWS alert found at this check</Tag><Muted>No active National Weather Service alerts include your address as of {time(feed.checkedAt)}. This does not cover City evacuation orders. Check official channels.</Muted><Link onPress={load}>Refresh</Link></Card>
         : feed.alerts.map(a => <Card key={a.id} style={{ borderColor: color.warmLine, backgroundColor: color.warmBg }}>
             <Tag tone="warm">{a.severity} · {a.sender}</Tag>
             <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{a.event}</Text>
@@ -200,6 +200,22 @@ export function Alerts({ me, onChange, sub, setSub }) {
   </>;
 }
 
+const CITY_FEE_SCHEDULE = 'https://www.glendaleca.gov/government/departments/finance/revenue/citywide-fee-schedule';
+
+// The public catalog has permit names and work classes, not a final fee for every project.
+function PermitPrice({ otherAgency = false }) {
+  return <Text style={{ color: color.gold, fontSize: 12, fontWeight: '700', marginTop: 5 }}>
+    {otherAgency ? 'Price: check with the issuing agency' : 'City permit fee: quote required for this project'}
+  </Text>;
+}
+function FeeGuide() {
+  return <View style={{ backgroundColor: color.goldBg, borderRadius: 12, padding: 14, marginTop: 12 }}>
+    <Text style={{ color: color.ink, fontWeight: '800' }}>What will permits cost?</Text>
+    <Text style={{ color: color.muted, lineHeight: 19, marginTop: 5 }}>The public catalog lists permit types, not a final fee for your scope. Plan for a City quote and possible plan review, inspection, venue or other-agency charges. FirePath does not calculate or collect fees.</Text>
+    <Link onPress={() => Linking.openURL(CITY_FEE_SCHEDULE)}>View Glendale's current Citywide Fee Schedule ↗</Link>
+  </View>;
+}
+
 // Plain-language search across the City of Glendale's full permit catalog (crawled from Glendale Permits).
 function PermitSearch({ me }) {
   const [q, setQ] = useState(''), [result, setResult] = useState(null);
@@ -212,12 +228,13 @@ function PermitSearch({ me }) {
   return <>
     <Field label="What are you planning?" value={q} onChangeText={setQ} placeholder={audience === 'business' ? 'e.g., outdoor dining, block party, sign, propane' : 'e.g., new roof, ADU, solar, remove an oak tree'} autoCapitalize="none" />
     {result && <View>
+      <FeeGuide />
       {result.permits.length === 0 ? <Caption>No City permit type matches. Try other words, or ask the City's Permit Services Center.</Caption> : result.permits.slice(0, 5).map(p => <Card key={p.name} style={{ marginTop: 8, padding: 14 }}>
-        <Text style={{ color: color.ink, fontSize: 15, fontWeight: '800' }}>{p.name}</Text>
+        <Text style={{ color: color.ink, fontSize: 15, fontWeight: '800' }}>{p.name}</Text><PermitPrice />
         {p.matched.length > 0 && <Text style={{ color: color.muted, fontSize: 13, marginTop: 4 }}>Work class: {p.matched.slice(0, 3).join(' · ')}</Text>}
         {p.hazards.includes('wildfire') && me.hazards && describeHazard('wildfire', me.hazards.wildfire).tone === 'mapped' && <Text style={{ color: color.warm, fontSize: 12, marginTop: 4 }}>Your address is in a mapped fire zone; ask about wildfire-related rules.</Text>}
       </Card>)}
-      {result.licenses.length > 0 && <Caption>Matching business license types: {result.licenses.join(', ')}</Caption>}
+      {result.licenses.length > 0 && <><Caption>Matching business license types: {result.licenses.join(', ')}</Caption><PermitPrice /></>}
       <Caption>Official names from the City's permit catalog (Glendale Permits, crawled {result.crawledAt?.slice(0, 10)}). Search for them when you apply.</Caption>
       <Link onPress={() => Linking.openURL(PERMIT_PORTAL)}>Open Glendale Permits ↗</Link>
     </View>}
@@ -249,9 +266,9 @@ function EventPlanner({ me }) {
     <Button busy={busy} onPress={build}>Get my permit list</Button>
     {plan && <View style={{ marginTop: 14 }}>
       <Caption style={{ marginTop: 0 }}>Location: {plan.location}</Caption>
-      <Tag>{`Likely City permits · ${plan.items.length}`}</Tag>
+      <Tag>{`Likely City permits · ${plan.items.length}`}</Tag><FeeGuide />
       {plan.items.map(i => <View key={`${i.type}-${i.workClass}`} style={{ paddingVertical: 8, borderTopWidth: 1, borderColor: color.line }}>
-        <Text style={{ color: color.ink, fontWeight: '700' }}>{i.type}{i.workClass && !i.type.includes(i.workClass) ? ` · ${i.workClass}` : ''}</Text>
+        <Text style={{ color: color.ink, fontWeight: '700' }}>{i.type}{i.workClass && !i.type.includes(i.workClass) ? ` · ${i.workClass}` : ''}</Text><PermitPrice />
         <Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{i.why}</Text>
       </View>)}
       {plan.notes.map(n => <Text key={n} style={{ color: /CAL FIRE/.test(n) ? color.warm : color.ink, lineHeight: 20, marginTop: 8 }}>• {n}</Text>)}
@@ -298,14 +315,14 @@ function VenuePlanner({ me }) {
     </>}
     {pkg && <View style={{ marginTop: 16 }}>
       <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{form.name || 'Your event'} · {pkg.venue.name}</Text>
-      <Tag>{`City of Glendale permits · ${pkg.items.length}`}</Tag>
+      <Tag>{`City of Glendale permits · ${pkg.items.length}`}</Tag><FeeGuide />
       {pkg.items.map(i => <View key={`${i.type}-${i.workClass}`} style={{ paddingVertical: 8, borderTopWidth: 1, borderColor: color.line }}>
-        <Text style={{ color: color.ink, fontWeight: '700' }}>{i.type}{i.workClass && !i.type.includes(i.workClass) ? ` · ${i.workClass}` : ''}</Text>
+        <Text style={{ color: color.ink, fontWeight: '700' }}>{i.type}{i.workClass && !i.type.includes(i.workClass) ? ` · ${i.workClass}` : ''}</Text><PermitPrice />
         <Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{i.why}</Text>
       </View>)}
       {pkg.outside.length > 0 && <><Text style={[s.tag, { marginTop: 14 }]}>OTHER AGENCIES</Text>
         {pkg.outside.map(o => <Pressable key={o.name} accessibilityRole="link" onPress={() => Linking.openURL(o.url)} style={{ paddingVertical: 8, borderTopWidth: 1, borderColor: color.line }}>
-          <Text style={{ color: '#086B56', fontWeight: '700' }}>{o.name} ↗</Text><Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{o.who}. {o.why}</Text>
+          <Text style={{ color: '#086B56', fontWeight: '700' }}>{o.name} ↗</Text><PermitPrice otherAgency /><Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{o.who}. {o.why}</Text>
         </Pressable>)}</>}
       <Text style={[s.tag, { marginTop: 14 }]}>TIMELINE</Text>
       {pkg.timeline.map(t => <View key={t.when + t.what} style={{ flexDirection: 'row', gap: 10, paddingVertical: 6 }}><Text style={{ width: 110, color: color.green, fontWeight: '800', fontSize: 12 }}>{t.when}</Text><Text style={{ flex: 1, color: color.ink }}>{t.what}</Text></View>)}
@@ -327,7 +344,8 @@ export function Permits({ me, top, sub, setSub }) {
   if (guide) return <>
     <Link style={{ marginTop: 0 }} onPress={() => { setGuide(null); top?.(); }}>← All projects</Link>
     <Title style={{ marginTop: 10 }}>{guide.title}</Title>
-    <Card><Tag>Likely permit</Tag><Text style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{guide.permit}</Text></Card>
+    <Card><Tag>Likely permit</Tag><Text style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{guide.permit}</Text><PermitPrice /></Card>
+    <FeeGuide />
     {guide.notes.length > 0 && <Card style={{ borderColor: color.warmLine, backgroundColor: color.warmBg }}><Tag tone="warm">For your address</Tag>{guide.notes.map(n => <Text key={n} style={{ color: color.ink, lineHeight: 20, marginTop: 6 }}>• {n}</Text>)}</Card>}
     <Card><Tag>What you'll usually need</Tag>{guide.needs.map(n => <Text key={n} style={{ color: color.ink, lineHeight: 22 }}>☐ {n}</Text>)}</Card>
     <Card><Tag>Your project summary</Tag><Text selectable style={{ color: color.ink, fontFamily: 'Courier', fontSize: 12, lineHeight: 18 }}>{guide.summary}</Text>
@@ -339,13 +357,14 @@ export function Permits({ me, top, sub, setSub }) {
   </>;
   return <>
     <Title>Permits</Title>
+    <FeeGuide />
     <SubTabs value={sub || 'search'} options={[['search', 'Search'], ['events', 'Events'], ['projects', 'Projects']]} onChange={setSub} />
     {(sub || 'search') === 'search' && <PermitSearch me={me} />}
     {sub === 'events' && <><VenuePlanner me={me} /><EventPlanner me={me} /></>}
     {sub === 'projects' && <>
     <Muted style={{ marginTop: 12 }}>Pick a project. We'll list what the City usually asks for, flag anything your address's hazard maps change, and prepare a summary to paste into the City's portal.</Muted>
     {(me.user.type === 'business' ? businessPermitTypes : permitTypes).map(t => <Pressable key={t.id} accessibilityRole="radio" accessibilityState={{ selected: type === t.id }} onPress={() => setType(t.id)} style={[s.card, type === t.id && { borderColor: color.green, borderWidth: 2 }]}>
-      <Text style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{t.title}</Text><Caption style={{ marginTop: 4 }}>{t.permit}</Caption>
+      <Text style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{t.title}</Text><Caption style={{ marginTop: 4 }}>{t.permit}</Caption><PermitPrice />
     </Pressable>)}
     {type && <>
       <Field label="Describe the project (optional)" value={description} onChangeText={setDescription} placeholder="e.g., add a 200 sq ft bedroom at the back" multiline maxLength={500} />
