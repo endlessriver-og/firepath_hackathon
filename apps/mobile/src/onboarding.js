@@ -22,10 +22,8 @@ export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'reside
   }
   return <>
     <Text style={{ fontSize: 15, fontWeight: '900', letterSpacing: 2, color: color.green }}>FIREPATH</Text>
-    <Text style={{ fontSize: 28, lineHeight: 34, fontWeight: '800', color: color.ink, marginTop: 16, marginBottom: 10 }}>Know what's mapped where you live, and what to do about it.</Text>
-    <Muted>Register your Glendale home or business to get a readiness plan, a hazard map, live weather alerts and help with permits.</Muted>
-    <View style={[s.segment, { marginTop: 22 }]}>{[['signup', 'Create account'], ['login', 'Sign in']].map(([key, label]) =>
-      <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: mode === key }} onPress={() => { setMode(key); setError(''); }} style={[s.segmentItem, mode === key && s.segmentOn]}><Text style={[s.segmentText, mode === key && { color: color.ink }]}>{label}</Text></Pressable>)}</View>
+    <Text style={{ fontSize: 28, lineHeight: 34, fontWeight: '800', color: color.ink, marginTop: 16, marginBottom: 6 }}>{mode === 'signup' ? 'Create your account' : 'Welcome back'}</Text>
+    <Muted>{mode === 'signup' ? 'Save your plan, alerts and permits in one place.' : 'Sign in to see your plan.'}</Muted>
     {mode === 'signup' && <Select label="I'm setting up" value={form.type} options={[['resident', 'My home'], ['business', 'A business']]} onChange={type => set({ type })} />}
     {mode === 'signup' && form.type === 'business' && <>
       <Field label="Business name" value={form.businessName} onChangeText={businessName => set({ businessName })} placeholder="e.g., Glencoe Bakery" maxLength={100} />
@@ -36,7 +34,8 @@ export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'reside
     <Field label="Password" hint={mode === 'signup' ? 'At least 8 characters.' : null} value={form.password} onChangeText={password => set({ password })} secureTextEntry autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} onSubmitEditing={submit} maxLength={200} />
     <ErrorText>{error}</ErrorText>
     <Button busy={busy} onPress={submit}>{mode === 'signup' ? 'Create account' : 'Sign in'}</Button>
-    <Caption>Prototype accounts are stored only on this demo server. It is not a City of Glendale service.</Caption>
+    <Link onPress={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(''); }}>{mode === 'signup' ? 'Already have an account? Sign in' : 'New here? Create an account'}</Link>
+    <Caption>Prototype: accounts live on this demo server, not with the City.</Caption>
   </>;
 }
 
