@@ -84,6 +84,7 @@ export function Home({ me, onChange, go }) {
     {next.map(task => <TaskCard key={task.id} task={task} number={ordered.indexOf(task) + 1} done={false} busy={busy === task.id} onToggle={toggle} />)}
     <Link onPress={() => go('Plan')}>See the full checklist ({total}) →</Link>
     <Collapsible icon="🔗" title="How FirePath connects" summary="Maps, City records, alerts, your household and your devices"><Muted style={{ marginTop: 10 }}>See every data source and device, and which are live today.</Muted><Link onPress={() => go('Systems')}>Open →</Link></Collapsible>
+    <Link onPress={() => go('Walkthrough')}>▶ Take the guided walkthrough</Link>
     <Section>Public resources</Section>
     <Resources compact />
   </>;

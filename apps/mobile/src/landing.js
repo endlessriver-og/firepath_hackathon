@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { api, apiBase } from './api';
 import MapFrame from './MapFrame';
 import { Auth, AddressSearch } from './onboarding';
@@ -64,7 +64,7 @@ export function AddressCheck({ onResult, showPreview = true, label }) {
 
 // Public front door: anyone can check a Glendale address without an account. Results end in a
 // call to register for alerts, a household plan and permit help for that address.
-export function Landing({ onSignedIn, onEmergency }) {
+export function Landing({ onSignedIn, onEmergency, onWalkthrough }) {
   const [result, setResult] = useState(null);
   const [signup, setSignup] = useState(null); // null | { type, mode }
 
@@ -79,6 +79,10 @@ export function Landing({ onSignedIn, onEmergency }) {
       <Text accessibilityRole="button" onPress={onEmergency} style={{ backgroundColor: '#B3261A', color: '#FFF', fontWeight: '800', fontSize: 12, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, overflow: 'hidden' }}>Emergency</Text></View>
     <Text style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 14 }}>What's mapped at your Glendale address?</Text>
     <Muted style={{ marginTop: 8 }}>Check any address against seven state and federal hazard maps. No account needed.</Muted>
+    {onWalkthrough && <Pressable accessibilityRole="button" onPress={onWalkthrough} style={{ marginTop: 14, backgroundColor: '#12302A', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <Text style={{ fontSize: 22 }}>▶</Text>
+      <View style={{ flex: 1 }}><Text style={{ color: '#FFF', fontWeight: '800', fontSize: 15 }}>Take the 4-minute walkthrough</Text><Text style={{ color: '#CFE3DA', fontSize: 12, marginTop: 2 }}>A guided tour with a fictional household. No sign-up.</Text></View>
+    </Pressable>}
     <AddressCheck onResult={setResult} />
     {result && <>
       <Card style={{ borderColor: color.green, borderWidth: 2, marginTop: 22 }}>

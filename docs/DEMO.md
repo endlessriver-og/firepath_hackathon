@@ -1,5 +1,7 @@
 # Three-minute preparedness demo
 
+**Fastest demo: the guided walkthrough.** On the signed-out landing page, tap **Take the 4-minute walkthrough**, then **Start the walkthrough**. This creates a fresh, fictional demo household (no sign-up) and guides you through 10 stops in four chapters: Personalized, Actionable, Connected, A new approach. The last stop answers the Jewel City Hacks judging criteria explicitly (technical execution 40%, impact 20%, presentation 15%, creativity 10%, feasibility 15%) and ends with the City partnership asks. The content lives in `apps/mobile/src/walkthrough.js`.
+
 **Resident app with accounts (browser, recommended):**
 
 Run these from the repo root:

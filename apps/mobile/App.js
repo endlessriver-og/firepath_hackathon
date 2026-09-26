@@ -9,6 +9,8 @@ import { AboutYou, AddressPanel, BusinessDetails, BusinessProfile, HouseholdForm
 import { Actions, Alerts, Home, MapTab, Permits, Profile, Systems } from './src/tabs';
 import { Landing } from './src/landing';
 import { EmergencyNow } from './src/emergency';
+import { TourOverlay, WalkthroughHub } from './src/tour';
+import { TOUR_STEPS } from './src/walkthrough';
 import { Button, ErrorText, color } from './src/ui';
 
 const ONBOARDING = 'firepath-onboarding-step';
@@ -22,7 +24,21 @@ export default function App() {
   const [tab, setTab] = useState('Home');
   const [layers, setLayers] = useState(['combined']);
   const [pendingAddress, setPendingAddress] = useState(null);
-  const [emergency, setEmergency] = useState(false); // checked on the public page before sign-up
+  const [emergency, setEmergency] = useState(false);
+  const [tour, setTour] = useState(null);          // walkthrough step index, null when not touring
+  const [hub, setHub] = useState(false);           // signed-out walkthrough hub
+  const [demoBusy, setDemoBusy] = useState(false), [demoError, setDemoError] = useState('');
+  const goTour = i => { const stepDef = TOUR_STEPS[i]; setTour(i); setEmergency(Boolean(stepDef.emergency)); setTab(stepDef.tab); };
+  async function startTour() {
+    setDemoError('');
+    if (!me) {
+      setDemoBusy(true);
+      try { const result = await api('POST', '/api/demo/start'); await saveSession(result.token); setMe(result); setStep(0); setHub(false); }
+      catch (e) { setDemoError(e.message); setDemoBusy(false); return; }
+      setDemoBusy(false);
+    }
+    goTour(0);
+  } // checked on the public page before sign-up
   const go = (next, withLayers) => { if (withLayers) setLayers(withLayers); setTab(next); };
   const [error, setError] = useState('');
   const scroller = useRef(null);
@@ -51,7 +67,8 @@ export default function App() {
   if (error) return <Shell><ErrorText>{error}</ErrorText><Button onPress={load}>Try again</Button></Shell>;
   if (me === undefined) return <Shell><ActivityIndicator color={color.green} style={{ marginTop: 80 }} /></Shell>;
   if (emergency && (me === null || step)) return <Shell><EmergencyNow me={me} onClose={() => setEmergency(false)} /></Shell>;
-  if (me === null) return <Shell><Landing onEmergency={() => setEmergency(true)} onSignedIn={(result, isNew, checked) => { setMe(result); setPendingAddress(isNew ? checked : null); if (isNew) goStep(1); }} /></Shell>;
+  if (me === null && hub) return <Shell><WalkthroughHub onStart={startTour} onClose={() => setHub(false)} busy={demoBusy} error={demoError} /></Shell>;
+  if (me === null) return <Shell><Landing onEmergency={() => setEmergency(true)} onWalkthrough={() => setHub(true)} onSignedIn={(result, isNew, checked) => { setMe(result); setPendingAddress(isNew ? checked : null); if (isNew) goStep(1); }} /></Shell>;
   const business = me.user.type === 'business';
   if (step === 1) return <Shell>{business ? <BusinessProfile me={me} onSaved={next => { setMe(next); goStep(2); }} onboarding /> : <AboutYou me={me} onSaved={next => { setMe(next); goStep(2); }} />}</Shell>;
   if (step === 2) return <Shell><AddressPanel me={me} onChange={setMe} onDone={() => goStep(3)} onboarding initialAddress={pendingAddress} /></Shell>;
@@ -66,16 +83,18 @@ export default function App() {
         <Text style={[styles.avatarText, tab === 'Profile' && !emergency && { color: '#FFF' }]}>{me.user.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}</Text>
       </Pressable>
     </View>
-    <ScrollView key={emergency ? 'sos' : tab} ref={scroller} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView key={emergency ? 'sos' : tab} ref={scroller} contentContainerStyle={[styles.content, tour !== null && { paddingBottom: 280 }]} keyboardShouldPersistTaps="handled">
       {emergency && <EmergencyNow me={me} onClose={() => setEmergency(false)} />}
       {!emergency && tab === 'Home' && <Home me={me} onChange={setMe} go={go} />}
       {!emergency && tab === 'Systems' && <Systems go={go} />}
+      {!emergency && tab === 'Walkthrough' && <WalkthroughHub onStart={startTour} onClose={() => { setTour(null); setTab('Home'); }} closing={tour !== null} />}
       {!emergency && tab === 'Map' && <MapTab me={me} layers={layers} setLayers={setLayers} top={top} />}
       {!emergency && tab === 'Plan' && <Actions me={me} onChange={setMe} />}
       {!emergency && tab === 'Alerts' && <Alerts me={me} onChange={setMe} />}
       {!emergency && tab === 'Permits' && <Permits me={me} top={top} />}
       {!emergency && tab === 'Profile' && <Profile me={me} onChange={setMe} onSignOut={signOut} />}
     </ScrollView>
+    {tour !== null && <TourOverlay index={tour} onBack={() => goTour(Math.max(tour - 1, 0))} onNext={() => goTour(Math.min(tour + 1, TOUR_STEPS.length - 1))} onExit={() => { setTour(null); setEmergency(false); setTab('Home'); }} />}
     <View style={styles.nav}>{TABS.map(([item, icon]) => {
       const on = tab === item && !emergency;
       const go = () => { setEmergency(false); setTab(item); };

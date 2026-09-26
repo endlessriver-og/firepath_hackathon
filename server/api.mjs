@@ -74,7 +74,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
     const household = (user.type === 'business' ? user.business : user.household) || {};
     const recommendations = recommendationsFor(user, household, user.hazards);
     return {
-      user: { id: user.id, email: user.email, name: user.name, type: user.type, createdAt: user.createdAt },
+      user: { id: user.id, email: user.email, name: user.name, type: user.type, createdAt: user.createdAt, demo: Boolean(user.demo) },
       address: user.address ? { text: user.address, lat: user.lat, lon: user.lon, verified: user.addressVerified, checkedAt: user.hazardsCheckedAt, codePending: Boolean(user.verification && user.addressVerified !== 'mail') } : null,
       hazards: user.hazards || null,
       household: user.type === 'business' ? {} : household,
@@ -98,6 +98,29 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       if (Object.values(data.users).some(u => u.email === email)) fail(409, 'An account with that email already exists. Sign in instead.');
       const user = { id: randomUUID(), email, name, type: body.type === 'business' ? 'business' : 'resident', passwordHash: hashPassword(body.password), createdAt: new Date(now()).toISOString(), household: {}, business: isBusiness ? { name: businessName, kind: businessKind } : {}, done: {} };
       data.users[user.id] = user;
+      const token = startSession(user);
+      store.save();
+      return { status: 201, body: { token, ...view(user) } };
+    },
+
+    // Walkthrough: a fresh, clearly fictional demo household at a public address, so a demo never needs
+    // a real sign-up. Each call creates its own account; nothing real is stored.
+    'POST /api/demo/start': async req => {
+      throttle(req, 30);
+      const id = randomUUID();
+      let lookup;
+      try { lookup = await lookupHazards({ lat: 34.199055, lon: -118.230606 }); } catch { fail(503, 'Demo data is unavailable right now.'); }
+      const user = {
+        id, email: `demo-${id.slice(0, 8)}@firepath.demo`, name: 'Dana Rivera', type: 'resident', demo: true, passwordHash: 'demo:no-login',
+        createdAt: new Date(now()).toISOString(),
+        address: '1613 GLENCOE WAY, GLENDALE, CA, 91208', lat: 34.199055, lon: -118.230606, addressScore: 100, addressVerified: 'mail',
+        hazards: lookup.hazards, hazardsCheckedAt: new Date(now()).toISOString(), business: {},
+        household: { housing: 'own', homeType: 'house', members: [{ name: 'Mia', ageGroup: 'child', needsHelp: false }, { name: 'Rosa', ageGroup: 'senior', needsHelp: true }], people: 3,
+          pets: [{ kind: 'dogs', count: 2, where: 'backyard' }], assistance: 'Rosa uses a walker; needs a step-free exit', access: 'Side gate on the left', utilities: 'Gas meter on the east wall',
+          meetNear: 'Corner mailbox', meetFar: 'Montrose library', contact: 'Aunt Lucia in Fresno', shareWithResponders: true, updatedAt: new Date(now()).toISOString() },
+        done: { alerts: true, kit: true },
+      };
+      data.users[id] = user;
       const token = startSession(user);
       store.save();
       return { status: 201, body: { token, ...view(user) } };

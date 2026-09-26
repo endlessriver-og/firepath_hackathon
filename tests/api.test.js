@@ -315,3 +315,14 @@ test('city records summary lists permits and inspections, counts but never lists
   assert.equal(streetAddress('1613 GLENCOE WAY, GLENDALE, CA, 91208'), '1613 GLENCOE WAY');
   assert.match(s.searchUrl, /st=1613%20GLENCOE%20WAY$/);
 });
+
+test('demo household starts signed in with a fictional, verified, personalised profile', async () => {
+  const { call } = setup();
+  const res = await call('POST', '/api/demo/start');
+  assert.equal(res.status, 201);
+  assert.equal(res.body.user.demo, true);
+  assert.equal(res.body.address.verified, 'mail');
+  assert.ok(res.body.recommendations.some(r => r.id === 'kids') && res.body.recommendations.some(r => r.id === 'assistance'));
+  assert.equal((await call('POST', '/api/account/login', { email: res.body.user.email, password: 'demo:no-login' })).status, 401, 'demo accounts cannot be logged into');
+  assert.equal((await call('GET', '/api/me', null, res.body.token)).body.user.name, 'Dana Rivera');
+});
