@@ -6,7 +6,7 @@ const TOKEN = 'firepath-session';
 
 // The API lives on the FirePath Node server (port 5173). The built web app is served by that same
 // server at /app; the Expo dev server (8081) and phones reach it on the dev machine's host.
-function apiBase() {
+export function apiBase() {
   if (Platform.OS === 'web') {
     const { protocol, hostname, port } = window.location;
     return port === '8081' ? `${protocol}//${hostname}:5173` : '';

@@ -48,3 +48,12 @@ test('seismic layers get plain-language detail instead of GIS metadata notes', (
   assert.doesNotMatch(describeHazard('fault', civic.hazards.fault).detail, /attributes|quadrangle/);
   assert.match(describeHazard('wildfire', civic.hazards.wildfire).detail, /NonWildland/, 'keeps the useful CAL FIRE unzoned note');
 });
+
+import { hazardSeverity } from '../src/readiness.js';
+test('severity uses only source-defined classes and never scores binary layers', () => {
+  assert.deepEqual([hazardSeverity('wildfire', sparr.hazards.wildfire).level, hazardSeverity('wildfire', civic.hazards.wildfire).level], [2, 0]);
+  assert.equal(hazardSeverity('liquefaction', sparr.hazards.liquefaction).level, 'zone');
+  assert.equal(hazardSeverity('flood', civic.hazards.flood).label, 'Minimal');
+  assert.equal(hazardSeverity('flood', { status: 'in_zone', matches: [{ attributes: { FLD_ZONE: 'D', SFHA_TF: 'F' } }] }).level, 'unknown');
+  assert.equal(hazardSeverity('flood', { status: 'in_zone', matches: [{ attributes: { FLD_ZONE: 'AE', SFHA_TF: 'T' } }] }).level, 3);
+});

@@ -115,3 +115,23 @@ export function permitGuide(typeId, { profile = {}, household = {}, hazards = nu
   ].filter(Boolean).join('\n');
   return { ...type, notes, summary };
 }
+
+// --- Per-layer severity at an address -------------------------------------------------
+// Uses only the classes each source defines (mirrors scripts/build-map-layers.py). Binary layers
+// report "zone": inside the mapped zone, with no invented severity.
+const SEVERITY_LABELS = { 3: 'Very high', 2: 'High', 1: 'Moderate', 0: 'Not mapped' };
+export function hazardSeverity(key, value) {
+  if (!value || value.status === 'unavailable') return { level: 'unknown', label: 'Not checked', scale: null };
+  const attrs = value.matches?.[0]?.attributes || {};
+  if (key === 'wildfire') {
+    const level = { 'Very High': 3, High: 2, Moderate: 1 }[attrs.FHSZ_Description] ?? 0;
+    return { level, label: SEVERITY_LABELS[level], scale: 'CAL FIRE scale: Moderate, High, Very high' };
+  }
+  if (key === 'flood') {
+    if (attrs.SFHA_TF === 'T') return { level: 3, label: 'High (1% annual chance)', scale: 'FEMA: special flood hazard area' };
+    if (attrs.FLD_ZONE === 'X' && String(attrs.ZONE_SUBTY || '').includes('0.2')) return { level: 1, label: 'Moderate (0.2% annual chance)', scale: 'FEMA: Zone X shaded' };
+    if (attrs.FLD_ZONE === 'D') return { level: 'unknown', label: 'Undetermined', scale: 'FEMA Zone D: not studied' };
+    return { level: 0, label: 'Minimal', scale: 'FEMA: Zone X, minimal flood hazard' };
+  }
+  return value.status === 'in_zone' ? { level: 'zone', label: 'In mapped zone', scale: 'This map has no severity levels; being inside the zone is the signal.' } : { level: 0, label: 'Not mapped', scale: null };
+}

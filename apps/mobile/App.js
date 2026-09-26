@@ -5,17 +5,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { api, loadSession, saveSession } from './src/api';
 import { AboutYou, AddressPanel, Auth, HouseholdForm } from './src/onboarding';
-import { Actions, Alerts, Home, Permits, Profile } from './src/tabs';
+import { Actions, Alerts, Home, MapTab, Permits, Profile } from './src/tabs';
 import { Button, ErrorText, color } from './src/ui';
 
 const ONBOARDING = 'firepath-onboarding-step';
-const TABS = ['Home', 'Actions', 'Alerts', 'Permits', 'Profile'];
+const TABS = ['Home', 'Map', 'Plan', 'Alerts', 'Permits', 'Profile'];
 Notifications.setNotificationHandler({ handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }) });
 
 export default function App() {
   const [me, setMe] = useState(undefined); // undefined = loading, null = signed out
   const [step, setStep] = useState(0);     // onboarding step 1-3, 0 = done
   const [tab, setTab] = useState('Home');
+  const [layers, setLayers] = useState(['wildfire']);
+  const go = (next, withLayers) => { if (withLayers) setLayers(withLayers); setTab(next); };
   const [error, setError] = useState('');
   const scroller = useRef(null);
   const top = () => scroller.current?.scrollTo({ y: 0, animated: false });
@@ -50,8 +52,9 @@ export default function App() {
   return <SafeAreaView style={styles.safe}><StatusBar style="dark" />
     <View style={styles.header}><Text style={styles.brand}>FIREPATH</Text><Text style={styles.pill}>GLENDALE PILOT · PROTOTYPE</Text></View>
     <ScrollView key={tab} ref={scroller} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      {tab === 'Home' && <Home me={me} onChange={setMe} go={setTab} />}
-      {tab === 'Actions' && <Actions me={me} onChange={setMe} />}
+      {tab === 'Home' && <Home me={me} onChange={setMe} go={go} />}
+      {tab === 'Map' && <MapTab me={me} layers={layers} setLayers={setLayers} top={top} />}
+      {tab === 'Plan' && <Actions me={me} onChange={setMe} />}
       {tab === 'Alerts' && <Alerts me={me} />}
       {tab === 'Permits' && <Permits me={me} top={top} />}
       {tab === 'Profile' && <Profile me={me} onChange={setMe} onSignOut={signOut} />}
@@ -69,10 +72,10 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderColor: '#DCE1D9' },
   brand: { fontSize: 15, fontWeight: '900', letterSpacing: 2, color: color.green },
   pill: { fontSize: 10, fontWeight: '800', letterSpacing: 1, color: '#7A4A12', backgroundColor: color.goldBg, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3, overflow: 'hidden' },
-  content: { padding: 20, paddingBottom: 40 },
-  onboard: { padding: 24, paddingTop: 36, paddingBottom: 48 },
-  nav: { flexDirection: 'row', padding: 6, backgroundColor: '#FFF', borderTopWidth: 1, borderColor: color.line },
-  navItem: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 10 },
+  content: { padding: 20, paddingBottom: 40, width: '100%', maxWidth: 720, alignSelf: 'center' },
+  onboard: { padding: 24, paddingTop: 36, paddingBottom: 48, width: '100%', maxWidth: 560, alignSelf: 'center' },
+  nav: { flexDirection: 'row', padding: 6, justifyContent: 'center', backgroundColor: '#FFF', borderTopWidth: 1, borderColor: color.line },
+  navItem: { flex: 1, maxWidth: 120, alignItems: 'center', paddingVertical: 11, borderRadius: 10 },
   active: { backgroundColor: color.soft },
-  navText: { color: '#60706B', fontWeight: '700', fontSize: 13 },
+  navText: { color: '#60706B', fontWeight: '700', fontSize: 12 },
 });

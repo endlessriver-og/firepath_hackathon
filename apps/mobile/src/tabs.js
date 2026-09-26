@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Notifications from 'expo-notifications';
-import { api } from './api';
+import { api, apiBase } from './api';
+import MapFrame from './MapFrame';
 import { describeHazard, hazardNames, nextSteps, summarizePlace } from './preparedness';
-import { PERMIT_PORTAL, categories, permitTypes, queryRecommendations } from './readiness';
+import { PERMIT_PORTAL, categories, hazardSeverity, permitTypes, queryRecommendations } from './readiness';
 import { AddressPanel, HouseholdForm } from './onboarding';
 import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, Section, Tag, Title, color, s } from './ui';
 
@@ -55,14 +56,14 @@ export function Home({ me, onChange, go }) {
     {!me.address ? <Card><Muted>Register your address to see which hazard maps include your home.</Muted><Link onPress={() => go('Profile')}>Add your address →</Link></Card> : <>
       <Caption style={{ marginTop: 0 }}>{me.address.text} · {me.address.verified === 'mail' ? 'verified' : 'not yet verified'}</Caption>
       {place.mapped.length ? place.mapped.map(item => <View key={item.key} style={{ flexDirection: 'row', gap: 12, backgroundColor: color.warmBg, borderWidth: 1, borderColor: color.warmLine, borderRadius: 14, padding: 14, marginTop: 8 }}>
-        <Text style={{ color: color.warm }}>●</Text><View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{item.name}</Text><Muted>{item.label}</Muted></View></View>)
+        <Text style={{ color: color.warm }}>●</Text><View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{item.name} · {hazardSeverity(item.key, me.hazards[item.key]).label}</Text><Muted>{item.label}</Muted><Link style={{ marginTop: 6 }} onPress={() => go('Map', [item.key])}>See zones on the map →</Link></View></View>)
         : <Muted>No mapped hazard zone includes your home. That is not the same as no risk.</Muted>}
       <Caption>Planning maps, not live incidents. Not mapped here: {place.outside.map(i => i.name.toLowerCase()).join(', ') || 'none'}.</Caption>
     </>}
 
     <Section>Your next steps</Section>
     {next.map(task => <TaskCard key={task.id} task={task} done={false} busy={busy === task.id} onToggle={toggle} />)}
-    <Link onPress={() => go('Actions')}>Search all {me.recommendations.length} recommendations →</Link>
+    <Link onPress={() => go('Plan')}>Search all {me.recommendations.length} recommendations →</Link>
   </>;
 }
 
@@ -171,5 +172,42 @@ export function Profile({ me, onChange, onSignOut }) {
     {brief && <Card><Text selectable style={{ color: color.ink, fontFamily: 'Courier', fontSize: 12, lineHeight: 18 }}>{brief.brief}</Text></Card>}
     <Button kind="outline" onPress={onSignOut}>Sign out</Button>
     <Caption>Prototype account on this demo server. Hazard results: {me.hazards ? Object.keys(hazardNames).map(k => `${hazardNames[k]} (${me.hazards[k]?._meta?.source || '?'})`).join(', ') : 'none yet'}.</Caption>
+  </>;
+}
+
+
+// Severity dots: filled up to the level on sources with a 3-step scale; binary layers get a pill instead.
+function SeverityBadge({ severity }) {
+  if (severity.level === 'zone') return <Text style={{ alignSelf: 'flex-start', backgroundColor: '#F3E3EF', color: '#7B2D8B', fontWeight: '800', fontSize: 11, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, overflow: 'hidden' }}>IN MAPPED ZONE</Text>;
+  if (typeof severity.level !== 'number') return <Text style={{ color: color.muted, fontWeight: '700', fontSize: 12 }}>{severity.label}</Text>;
+  return <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} accessibilityLabel={`Severity ${severity.label}`}>
+    {[1, 2, 3].map(n => <View key={n} style={{ width: 16, height: 8, borderRadius: 4, backgroundColor: n <= severity.level ? ['#F5CF4A', '#E8641E', '#B3261A'][severity.level - 1] : '#E0E5DE' }} />)}
+    <Text style={{ marginLeft: 6, color: color.ink, fontWeight: '800', fontSize: 12 }}>{severity.label}</Text>
+  </View>;
+}
+
+export function MapTab({ me, layers, setLayers, top }) {
+  const lat = me.address?.lat, lon = me.address?.lon;
+  const src = `${apiBase()}/map.html?layers=${layers.join(',')}${lat ? `&lat=${lat}&lon=${lon}` : ''}`;
+  const order = me.hazards ? Object.keys(hazardNames).sort((a, b) => {
+    const rank = k => { const l = hazardSeverity(k, me.hazards[k]).level; return typeof l === 'number' ? -l : l === 'zone' ? -1.5 : 1; };
+    return rank(a) - rank(b);
+  }) : [];
+  return <>
+    <Title>Hazard map</Title>
+    <Muted>Tap a filter on the map, or a layer below, to shade its zones across Glendale.</Muted>
+    <MapFrame key={src} src={src} style={{ height: 460, borderRadius: 17, marginTop: 12, borderWidth: 1, borderColor: color.line }} />
+    {me.hazards ? <>
+      <Section>At your address</Section>
+      {order.map(key => { const sev = hazardSeverity(key, me.hazards[key]); const meta = me.hazards[key]?._meta || {}; const on = layers.includes(key); return (
+        <Pressable key={key} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => { setLayers([key]); top?.(); }} style={[s.card, on && { borderColor: color.green, borderWidth: 2 }]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>{hazardNames[key]}</Text><SeverityBadge severity={sev} /></View>
+          <Muted>{describeHazard(key, me.hazards[key]).detail}</Muted>
+          {sev.scale ? <Caption>{sev.scale}</Caption> : null}
+          <Caption style={{ marginTop: 4 }}>{meta.source || 'Unknown source'} · checked {meta.as_of ? meta.as_of.slice(0, 10) : 'unknown'} · {on ? 'showing on map' : 'tap to show on map'}</Caption>
+        </Pressable>); })}
+    </> : <Card><Muted>Register your address to see how each layer rates at your home.</Muted></Card>}
+    <CityDataCallout id="evacuationZones" />
+    <CityDataCallout id="closures" />
   </>;
 }

@@ -8,17 +8,18 @@ cd apps/mobile && npm install && cd ../..
 npm run build:demo
 GLENDALE_GIS_PYTHON=.venv/bin/python npm start
 ```
-Then open <http://localhost:5173/app/>. For live editing, also run `cd apps/mobile && npx expo start` and open <http://localhost:8081>; it calls the same API on port 5173.
+Run `npm run map:build` once, after the GIS snapshot is installed, to build the hazard map layers. Then open <http://localhost:5173/app/>. For live editing, also run `cd apps/mobile && npx expo start` and open <http://localhost:8081>; it calls the same API on port 5173.
 
 1. **Create account.** Name, email and password. Stored only in `data/firepath-dev.json` on this machine.
 2. **Step 1, household.** Add people with an age group and a "may need help leaving" flag. Choose own or rent, and house or apartment.
 3. **Step 2, address.** Any Glendale street address goes to the City geocoder plus the 7 hazard maps (the GIS package must be installed). Then **Mail me a code** shows the code in a labeled *demo mailbox*; enter it to verify.
 4. **Step 3, responder details.** Pets, access and utility notes, meeting places, and the consent toggle.
 5. **Home.** Readiness score, level, badges and the next steps. Check one off to watch the score move.
-6. **Actions.** Search (for example "pets" or "roof") and filter by hazard or status.
-7. **Alerts.** Live National Weather Service alerts for the address point, which are often empty. City signup links. "Needs City data" callouts.
-8. **Permits.** Pick a project to get the likely permit, notes for this address, the usual requirements, a copyable summary and a link to the Glendale Permits portal.
-9. **Profile.** Edit the address and household, and preview exactly what a responder would see.
+6. **Map.** A city-wide Leaflet map with a filter for each hazard layer plus fire stations, hospitals and schools; zones are shaded by the severity their source defines. Below it, each layer's rating at your address. Tap one to show it on the map.
+7. **Plan.** Search (for example "pets" or "roof") and filter by hazard or status.
+8. **Alerts.** Live National Weather Service alerts for the address point, which are often empty. City signup links. "Needs City data" callouts.
+9. **Permits.** Pick a project to get the likely permit, notes for this address, the usual requirements, a copyable summary and a link to the Glendale Permits portal.
+10. **Profile.** Edit the address and household, and preview exactly what a responder would see.
 
 The blue **Needs City data** callouts name the dataset we lack, an illustrative example record and the capability it would unlock. Their text lives in `src/city-data.js`.
 

@@ -76,6 +76,8 @@ Address verification has two levels:
 - **Matched:** the City geocoder confirms the address.
 - **Verified by mail:** the resident enters a 6-digit code. In production it would be printed on a mailed postcard; locally it appears in a labeled demo mailbox. Set `FIREPATH_DEMO_MAILBOX=0` to hide it.
 
+The **Map** tab embeds `map.html`, a Leaflet map of real GIS zone polygons built by `npm run map:build` (`scripts/build-map-layers.py`: clip to the city boundary, simplify, and tag each polygon with its source's severity class). Wildfire and flood use the classes their sources define. Fault, liquefaction, landslide and dam inundation are shown as "in mapped zone" with no invented score.
+
 Neither level proves ownership. Nothing is sent to 911, dispatch or the City. Wherever City data is missing, a "Needs City data" callout (`src/city-data.js`) names the dataset and the capability it would unlock. See `docs/DEMO.md` for the walkthrough.
 
 ### Native resident prototype

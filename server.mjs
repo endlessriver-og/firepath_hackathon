@@ -9,9 +9,10 @@ const root = resolve(import.meta.dirname);
 const srcRoot = resolve(root, 'src');
 const audioRoot = resolve(root, 'audio');
 const appRoot = resolve(root, 'dist/app');
+const layerRoot = resolve(root, 'data/map-layers');
 const port = Number(process.env.PORT || 5173);
 const python = process.env.GLENDALE_GIS_PYTHON || 'python3';
-const mime = { '.ttf': 'font/ttf', '.png': 'image/png', '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg' };
+const mime = { '.geojson': 'application/geo+json', '.ttf': 'font/ttf', '.png': 'image/png', '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg' };
 
 function lookup(payload) {
   return new Promise((resolveLookup, reject) => {
@@ -41,6 +42,14 @@ http.createServer(async (req, res) => {
     }
     if (await api(req, res, url)) return;
     const pathname = decodeURIComponent(url.pathname);
+    // Public planning layers built by scripts/build-map-layers.py (not user data).
+    if (pathname.startsWith('/map-layers/')) {
+      const file = resolve(layerRoot, pathname.slice('/map-layers/'.length));
+      if (!file.startsWith(layerRoot + sep) || !['.geojson', '.json'].includes(extname(file))) throw new Error('Invalid path');
+      res.writeHead(200, { 'content-type': mime[extname(file)], 'cache-control': 'max-age=3600', 'access-control-allow-origin': '*' });
+      res.end(await readFile(file));
+      return;
+    }
     if (pathname === '/app' || pathname.startsWith('/app/')) {
       const rel = pathname.replace(/^\/app\/?/, '');
       let file = resolve(appRoot, rel || 'index.html');
@@ -60,9 +69,9 @@ http.createServer(async (req, res) => {
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(result)); return;
     }
     if (req.method !== 'GET') throw new Error('Not found');
-    if (pathname !== '/' && pathname !== '/fire-lab.html' && !pathname.startsWith('/src/') && !pathname.startsWith('/audio/')) throw new Error('Outside public assets');
+    if (pathname !== '/' && pathname !== '/fire-lab.html' && pathname !== '/map.html' && !pathname.startsWith('/src/') && !pathname.startsWith('/audio/')) throw new Error('Outside public assets');
     const file = resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname));
-    if (![resolve(root, 'index.html'), resolve(root, 'fire-lab.html')].includes(file) && !file.startsWith(srcRoot + sep) && !file.startsWith(audioRoot + sep)) throw new Error('Invalid path');
+    if (![resolve(root, 'index.html'), resolve(root, 'fire-lab.html'), resolve(root, 'map.html')].includes(file) && !file.startsWith(srcRoot + sep) && !file.startsWith(audioRoot + sep)) throw new Error('Invalid path');
     const info = await stat(file);
     if (!info.isFile()) throw new Error('Not a file');
     res.writeHead(200, { 'content-type': mime[extname(file)] || 'application/octet-stream', 'cache-control': 'no-store' });
