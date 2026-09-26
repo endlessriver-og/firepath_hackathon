@@ -2,6 +2,8 @@
 
 A Glendale pilot that combines mapped local hazards, a household checklist, official alert links, a local-only draft of useful property facts for possible responder workflows, and an optional USB in-home notification demo. The old fire-routing experiment remains at `/fire-lab.html`.
 
+The main interface has two modes: **Resident** for location, actions and optional property notes; **Responder demo** for a short, source-labeled exercise brief. The responder view includes three fictional scenarios, a compact field layout, and a switch between fictional sample facts and the current browser's saved draft. It has no login, City access, dispatch connection or live calls.
+
 ## Quick start
 
 Requires Node.js 20+ and Python 3.11+. The browser UI needs no JavaScript dependencies.
@@ -37,6 +39,7 @@ Mapped layers: CAL FIRE wildfire severity, FEMA flood zones, fault, liquefaction
 - Official [Glendale Everbridge](https://www.glendaleca.gov/Everbridge), [Know Your Zone](https://www.glendaleca.gov/government/departments/fire-department/other-links/emergency-preparedness-response/know-your-zone), and City emergency-alert links. The app does **not** receive live city alerts or send push notifications.
 - Simulated alert over Web Serial to an ESP32; Arduino-framework C++ sketch with MQ-2 input on GPIO33 and buzzer output on GPIO12. See [hardware wiring and limits](docs/HARDWARE.md).
 - Resident-entered property facts and an illustrative, copyable responder text summary. This draft stays in browser storage; it does not connect to dispatch, CAD, or City systems. See the [City integration hypothesis](docs/CITY_INTEGRATION.md).
+- A dedicated responder **training** workspace that orders facts by exercise type and separates fictional facts, resident-entered notes, mapped planning layers and unavailable City systems. The field readout strips the side panels for a quick scan.
 - Earlier simulated interior fire routing at `/fire-lab.html`, with its own [bridge protocol](docs/FIRE_LAB.md).
 
 ## Next build targets

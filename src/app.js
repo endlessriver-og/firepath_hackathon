@@ -1,9 +1,12 @@
 import { hazardNames, describeHazard, buildTasks } from './preparedness.js';
 import { buildResponderSummary } from './responder.js';
+import { buildWorkspace } from './workspace.js';
 const $ = id => document.getElementById(id);
 const escape = input => String(input ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const keys = Object.keys(hazardNames);
 let profile = {}, hazards = null, serial = null;
+let sampleMap = false;
+const workspace = { mode: 'resident', scenario: 'earthquake', source: 'fictional', layout: 'dispatch' };
 try { profile = JSON.parse(localStorage.getItem('firepath-prep-profile') || '{}'); } catch {}
 let done = {};
 try { done = JSON.parse(localStorage.getItem('firepath-prep-done') || '{}'); } catch {}
@@ -13,6 +16,45 @@ const responderFields = { parcelId: 'parcel-id', occupants: 'occupants', pets: '
 
 function renderResponder() {
   $('responder-summary').textContent = buildResponderSummary(profile, responderDraft, hazards);
+  renderWorkspace();
+}
+
+function renderWorkspace() {
+  const data = buildWorkspace({ scenario: workspace.scenario, source: workspace.source, profile, draft: responderDraft, hazards: sampleMap ? null : hazards });
+  $('brief-scenario-name').textContent = data.title;
+  $('brief-location').textContent = data.place;
+  $('priority-title').textContent = data.focus;
+  $('priority-detail').textContent = data.detail;
+  $('fact-count').textContent = `${data.facts.length} ${data.facts.length === 1 ? 'FACT' : 'FACTS'}`;
+  $('workspace-facts').innerHTML = data.facts.length ? data.facts.map((fact, index) => `<div class="workspace-fact"><span class="fact-index">${String(index + 1).padStart(2, '0')}</span><div><strong>${escape(fact.label)}</strong><p>${escape(fact.value)}</p><small>${escape(fact.source)}</small></div></div>`).join('') : '<div class="empty-facts">No facts saved for this property. Missing information is unknown.</div>';
+  $('workspace-readout').textContent = data.readout;
+  $('fact-source-title').textContent = workspace.source === 'fictional' ? 'Fictional sample' : 'Resident draft · unverified';
+  $('fact-source-detail').textContent = workspace.source === 'fictional' ? 'Training data, not a real household' : data.updatedAt ? `Saved locally ${data.updatedAt}` : 'No confirmed update date';
+  $('hazard-source-detail').textContent = data.mapLinked ? 'Public planning layers checked for this location; not live incidents' : 'No property map linked to this exercise';
+  for (const button of document.querySelectorAll('.scenario')) {
+    const selected = button.dataset.scenario === workspace.scenario;
+    button.classList.toggle('active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  }
+  $('fictional-source').setAttribute('aria-pressed', String(workspace.source === 'fictional'));
+  $('draft-source').setAttribute('aria-pressed', String(workspace.source === 'local'));
+}
+
+function setMode(mode, { showDraft = false } = {}) {
+  workspace.mode = mode;
+  if (showDraft) workspace.source = 'local';
+  $('resident-view').hidden = mode !== 'resident';
+  $('responder-view').hidden = mode !== 'responder';
+  $('resident-nav').hidden = mode !== 'resident';
+  $('field-nav').hidden = mode !== 'responder';
+  $('rail-label').textContent = mode === 'resident' ? 'RESIDENT WORKSPACE' : 'RESPONDER DEMO';
+  $('workspace-name').textContent = mode === 'resident' ? 'RESIDENT VIEW' : 'RESPONDER EXERCISE';
+  $('resident-mode').setAttribute('aria-pressed', String(mode === 'resident'));
+  $('responder-mode').setAttribute('aria-pressed', String(mode === 'responder'));
+  document.title = mode === 'resident' ? 'FirePath — Prepared for where you live' : 'FirePath — Responder training demo';
+  if (mode === 'responder') renderWorkspace();
+  history.replaceState(null, '', mode === 'resident' ? '#home' : '#responder-workspace');
+  window.scrollTo(0, 0);
 }
 
 function renderHazards() {
@@ -59,6 +101,7 @@ $('example-point').addEventListener('click', async () => {
     if (!response.ok) throw new Error('Sample unavailable');
     const sample = await response.json();
     hazards = sample.hazards;
+    sampleMap = true;
     profile = { housing: $('housing').value, homeType: $('home-type').value, pets: $('pets').checked, assistance: $('assistance').checked };
     $('hazard-intro').textContent = 'Sample public map point near Glendale Civic Center (34.1466, -118.2483). This is not your home.';
     $('plan-intro').textContent = 'Illustrative checklist for the sample point and the household choices above.';
@@ -85,6 +128,7 @@ $('profile-form').addEventListener('submit', async event => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Lookup unavailable');
     hazards = data.hazards;
+    sampleMap = false;
     const name = data.location.matched_address || (coordinates ? `Map point ${payload.lat.toFixed(4)}, ${payload.lon.toFixed(4)}` : address);
     $('hazard-intro').textContent = `Mapped layers for ${name}. Check each layer's source and date.`;
     $('plan-intro').textContent = 'Your household checklist, with extra steps when a relevant mapped zone is present.';
@@ -92,7 +136,7 @@ $('profile-form').addEventListener('submit', async event => {
     renderHazards(); renderTasks(); renderResponder();
     $('hazards').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
-    hazards = null; renderHazards(); renderTasks(); renderResponder();
+    hazards = null; sampleMap = false; renderHazards(); renderTasks(); renderResponder();
     $('form-status').textContent = error.message || 'Lookup unavailable. Review the local GIS setup.';
   } finally { button.disabled = false; }
 });
@@ -114,6 +158,33 @@ $('clear-responder').addEventListener('click', () => {
 $('copy-responder').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText($('responder-summary').textContent); $('responder-status').textContent = 'Draft copied. It has not been sent to any city system.'; }
   catch { $('responder-status').textContent = 'Clipboard unavailable in this browser.'; }
+});
+$('resident-mode').addEventListener('click', () => setMode('resident'));
+$('responder-mode').addEventListener('click', () => setMode('responder'));
+$('preview-in-workspace').addEventListener('click', () => setMode('responder', { showDraft: true }));
+$('back-to-resident').addEventListener('click', () => {
+  setMode('resident');
+  $('responders').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+for (const button of document.querySelectorAll('.scenario')) button.addEventListener('click', () => {
+  workspace.scenario = button.dataset.scenario;
+  $('workspace-status').textContent = '';
+  renderWorkspace();
+});
+for (const [id, source] of [['fictional-source', 'fictional'], ['draft-source', 'local']]) $(id).addEventListener('click', () => {
+  workspace.source = source;
+  $('workspace-status').textContent = '';
+  renderWorkspace();
+});
+for (const [id, layout] of [['dispatch-layout', 'dispatch'], ['field-layout', 'field']]) $(id).addEventListener('click', () => {
+  workspace.layout = layout;
+  $('responder-view').classList.toggle('field-mode', layout === 'field');
+  $('dispatch-layout').setAttribute('aria-pressed', String(layout === 'dispatch'));
+  $('field-layout').setAttribute('aria-pressed', String(layout === 'field'));
+});
+$('copy-workspace').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('workspace-readout').textContent); $('workspace-status').textContent = 'Exercise brief copied locally. No responder system received it.'; }
+  catch { $('workspace-status').textContent = 'Clipboard unavailable in this browser.'; }
 });
 $('connect-device').addEventListener('click', async () => {
   if (!('serial' in navigator)) { $('device-status').textContent = 'Web Serial requires a supported desktop browser on localhost or HTTPS.'; return; }
@@ -153,3 +224,4 @@ $('demo-alert').addEventListener('click', async () => {
   } else $('device-status').textContent = 'SIMULATED alert preview. Connect a USB device to sound the buzzer. No live alert was sent.';
 });
 render();
+if (location.hash.startsWith('#responder-')) setMode('responder');

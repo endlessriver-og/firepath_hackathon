@@ -32,6 +32,8 @@ Candidate resident-reported fields: occupants usually present, pets and their li
 
 The prototype holds these fields only in the user's browser and shows an **illustrative** text summary. It never sends them to the City, 911, dispatch or responders. The copy button is a manual demonstration. No actual CAD integration exists.
 
+The standalone **Responder demo** view uses fictional training facts by default. A user may explicitly switch it to the current browser's saved local draft. Earthquake, evacuation and water exercises change the order of facts, not the underlying evidence or official instructions. The field layout removes secondary panels to demonstrate a short en-route readout. None of these exercises represents an active dispatch call.
+
 ## Integration sequence to validate with the City
 
 1. **Discover:** ask GIS/permitting for the authoritative parcel lookup, the fire permit-zone layer, class definitions, effective dates and requirement rules. Ask which floor plans are available, for which properties, with what access restrictions and update cadence.
