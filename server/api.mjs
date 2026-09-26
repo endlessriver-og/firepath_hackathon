@@ -27,7 +27,7 @@ function occupancy(h) {
 
 const playbookFor = (user, event) => buildPlaybook(event, { type: user.type, household: user.household || {}, business: user.business || {}, hazards: user.hazards, done: user.done || {} });
 
-export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, combinedIndex = () => null, cityRecords = async () => null, permitCatalog = { permitTypes: [], businessLicenseTypes: [] }, demoMailbox = true, now = () => Date.now() }) {
+export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, combinedIndex = () => null, cityRecords = async () => null, parcelAt = async () => null, permitCatalog = { permitTypes: [], businessLicenseTypes: [] }, demoMailbox = true, now = () => Date.now() }) {
   const { data } = store;
   const failures = new Map(); // email -> [timestamps] of failed logins, in memory only
   const alertCache = new Map();
@@ -277,6 +277,18 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       const preview = buildRecommendations({}, {}, result.hazards).filter(r => r.tag.startsWith('Mapped') || r.id === 'alerts').slice(0, 3).map(({ id, title, description }) => ({ id, title, description }));
       const records = await cityRecords(result.location.matched_address || address).catch(() => null);
       return { body: { records, address: result.location.matched_address || address, lat: result.location.lat, lon: result.location.lon, layers, combined: combinedIndex(result.location.lat, result.location.lon), preview, checkedAt: new Date(now()).toISOString() } };
+    },
+
+    // Tap-to-inspect on the 3D map: the parcel, mapped hazards, combined index and City records at a point.
+    'GET /api/public/point': async (req, body, url) => {
+      throttle(req, 60);
+      const lat = Number(url.searchParams.get('lat')), lon = Number(url.searchParams.get('lon'));
+      if (!(lat > 34.1 && lat < 34.3 && lon > -118.33 && lon < -118.16)) fail(400, 'Pick a point in Glendale.');
+      const [parcel, lookup] = await Promise.all([parcelAt(lat, lon).catch(() => null), lookupHazards({ lat, lon }).catch(() => null)]);
+      const layers = lookup ? Object.keys(hazardNames).map(key => ({ key, name: hazardNames[key], ...hazardSeverity(key, lookup.hazards[key]) })) : null;
+      // The City's permit system is keyed to the same parcel number (AIN = APN without dashes).
+      const records = parcel?.apn && parcel.city === 'GLENDALE' ? await cityRecords(parcel.apn.replace(/-/g, '')).catch(() => null) : null;
+      return { body: { lat, lon, parcel, layers, combined: combinedIndex(lat, lon), records, inCity: !!lookup, checkedAt: new Date(now()).toISOString() } };
     },
 
     // Plain-language search over the City of Glendale permit catalog (crawled by scripts/crawl-permits.mjs).

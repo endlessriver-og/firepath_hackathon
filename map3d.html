@@ -19,6 +19,17 @@
   .ramp { height: 8px; border-radius: 4px; margin: 5px 0; background: linear-gradient(90deg,#F5CF4A,#E8641E,#B3261A); }
   .home { width: 18px; height: 18px; border-radius: 50%; background: var(--ink); border: 3px solid #FFF; box-shadow: 0 0 0 6px rgba(232,100,30,.35); }
   @media (max-width: 500px) { #legend .fine { display: none; } #legend { bottom: 10px; } .maplibregl-ctrl-bottom-right { margin-bottom: 0; } }
+  #card { display: none; position: absolute; right: 10px; top: 58px; width: 320px; max-height: calc(100% - 110px); overflow: auto; background: #FFF; border-radius: 16px; padding: 14px 16px; font-size: 13px; line-height: 1.45; box-shadow: 0 6px 24px rgba(0,0,0,.22); }
+  #card h3 { margin: 0 26px 2px 0; font-size: 16px; line-height: 1.25; }
+  #card .k { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; color: #367363; margin-top: 12px; }
+  #card .muted { color: var(--muted); }
+  #card .x { position: absolute; right: 8px; top: 6px; border: 0; box-shadow: none; font-size: 20px; padding: 4px 8px; background: none; }
+  #card .score { display: inline-block; font-weight: 900; color: #FFF; border-radius: 8px; padding: 2px 8px; margin-right: 6px; }
+  #card .row { display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid #EDF1ED; padding: 4px 0; }
+  #card a { color: #086B56; font-weight: 700; }
+  #card .note { background: #FFF6EC; border-left: 3px solid #E8641E; border-radius: 6px; padding: 6px 8px; margin-top: 6px; }
+  #hint { position: absolute; left: 50%; transform: translateX(-50%); top: 58px; background: rgba(23,55,46,.88); color: #FFF; border-radius: 20px; padding: 6px 12px; font: 700 12px/1.2 inherit; pointer-events: none; transition: opacity .6s; }
+  @media (max-width: 500px) { #card { left: 8px; right: 8px; width: auto; top: auto; bottom: 8px; max-height: 62%; } }
   #fallback { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; text-align: center; padding: 24px; }
 </style>
 </head>
@@ -30,6 +41,8 @@
   <button id="reset">Recenter</button>
 </div>
 <div id="legend" aria-live="polite"></div>
+<div id="hint">Tap any building or lot to inspect it</div>
+<div id="card" role="dialog" aria-label="Parcel details" aria-live="polite"></div>
 <div id="fallback"><div><b>3D needs WebGL, which this browser has turned off.</b><br>The flat map shows the same hazard zones.</div></div>
 <script>
 // 3D view of the same public planning layers as map.html: OpenStreetMap buildings extruded to their
@@ -117,6 +130,49 @@ map.on('load', async () => {
   map.flyTo({ ...view, duration: 3500, essential: true });
 });
 
+
+// Tap-to-inspect: the parcel (LA County Assessor), mapped hazards, combined index and City records at that point.
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const card = document.getElementById('card');
+const title = t => t.replace(/\b([A-Z])([A-Z']+)\b/g, (m, a, b) => a + b.toLowerCase()).replace(/\b(Ca)\b/, 'CA');
+function outline(rings) {
+  const data = { type: 'FeatureCollection', features: rings ? [{ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: rings } }] : [] };
+  if (map.getSource('parcel')) return map.getSource('parcel').setData(data);
+  map.addSource('parcel', { type: 'geojson', data });
+  map.addLayer({ id: 'parcel-fill', type: 'fill', source: 'parcel', paint: { 'fill-color': '#17372E', 'fill-opacity': 0.18 } });
+  map.addLayer({ id: 'parcel-halo', type: 'line', source: 'parcel', paint: { 'line-color': '#FFFFFF', 'line-width': 6 } });
+  map.addLayer({ id: 'parcel-line', type: 'line', source: 'parcel', paint: { 'line-color': '#17372E', 'line-width': 3 } });
+}
+function closeCard() { card.style.display = 'none'; outline(null); }
+async function inspect(lngLat) {
+  document.getElementById('hint').style.opacity = 0;
+  card.style.display = 'block';
+  card.innerHTML = '<button class="x" aria-label="Close" onclick="closeCard()">×</button><h3>Looking this up…</h3><div class="muted">Parcel, hazard maps and City records.</div>';
+  let d;
+  try { const r = await fetch(`${base}/api/public/point?lat=${lngLat.lat.toFixed(6)}&lon=${lngLat.lng.toFixed(6)}`); d = await r.json(); if (!r.ok) throw new Error(d.error || r.status); }
+  catch (e) { card.innerHTML = `<button class="x" aria-label="Close" onclick="closeCard()">×</button><h3>Could not look this up</h3><div class="muted">${esc(e.message)}</div>`; return; }
+  const p = d.parcel;
+  outline(p?.outline || null);
+  const facts = p ? [p.use, p.yearBuilt && `built ${p.yearBuilt}`, p.sqft && `${p.sqft.toLocaleString()} sq ft`, p.units > 1 && `${p.units} units`, p.lotSqft && `lot ${p.lotSqft.toLocaleString()} sq ft`].filter(Boolean).join(' · ') : '';
+  const c = d.combined, t = c ? c.score / c.max : 0;
+  const scoreColor = t > 0.5 ? '#B3261A' : t > 0.2 ? '#E8641E' : t > 0 ? '#C49A12' : '#5E7C70';
+  const mapped = (d.layers || []).filter(l => !/^(Not mapped|Minimal|Outside)/i.test(l.label || ''));
+  const rec = d.records;
+  card.innerHTML = `<button class="x" aria-label="Close" onclick="closeCard()">×</button>
+    <h3>${esc(p?.address ? title(p.address.replace(/\s+GLENDALE CA \d{5}$/, '')) : p ? 'Parcel ' + p.apn : 'No parcel here')}</h3>
+    <div class="muted">${p ? `APN ${esc(p.apn)}${facts ? ' · ' + esc(facts) : ''}` : 'This spot is a street or outside the parcel map.'}</div>
+    ${!d.inCity ? '<div class="note">Outside Glendale pilot coverage: hazard layers are not checked here.</div>' : ''}
+    ${c ? `<div class="k">COMBINED PLANNING INDEX</div><div style="margin-top:4px"><span class="score" style="background:${scoreColor}">${c.score} of ${c.max}</span>${c.parts.length ? c.parts.map(x => esc(x.label) + ' +' + x.points).join(', ') : 'No mapped layer here. That is not the same as no risk.'}</div>` : ''}
+    ${d.layers ? `<div class="k">MAPPED HAZARDS AT THIS POINT</div>${mapped.length ? mapped.map(l => `<div class="row"><span>${esc(l.name)}</span><b>${esc(l.label)}</b></div>`).join('') : '<div class="muted">None of the seven layers maps a hazard here.</div>'}` : ''}
+    ${p?.notes?.length ? `<div class="k">WHAT THE BUILD YEAR MEANS</div>${p.notes.map(n => `<div class="note">${esc(n)}</div>`).join('')}` : ''}
+    ${rec ? `<div class="k">CITY RECORDS FOR THIS PARCEL</div><div>${rec.totals.permits} permits · ${rec.totals.inspections} inspections${rec.totals.codeCases ? ` · ${rec.totals.codeCases} code cases` : ''}</div>
+      ${rec.recent.slice(0, 3).map(r => `<div class="row"><span>${esc(r.type.length > 70 ? r.type.slice(0, 68) + '…' : r.type)}${r.description ? `<br><span class="muted">${esc(r.description.length > 90 ? r.description.slice(0, 88) + '…' : r.description)}</span>` : ''}</span><span class="muted" style="white-space:nowrap">${esc(r.status || '')}<br>${esc(r.date || '')}</span></div>`).join('')}
+      <a href="${esc(rec.searchUrl)}" target="_blank" rel="noopener">Open in Glendale Permits ↗</a>` : ''}
+    <div class="muted" style="margin-top:10px;font-size:11px">Parcel: ${esc(p?.source || 'LA County Assessor')}. Records: City of Glendale public permit search. Hazards: CAL FIRE, FEMA, CGS, DWR planning maps. Planning information, not an official determination.</div>`;
+}
+map.on('click', e => inspect(e.lngLat));
+map.on('load', () => setTimeout(() => { document.getElementById('hint').style.opacity = 0; }, 6000));
+
 select.onchange = () => show(select.value);
 document.getElementById('reset').onclick = () => map.flyTo({ ...view, duration: 1500 });
 let spinning = false;
@@ -125,6 +181,7 @@ function orbit() { if (!spinning) return; map.easeTo({ bearing: map.getBearing()
 map.on('moveend', orbit);
 spinBtn.onclick = () => { spinning = !spinning; spinBtn.setAttribute('aria-pressed', spinning); spinBtn.textContent = spinning ? 'Stop' : 'Orbit'; orbit(); };
 map.on('mousedown', () => { if (spinning) spinBtn.click(); });
+map.getCanvas().style.cursor = 'pointer';
 map.on('touchstart', () => { if (spinning) spinBtn.click(); });
 </script>
 </body>

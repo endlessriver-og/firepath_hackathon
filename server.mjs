@@ -3,6 +3,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { resolve, extname, sep } from 'node:path';
 import { createApi, fetchNwsAlerts } from './server/api.mjs';
+import { createParcels } from './server/parcels.mjs';
 import { openStore } from './server/store.mjs';
 import { createGeocoder } from './server/geocode.mjs';
 import { createCityRecords } from './server/city-records.mjs';
@@ -40,7 +41,7 @@ function combinedIndex(lat, lon) {
   return { score: inCell ? best[2] : 0, max: combined.max, parts: inCell ? best[3].split(',').map(code => ({ label: combined.labels[code], points: combined.weights[code] })) : [] };
 }
 const hazardHits = new Map();
-const api = createApi({ store: openStore(process.env.FIREPATH_DATA || resolve(root, 'data/firepath-dev.json')), lookupHazards: lookup, fetchAlerts: fetchNwsAlerts, geocoder: createGeocoder(), combinedIndex, cityRecords: createCityRecords(), permitCatalog: JSON.parse(readFileSync(resolve(root, 'src/glendale-permits.json'), 'utf8')), demoMailbox: process.env.FIREPATH_DEMO_MAILBOX !== '0' });
+const api = createApi({ store: openStore(process.env.FIREPATH_DATA || resolve(root, 'data/firepath-dev.json')), lookupHazards: lookup, fetchAlerts: fetchNwsAlerts, geocoder: createGeocoder(), combinedIndex, cityRecords: createCityRecords(), parcelAt: createParcels(), permitCatalog: JSON.parse(readFileSync(resolve(root, 'src/glendale-permits.json'), 'utf8')), demoMailbox: process.env.FIREPATH_DEMO_MAILBOX !== '0' });
 // The Expo dev server (port 8081) calls this API cross-origin with a bearer token; no cookies are used.
 const devOrigin = /^http:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+):8081$/;
 
