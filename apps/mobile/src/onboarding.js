@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { api, saveSession } from './api';
 import { summarizePlace } from './preparedness';
+import { businessKinds, hazmatKinds } from './readiness';
 import MapPanel from './MapPanel';
 import { Button, Caption, Card, CityDataCallout, ErrorText, Field, Link, Muted, Section, Segment, Step, Tag, Title, Toggle, color, s } from './ui';
 
 export function Auth({ onSignedIn }) {
   const [mode, setMode] = useState('signup');
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', type: 'resident' });
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const set = patch => setForm(current => ({ ...current, ...patch }));
   async function submit() {
@@ -21,10 +22,11 @@ export function Auth({ onSignedIn }) {
   return <>
     <Text style={{ fontSize: 15, fontWeight: '900', letterSpacing: 2, color: color.green }}>FIREPATH</Text>
     <Text style={{ fontSize: 28, lineHeight: 34, fontWeight: '800', color: color.ink, marginTop: 16, marginBottom: 10 }}>Know what's mapped where you live, and what to do about it.</Text>
-    <Muted>Register your Glendale home to get a readiness plan, live weather alerts and help with permits.</Muted>
+    <Muted>Register your Glendale home or business to get a readiness plan, a hazard map, live weather alerts and help with permits.</Muted>
     <View style={[s.segment, { marginTop: 22 }]}>{[['signup', 'Create account'], ['login', 'Sign in']].map(([key, label]) =>
       <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: mode === key }} onPress={() => { setMode(key); setError(''); }} style={[s.segmentItem, mode === key && s.segmentOn]}><Text style={[s.segmentText, mode === key && { color: color.ink }]}>{label}</Text></Pressable>)}</View>
-    {mode === 'signup' && <Field label="Your name" value={form.name} onChangeText={name => set({ name })} placeholder="First and last name" autoComplete="name" maxLength={80} />}
+    {mode === 'signup' && <Segment label="I'm setting up" value={form.type} options={[['resident', 'My home'], ['business', 'A business']]} onChange={type => set({ type })} />}
+    {mode === 'signup' && <Field label={form.type === 'business' ? 'Your name (key contact)' : 'Your name'} value={form.name} onChangeText={name => set({ name })} placeholder="First and last name" autoComplete="name" maxLength={80} />}
     <Field label="Email" value={form.email} onChangeText={email => set({ email })} placeholder="you@example.com" autoCapitalize="none" autoComplete="email" keyboardType="email-address" maxLength={200} />
     <Field label="Password" hint={mode === 'signup' ? 'At least 8 characters.' : null} value={form.password} onChangeText={password => set({ password })} secureTextEntry autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} onSubmitEditing={submit} maxLength={200} />
     <ErrorText>{error}</ErrorText>
@@ -82,7 +84,7 @@ export function AddressPanel({ me, onChange, onDone, onboarding }) {
 
   return <>
     {onboarding && <Step n={2} of={3} label="Your address" />}
-    {onboarding && <Title>Where is home?</Title>}
+    {onboarding && <Title>{me.user.type === 'business' ? 'Where is the business?' : 'Where is home?'}</Title>}
     {editing ? <>
       <Muted>We check your address against seven state and federal hazard maps.</Muted>
       <Field label="Glendale street address" hint="Sent to the City of Glendale's address lookup (geocoder) to find the map point." value={address} onChangeText={setAddress} placeholder="e.g., 1613 Glencoe Way" autoComplete="street-address" onSubmitEditing={lookup} maxLength={200} />
@@ -99,8 +101,8 @@ export function AddressPanel({ me, onChange, onDone, onboarding }) {
       </Card>
       <MapPanel style={{ height: 180, borderRadius: 17, marginTop: 12 }} point={{ latitude: a.lat, longitude: a.lon }} title="Your registered address" />
       {a.verified !== 'mail' && <Card>
-        <Tag tone="gold">Verify you live here</Tag>
-        <Muted>Matching an address shows it exists, not that you live there. We mail a 6-digit code to the address; entering it verifies your household. Verification does not prove ownership.</Muted>
+        <Tag tone="gold">{me.user.type === 'business' ? 'Verify this is your business' : 'Verify you live here'}</Tag>
+        <Muted>{me.user.type === 'business' ? 'Matching an address shows it exists, not that you operate there. We mail a 6-digit code to the business address; entering it verifies the location. Verification does not prove ownership.' : 'Matching an address shows it exists, not that you live there. We mail a 6-digit code to the address; entering it verifies your household. Verification does not prove ownership.'}</Muted>
         {!a.codePending && !mailbox && <Button kind="outline" busy={busy === 'mail'} onPress={mail}>Mail me a code</Button>}
         {mailbox && <View style={{ backgroundColor: color.goldBg, borderRadius: 12, padding: 12, marginTop: 14 }}><Text style={{ color: color.gold, fontWeight: '800', fontSize: 11, letterSpacing: 1 }}>DEMO MAILBOX</Text><Text style={{ color: color.ink, fontSize: 24, fontWeight: '800', letterSpacing: 4, marginVertical: 4 }}>{mailbox.code}</Text><Text style={{ color: color.gold, fontSize: 12 }}>{mailbox.note}</Text></View>}
         {(a.codePending || mailbox) && <>
@@ -153,6 +155,73 @@ export function HouseholdForm({ me, onSaved, onboarding }) {
     <Field label="Out-of-area contact" value={form.contact} onChangeText={contact => set({ contact })} placeholder="e.g., Aunt Rosa in Fresno" maxLength={80} />
     <Toggle label="Share with responders when the City connects" detail="Today FirePath is not connected to 911, dispatch or the City. Turning this on records your consent for a future connection; you can turn it off any time." value={form.shareWithResponders} onChange={shareWithResponders => set({ shareWithResponders })} />
     <CityDataCallout id="cad" />
+    <ErrorText>{error}</ErrorText>
+    <Button busy={busy} onPress={save}>{onboarding ? 'Finish setup' : 'Save details'}</Button>
+    {saved && !onboarding && <Caption>Saved.</Caption>}
+  </>;
+}
+
+
+export function BusinessProfile({ me, onSaved, onboarding }) {
+  const b = me.business || {};
+  const [form, setForm] = useState({ name: b.name || '', kind: b.kind || 'retail', employees: String(b.employees || ''), visitors: String(b.visitors || ''), floors: String(b.floors || ''), hours: b.hours || '', needsHelp: String(b.needsHelp || ''), sprinklers: b.sprinklers || 'unknown' });
+  const [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const set = patch => setForm(current => ({ ...current, ...patch }));
+  const digits = key => value => set({ [key]: value.replace(/\D/g, '') });
+  async function save() {
+    if (!form.name.trim()) return setError('Enter the business name.');
+    setBusy(true); setError('');
+    try { onSaved(await api('PUT', '/api/me/business', { ...b, ...form })); } catch (e) { setError(e.message); } finally { setBusy(false); }
+  }
+  return <>
+    {onboarding && <Step n={1} of={3} label="Your business" />}
+    {onboarding ? <Title>Tell us about the business</Title> : <Section>Business profile</Section>}
+    <Muted>Occupancy and building facts shape your plan and what responders would see first.</Muted>
+    <Field label="Business name" value={form.name} onChangeText={name => set({ name })} placeholder="e.g., Glencoe Bakery" maxLength={100} />
+    <Text style={[s.fieldLabel, { marginTop: 16 }]}>Type of business</Text>
+    <View style={[s.chips, { marginTop: 0 }]}>{businessKinds.map(([key, label]) => <Pressable key={key} accessibilityRole="radio" accessibilityState={{ selected: form.kind === key }} onPress={() => set({ kind: key })} style={[s.chip, form.kind === key && s.chipOn]}><Text style={[s.chipText, form.kind === key && { color: '#FFF' }]}>{label}</Text></Pressable>)}</View>
+    <View style={{ flexDirection: 'row', gap: 8 }}>
+      <Field style={{ flex: 1 }} label="Staff on a typical day" value={form.employees} onChangeText={digits('employees')} keyboardType="number-pad" placeholder="12" maxLength={4} />
+      <Field style={{ flex: 1 }} label="Peak visitors" value={form.visitors} onChangeText={digits('visitors')} keyboardType="number-pad" placeholder="40" maxLength={5} />
+    </View>
+    <View style={{ flexDirection: 'row', gap: 8 }}>
+      <Field style={{ flex: 1 }} label="Floors" value={form.floors} onChangeText={digits('floors')} keyboardType="number-pad" placeholder="1" maxLength={3} />
+      <Field style={{ flex: 1 }} label="May need help leaving" value={form.needsHelp} onChangeText={digits('needsHelp')} keyboardType="number-pad" placeholder="0" maxLength={4} />
+    </View>
+    <Field label="Hours" value={form.hours} onChangeText={hours => set({ hours })} placeholder="e.g., 6am-6pm daily" maxLength={80} />
+    <Segment label="Fire sprinklers" value={form.sprinklers} options={[['yes', 'Yes'], ['no', 'No'], ['unknown', 'Not sure']]} onChange={sprinklers => set({ sprinklers })} />
+    <ErrorText>{error}</ErrorText>
+    <Button busy={busy} onPress={save}>{onboarding ? 'Continue' : 'Save profile'}</Button>
+  </>;
+}
+
+export function BusinessDetails({ me, onSaved, onboarding }) {
+  const b = me.business || {};
+  const [form, setForm] = useState({ hazmat: b.hazmat || [], hazmatNote: b.hazmatNote || '', contactName: b.contactName || me.user.name, contactPhone: b.contactPhone || '', assembly: b.assembly || '', access: b.access || '', utilities: b.utilities || '', shareWithResponders: Boolean(b.shareWithResponders) });
+  const [busy, setBusy] = useState(false), [error, setError] = useState(''), [saved, setSaved] = useState(false);
+  const set = patch => { setSaved(false); setForm(current => ({ ...current, ...patch })); };
+  const toggleHazmat = key => set({ hazmat: form.hazmat.includes(key) ? form.hazmat.filter(h => h !== key) : [...form.hazmat, key] });
+  async function save() {
+    setBusy(true); setError('');
+    try { onSaved(await api('PUT', '/api/me/business', { ...b, ...form })); setSaved(true); } catch (e) { setError(e.message); } finally { setBusy(false); }
+  }
+  return <>
+    {onboarding && <Step n={3} of={3} label="Details for emergencies" />}
+    {onboarding ? <Title>What should responders know?</Title> : <Section>Emergency details</Section>}
+    <Muted>Short, factual notes. Never alarm or lock codes.</Muted>
+    <Text style={[s.fieldLabel, { marginTop: 20 }]}>Hazardous materials on site</Text>
+    <Caption style={{ marginTop: 0 }}>Select any you store or use. This drives your hazardous-materials steps.</Caption>
+    {hazmatKinds.map(([key, label]) => <Pressable key={key} accessibilityRole="checkbox" accessibilityState={{ checked: form.hazmat.includes(key) }} onPress={() => toggleHazmat(key)} style={[s.toggleRow, { marginTop: 8 }]}>
+      <Text style={{ width: 24, fontWeight: '900', color: color.green }}>{form.hazmat.includes(key) ? '☑' : '☐'}</Text><Text style={{ flex: 1, color: color.ink }}>{label}</Text>
+    </Pressable>)}
+    {form.hazmat.length > 0 && <Field label="Where they are stored" value={form.hazmatNote} onChangeText={hazmatNote => set({ hazmatNote })} placeholder="e.g., propane cage behind the kitchen" maxLength={140} />}
+    <Field label="Key emergency contact" value={form.contactName} onChangeText={contactName => set({ contactName })} placeholder="Name" maxLength={80} />
+    <Field label="Contact phone" value={form.contactPhone} onChangeText={contactPhone => set({ contactPhone })} placeholder="818-555-0100" keyboardType="phone-pad" maxLength={30} />
+    <Field label="Staff assembly point" value={form.assembly} onChangeText={assembly => set({ assembly })} placeholder="e.g., parking lot, northeast corner" maxLength={100} />
+    <Field label="Access note" hint="General access only. Never lock or alarm codes." value={form.access} onChangeText={access => set({ access })} placeholder="e.g., rear door off the alley" maxLength={140} />
+    <Field label="Utility shutoffs" value={form.utilities} onChangeText={utilities => set({ utilities })} placeholder="e.g., gas meter at rear wall" maxLength={120} />
+    <Toggle label="Share with responders when the City connects" detail="Today FirePath is not connected to 911, dispatch or the City. This records consent for a future connection." value={form.shareWithResponders} onChange={shareWithResponders => set({ shareWithResponders })} />
+    <CityDataCallout id="fireInspections" />
     <ErrorText>{error}</ErrorText>
     <Button busy={busy} onPress={save}>{onboarding ? 'Finish setup' : 'Save details'}</Button>
     {saved && !onboarding && <Caption>Saved.</Caption>}

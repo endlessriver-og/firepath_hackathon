@@ -21,6 +21,8 @@ Run `npm run map:build` once, after the GIS snapshot is installed, to build the 
 9. **Permits.** Pick a project to get the likely permit, notes for this address, the usual requirements, a copyable summary and a link to the Glendale Permits portal.
 10. **Profile.** Edit the address and household, and preview exactly what a responder would see.
 
+**Business version.** At sign-up choose *A business*. Onboarding asks for the business name and type, staff and visitor counts, floors, hours and sprinklers. Then comes the address, same as residents. Then hazardous materials, key contact, staff assembly point, access and utilities. Businesses get their own steps (contact tree, continuity plan, kitchen hood service, Hazardous Materials Business Plan check with Glendale Fire), their own badges and business permits. The responder brief leads with occupancy and hazardous materials.
+
 The blue **Needs City data** callouts name the dataset we lack, an illustrative example record and the capability it would unlock. Their text lives in `src/city-data.js`.
 
 **Browser workspace and responder exercise:**

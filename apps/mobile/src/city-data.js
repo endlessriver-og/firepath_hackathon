@@ -8,5 +8,6 @@ export const cityData = {
   permitHistory: { dataset: 'building permit history', example: '2019 re-roof, Class A material, final inspection passed', unlocks: 'skip steps you have already done and tailor home-hardening advice to your actual house' },
   brushClearance: { dataset: 'brush clearance inspection results', example: 'inspection passed May 12; next due May 2027', unlocks: 'show your inspection status and remind you before the deadline' },
   cad: { dataset: 'dispatch (CAD) test connection', example: 'a call at your address shows your consented note to the responding unit', unlocks: 'get your pets, access and assistance notes to responders en route' },
+  fireInspections: { dataset: 'fire inspection and hazardous-materials (CUPA) records', example: 'annual fire inspection passed March 2026; HMBP on file for 2 propane tanks', unlocks: 'pre-fill your compliance status and give responders verified facts instead of self-reported ones' },
   closures: { dataset: 'live road closures and evacuation routes', example: 'Glencoe Way closed at Honolulu Ave', unlocks: 'suggest a way out that avoids closed roads, instead of only meeting places' },
 };

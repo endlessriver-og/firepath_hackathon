@@ -130,3 +130,25 @@ test('alerts come only from the injected official source and fail closed', async
   assert.equal(res.unavailable, true);
   assert.equal(res.alerts.length, 0);
 });
+
+test('business accounts get their own profile, steps, badges, permits and responder brief', async () => {
+  const { call } = setup();
+  const res = await call('POST', '/api/account/signup', { email: 'owner@example.test', password: 'correct-horse', name: 'Sam Owner', type: 'business' });
+  const token = res.body.token;
+  assert.equal(res.body.user.type, 'business');
+  await call('POST', '/api/me/address', { address: '1613 Glencoe Way' }, token);
+  assert.equal((await call('PUT', '/api/me/household', { housing: 'own' }, token)).status, 200, 'household route stays harmless');
+  const me = (await call('PUT', '/api/me/business', { name: 'Glencoe Bakery', kind: 'restaurant', employees: 12, visitors: 40, hazmat: ['propane', 'rocket-fuel'], sprinklers: 'yes', contactName: 'Sam', contactPhone: '818-555-0100', shareWithResponders: true }, token)).body;
+  assert.deepEqual(me.business.hazmat, ['propane']);
+  const ids = me.recommendations.map(r => r.id);
+  for (const id of ['contacts', 'continuity', 'hood', 'hmbp', 'zone0', 'ground']) assert.ok(ids.includes(id), id);
+  assert.ok(me.readiness.badges.some(b => b.id === 'hazmat'));
+  assert.equal((await call('PUT', '/api/me/tasks', { id: 'hmbp', done: true }, token)).body.readiness.badges.find(b => b.id === 'hazmat').earned, true);
+  const brief = (await call('GET', '/api/me/responder', null, token)).body.brief;
+  assert.match(brief, /12 staff, up to 40 visitors/);
+  assert.match(brief, /Propane/);
+  const guide = (await call('POST', '/api/me/permits/guide', { type: 'hmbp' }, token)).body;
+  assert.match(guide.summary, /Business: Glencoe Bakery/);
+  const resident = await signup(call, 'r@example.test');
+  assert.equal((await call('PUT', '/api/me/business', { name: 'x' }, resident)).status, 400);
+});

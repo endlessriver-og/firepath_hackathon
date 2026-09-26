@@ -5,8 +5,8 @@ import * as Notifications from 'expo-notifications';
 import { api, apiBase } from './api';
 import MapFrame from './MapFrame';
 import { describeHazard, hazardNames, nextSteps, summarizePlace } from './preparedness';
-import { PERMIT_PORTAL, categories, hazardSeverity, permitTypes, queryRecommendations } from './readiness';
-import { AddressPanel, HouseholdForm } from './onboarding';
+import { PERMIT_PORTAL, businessPermitTypes, categories, hazardSeverity, permitTypes, queryRecommendations } from './readiness';
+import { AddressPanel, BusinessDetails, BusinessProfile, HouseholdForm } from './onboarding';
 import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, Section, Tag, Title, color, s } from './ui';
 
 const EVERBRIDGE = 'https://www.glendaleca.gov/Everbridge';
@@ -40,7 +40,7 @@ export function Home({ me, onChange, go }) {
   const place = me.hazards ? summarizePlace(me.hazards) : null;
   const next = nextSteps(me.recommendations, me.done);
   return <>
-    <Text style={s.muted}>Hi {me.user.name.split(' ')[0]}</Text>
+    <Text style={s.muted}>{me.user.type === 'business' ? me.business?.name || 'Your business' : `Hi ${me.user.name.split(' ')[0]}`}</Text>
     <Card style={{ marginTop: 8, backgroundColor: color.green, borderColor: color.green }}>
       <Text style={{ color: '#CFE3DA', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>READINESS</Text>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 10 }}><Text style={{ color: '#FFF', fontSize: 44, fontWeight: '900' }}>{r.score}</Text><Text style={{ color: '#FFF', fontSize: 18, fontWeight: '800' }}>{r.level}</Text></View>
@@ -52,12 +52,12 @@ export function Home({ me, onChange, go }) {
         <Text style={{ fontSize: 12, fontWeight: '700', color: b.earned ? color.gold : '#9AA8A2' }}>{b.earned ? '★ ' : '☆ '}{b.title}</Text>
       </View>)}</View>
 
-    <Section>What the maps show at home</Section>
-    {!me.address ? <Card><Muted>Register your address to see which hazard maps include your home.</Muted><Link onPress={() => go('Profile')}>Add your address →</Link></Card> : <>
+    <Section>{me.user.type === 'business' ? 'What the maps show at your site' : 'What the maps show at home'}</Section>
+    {!me.address ? <Card><Muted>Register your address to see which hazard maps include it.</Muted><Link onPress={() => go('Profile')}>Add your address →</Link></Card> : <>
       <Caption style={{ marginTop: 0 }}>{me.address.text} · {me.address.verified === 'mail' ? 'verified' : 'not yet verified'}</Caption>
       {place.mapped.length ? place.mapped.map(item => <View key={item.key} style={{ flexDirection: 'row', gap: 12, backgroundColor: color.warmBg, borderWidth: 1, borderColor: color.warmLine, borderRadius: 14, padding: 14, marginTop: 8 }}>
         <Text style={{ color: color.warm }}>●</Text><View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{item.name} · {hazardSeverity(item.key, me.hazards[item.key]).label}</Text><Muted>{item.label}</Muted><Link style={{ marginTop: 6 }} onPress={() => go('Map', [item.key])}>See zones on the map →</Link></View></View>)
-        : <Muted>No mapped hazard zone includes your home. That is not the same as no risk.</Muted>}
+        : <Muted>No mapped hazard zone includes this address. That is not the same as no risk.</Muted>}
       <Caption>Planning maps, not live incidents. Not mapped here: {place.outside.map(i => i.name.toLowerCase()).join(', ') || 'none'}.</Caption>
     </>}
 
@@ -74,7 +74,7 @@ export function Actions({ me, onChange }) {
   const complete = me.recommendations.filter(r => me.done[r.id]).length;
   return <>
     <Title>Recommendations</Title>
-    <Muted>Built from your address, household and pets. {complete} of {me.recommendations.length} done.</Muted>
+    <Muted>Built from your address and profile. {complete} of {me.recommendations.length} done.</Muted>
     <ScoreBar value={(complete / me.recommendations.length) * 100} />
     <Field label="Search" value={q} onChangeText={setQ} placeholder="Try “pets”, “roof”, “water”" autoCapitalize="none" />
     <Chips value={category} options={categories} onChange={setCategory} />
@@ -147,7 +147,7 @@ export function Permits({ me, top }) {
   return <>
     <Title>Permits</Title>
     <Muted>Pick a project. We'll list what the City usually asks for, flag anything your address's hazard maps change, and prepare a summary to paste into the City's portal.</Muted>
-    {permitTypes.map(t => <Pressable key={t.id} accessibilityRole="radio" accessibilityState={{ selected: type === t.id }} onPress={() => setType(t.id)} style={[s.card, type === t.id && { borderColor: color.green, borderWidth: 2 }]}>
+    {(me.user.type === 'business' ? businessPermitTypes : permitTypes).map(t => <Pressable key={t.id} accessibilityRole="radio" accessibilityState={{ selected: type === t.id }} onPress={() => setType(t.id)} style={[s.card, type === t.id && { borderColor: color.green, borderWidth: 2 }]}>
       <Text style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{t.title}</Text><Caption style={{ marginTop: 4 }}>{t.permit}</Caption>
     </Pressable>)}
     {type && <>
@@ -166,7 +166,7 @@ export function Profile({ me, onChange, onSignOut }) {
     <Muted>{me.user.email}</Muted>
     <Section>Address</Section>
     <AddressPanel me={me} onChange={onChange} />
-    <HouseholdForm me={me} onSaved={onChange} />
+    {me.user.type === 'business' ? <><BusinessProfile me={me} onSaved={onChange} /><BusinessDetails me={me} onSaved={onChange} /></> : <HouseholdForm me={me} onSaved={onChange} />}
     <Section>What a responder would see</Section>
     <Muted>{brief?.shareWithResponders ? 'You have consented to sharing this once a City connection exists.' : 'Sharing is off. Nothing is shared today either way.'}</Muted>
     {brief && <Card><Text selectable style={{ color: color.ink, fontFamily: 'Courier', fontSize: 12, lineHeight: 18 }}>{brief.brief}</Text></Card>}

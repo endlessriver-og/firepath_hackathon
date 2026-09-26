@@ -1,7 +1,7 @@
 // Resident account API for the FirePath prototype. Dependencies are injected so tests can run
 // without the GIS package or the network.
 import { randomUUID } from 'node:crypto';
-import { buildRecommendations, permitGuide, permitTypes, queryRecommendations, readiness } from '../src/readiness.js';
+import { businessKinds, businessPermitTypes, hazmatKinds, permitGuide, permitTypes, queryRecommendations, readiness, recommendationsFor } from '../src/readiness.js';
 import { buildResponderSummary } from '../src/responder.js';
 import { checkPassword, hashPassword, newCode, newToken, tokenKey } from './auth.mjs';
 
@@ -39,13 +39,14 @@ export function createApi({ store, lookupHazards, fetchAlerts, demoMailbox = tru
   }
 
   function view(user) {
-    const household = user.household || {};
-    const recommendations = buildRecommendations(user, household, user.hazards);
+    const household = (user.type === 'business' ? user.business : user.household) || {};
+    const recommendations = recommendationsFor(user, household, user.hazards);
     return {
       user: { id: user.id, email: user.email, name: user.name, type: user.type, createdAt: user.createdAt },
       address: user.address ? { text: user.address, lat: user.lat, lon: user.lon, verified: user.addressVerified, checkedAt: user.hazardsCheckedAt, codePending: Boolean(user.verification && user.addressVerified !== 'mail') } : null,
       hazards: user.hazards || null,
-      household,
+      household: user.type === 'business' ? {} : household,
+      business: user.type === 'business' ? household : null,
       done: user.done || {},
       recommendations,
       readiness: readiness(recommendations, user.done, user, household),
@@ -60,7 +61,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, demoMailbox = tru
       if (typeof body.password !== 'string' || body.password.length < 8 || body.password.length > 200) fail(400, 'Use a password of at least 8 characters.');
       if (!name) fail(400, 'Enter your name.');
       if (Object.values(data.users).some(u => u.email === email)) fail(409, 'An account with that email already exists. Sign in instead.');
-      const user = { id: randomUUID(), email, name, type: 'resident', passwordHash: hashPassword(body.password), createdAt: new Date(now()).toISOString(), household: {}, done: {} };
+      const user = { id: randomUUID(), email, name, type: body.type === 'business' ? 'business' : 'resident', passwordHash: hashPassword(body.password), createdAt: new Date(now()).toISOString(), household: {}, business: {}, done: {} };
       data.users[user.id] = user;
       const token = startSession(user);
       store.save();
@@ -124,6 +125,33 @@ export function createApi({ store, lookupHazards, fetchAlerts, demoMailbox = tru
       return { body: view(user) };
     },
 
+    'PUT /api/me/business': async (req, body) => {
+      const user = session(req);
+      if (user.type !== 'business') fail(400, 'This is a resident account.');
+      const count = (value, max) => Math.min(Math.max(Number.parseInt(value, 10) || 0, 0), max) || undefined;
+      user.business = {
+        name: text(body.name, 100),
+        kind: oneOf(body.kind, businessKinds.map(([k]) => k)),
+        employees: count(body.employees, 5000),
+        visitors: count(body.visitors, 20000),
+        floors: count(body.floors, 100),
+        hours: text(body.hours, 80),
+        needsHelp: count(body.needsHelp, 5000),
+        hazmat: Array.isArray(body.hazmat) ? body.hazmat.filter(h => hazmatKinds.some(([k]) => k === h)) : [],
+        hazmatNote: text(body.hazmatNote, 140),
+        sprinklers: oneOf(body.sprinklers, ['yes', 'no', 'unknown']) || 'unknown',
+        contactName: text(body.contactName, 80),
+        contactPhone: text(body.contactPhone, 30),
+        assembly: text(body.assembly, 100),
+        access: text(body.access, 140),
+        utilities: text(body.utilities, 120),
+        shareWithResponders: body.shareWithResponders === true,
+        updatedAt: new Date(now()).toISOString(),
+      };
+      store.save();
+      return { body: view(user) };
+    },
+
     'POST /api/me/address': async (req, body) => {
       const user = session(req);
       const address = text(body.address, 200);
@@ -177,7 +205,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, demoMailbox = tru
     'PUT /api/me/tasks': async (req, body) => {
       const user = session(req);
       const id = text(body.id, 40);
-      if (!buildRecommendations(user, user.household, user.hazards).some(r => r.id === id)) fail(404, 'Unknown step.');
+      if (!recommendationsFor(user, user.type === 'business' ? user.business : user.household, user.hazards).some(r => r.id === id)) fail(404, 'Unknown step.');
       user.done = { ...user.done, [id]: body.done === true };
       store.save();
       return { body: view(user) };
@@ -185,7 +213,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, demoMailbox = tru
 
     'GET /api/me/recommendations': async (req, body, url) => {
       const user = session(req);
-      const all = buildRecommendations(user, user.household, user.hazards);
+      const all = recommendationsFor(user, user.type === 'business' ? user.business : user.household, user.hazards);
       const results = queryRecommendations(all, { q: url.searchParams.get('q') || '', category: url.searchParams.get('category') || 'all', status: url.searchParams.get('status') || 'all', done: user.done || {} });
       return { body: { results, total: all.length } };
     },
@@ -202,17 +230,36 @@ export function createApi({ store, lookupHazards, fetchAlerts, demoMailbox = tru
       return { body: value };
     },
 
-    'GET /api/permits': async () => ({ body: { types: permitTypes.map(({ id, title, permit }) => ({ id, title, permit })) } }),
+    'GET /api/permits': async (req, body, url) => ({ body: { types: (url.searchParams.get('type') === 'business' ? businessPermitTypes : permitTypes).map(({ id, title, permit }) => ({ id, title, permit })) } }),
 
     'POST /api/me/permits/guide': async (req, body) => {
       const user = session(req);
-      const guide = permitGuide(text(body.type, 20), { profile: user, household: user.household, hazards: user.hazards, description: text(body.description, 500) });
+      const guide = permitGuide(text(body.type, 20), { profile: user, household: user.type === 'business' ? user.business : user.household, hazards: user.hazards, description: text(body.description, 500) });
       if (!guide) fail(404, 'Unknown project type.');
       return { body: guide };
     },
 
     'GET /api/me/responder': async req => {
       const user = session(req);
+      if (user.type === 'business') {
+        const b = user.business || {};
+        const lines = ['FIREPATH DRAFT - NOT CONNECTED TO DISPATCH OR CAD',
+          `Address status: ${user.addressVerified === 'mail' ? 'verified by mailed code (not proof of occupancy rights)' : user.addressVerified === 'matched' ? 'matched to a City address point; not verified' : 'no address'}`,
+          `Business (self-reported): ${b.name || 'not set'}${b.kind ? ` · ${businessKinds.find(([k]) => k === b.kind)[1]}` : ''}`,
+          `Location: ${user.address || 'not set'}`,
+          b.employees || b.visitors ? `Typical occupancy (self-reported): ${b.employees || 0} staff, up to ${b.visitors || 0} visitors${b.hours ? `, ${b.hours}` : ''}` : null,
+          b.floors ? `Floors: ${b.floors}` : null,
+          b.needsHelp ? `People who may need help leaving (typical): ${b.needsHelp}` : null,
+          `Sprinklers (self-reported): ${b.sprinklers || 'unknown'}`,
+          (b.hazmat || []).length ? `Hazardous materials on site (self-reported): ${b.hazmat.map(h => hazmatKinds.find(([k]) => k === h)[1]).join('; ')}${b.hazmatNote ? ` (${b.hazmatNote})` : ''}` : 'Hazardous materials: none reported (not verified)',
+          b.contactName ? `Key contact: ${b.contactName}${b.contactPhone ? `, ${b.contactPhone}` : ''}` : null,
+          b.assembly ? `Staff assembly point: ${b.assembly}` : null,
+          b.access ? `Access note: ${b.access}` : null,
+          b.utilities ? `Utility shutoffs: ${b.utilities}` : null,
+          'City fire inspection and CUPA records: not connected',
+        ].filter(Boolean);
+        return { body: { brief: lines.join('\n'), shareWithResponders: Boolean(b.shareWithResponders), connected: false } };
+      }
       const h = user.household || {};
       const verification = user.addressVerified === 'mail' ? 'verified by mailed code (not proof of ownership)' : user.addressVerified === 'matched' ? 'matched to a City address point; not verified' : 'no address';
       const brief = buildResponderSummary({ address: user.address }, {

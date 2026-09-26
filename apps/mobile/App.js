@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { api, loadSession, saveSession } from './src/api';
-import { AboutYou, AddressPanel, Auth, HouseholdForm } from './src/onboarding';
+import { AboutYou, AddressPanel, Auth, BusinessDetails, BusinessProfile, HouseholdForm } from './src/onboarding';
 import { Actions, Alerts, Home, MapTab, Permits, Profile } from './src/tabs';
 import { Button, ErrorText, color } from './src/ui';
 
@@ -45,12 +45,13 @@ export default function App() {
   if (error) return <Shell><ErrorText>{error}</ErrorText><Button onPress={load}>Try again</Button></Shell>;
   if (me === undefined) return <Shell><ActivityIndicator color={color.green} style={{ marginTop: 80 }} /></Shell>;
   if (me === null) return <Shell><Auth onSignedIn={(result, isNew) => { setMe(result); if (isNew) goStep(1); }} /></Shell>;
-  if (step === 1) return <Shell><AboutYou me={me} onSaved={next => { setMe(next); goStep(2); }} /></Shell>;
+  const business = me.user.type === 'business';
+  if (step === 1) return <Shell>{business ? <BusinessProfile me={me} onSaved={next => { setMe(next); goStep(2); }} onboarding /> : <AboutYou me={me} onSaved={next => { setMe(next); goStep(2); }} />}</Shell>;
   if (step === 2) return <Shell><AddressPanel me={me} onChange={setMe} onDone={() => goStep(3)} onboarding /></Shell>;
-  if (step === 3) return <Shell><HouseholdForm me={me} onSaved={next => { setMe(next); finish(); }} onboarding /></Shell>;
+  if (step === 3) return <Shell>{business ? <BusinessDetails me={me} onSaved={next => { setMe(next); finish(); }} onboarding /> : <HouseholdForm me={me} onSaved={next => { setMe(next); finish(); }} onboarding />}</Shell>;
 
   return <SafeAreaView style={styles.safe}><StatusBar style="dark" />
-    <View style={styles.header}><Text style={styles.brand}>FIREPATH</Text><Text style={styles.pill}>GLENDALE PILOT · PROTOTYPE</Text></View>
+    <View style={styles.header}><Text style={styles.brand}>FIREPATH</Text><Text style={styles.pill}>{business ? 'BUSINESS · PROTOTYPE' : 'GLENDALE PILOT · PROTOTYPE'}</Text></View>
     <ScrollView key={tab} ref={scroller} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       {tab === 'Home' && <Home me={me} onChange={setMe} go={go} />}
       {tab === 'Map' && <MapTab me={me} layers={layers} setLayers={setLayers} top={top} />}
