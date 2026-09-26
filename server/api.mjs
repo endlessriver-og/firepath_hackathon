@@ -3,6 +3,7 @@
 import { randomUUID } from 'node:crypto';
 import { businessKinds, businessPermitTypes, hazmatKinds, permitGuide, permitTypes, queryRecommendations, readiness, recommendationsFor } from '../src/readiness.js';
 import { buildResponderSummary } from '../src/responder.js';
+import { buildPlaybook, drillEvents } from '../src/playbooks.js';
 import { checkPassword, hashPassword, newCode, newToken, tokenKey } from './auth.mjs';
 
 const SESSION_DAYS = 30, CODE_DAYS = 14, MAX_CODE_ATTEMPTS = 5;
@@ -19,6 +20,8 @@ function occupancy(h) {
   const help = (h.members || []).filter(m => m.needsHelp).length;
   return `${h.people} ${h.people === 1 ? 'person' : 'people'}: ${parts.join(', ')}${help ? `; ${help} may need help leaving` : ''}`;
 }
+
+const playbookFor = (user, event) => buildPlaybook(event, { type: user.type, household: user.household || {}, business: user.business || {}, hazards: user.hazards, done: user.done || {} });
 
 export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, demoMailbox = true, now = () => Date.now() }) {
   const { data } = store;
@@ -242,10 +245,18 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       const cached = alertCache.get(user.id);
       if (cached && cached.at > now() - 120_000) return { body: cached.value };
       let value;
-      try { value = { source: 'National Weather Service', checkedAt: new Date(now()).toISOString(), alerts: await fetchAlerts(user.lat, user.lon) }; }
+      try { value = { source: 'National Weather Service', checkedAt: new Date(now()).toISOString(), alerts: (await fetchAlerts(user.lat, user.lon)).map(a => ({ ...a, playbook: playbookFor(user, a.event) })) }; }
       catch { value = { source: 'National Weather Service', checkedAt: new Date(now()).toISOString(), alerts: [], unavailable: true }; }
       alertCache.set(user.id, { at: now(), value });
       return { body: value };
+    },
+
+    // Practice drill: the same playbook a real alert would get, for an event type the user picks.
+    'GET /api/me/playbook': async (req, body, url) => {
+      const user = session(req);
+      const event = url.searchParams.get('event');
+      if (!drillEvents.includes(event)) fail(400, 'Pick one of the drill types.');
+      return { body: { drill: true, ...playbookFor(user, event) } };
     },
 
     'GET /api/permits': async (req, body, url) => ({ body: { types: (url.searchParams.get('type') === 'business' ? businessPermitTypes : permitTypes).map(({ id, title, permit }) => ({ id, title, permit })) } }),

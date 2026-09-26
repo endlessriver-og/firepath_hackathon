@@ -6,6 +6,7 @@ import { api, apiBase } from './api';
 import MapFrame from './MapFrame';
 import { describeHazard, hazardNames, nextSteps, summarizePlace } from './preparedness';
 import { PERMIT_PORTAL, businessPermitTypes, categories, hazardSeverity, permitTypes, queryRecommendations } from './readiness';
+import { drillEvents } from './playbooks';
 import { AddressPanel, BusinessDetails, BusinessProfile, HouseholdForm } from './onboarding';
 import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, Section, Tag, Title, color, s } from './ui';
 
@@ -86,7 +87,43 @@ export function Actions({ me, onChange }) {
   </>;
 }
 
-export function Alerts({ me }) {
+// A playbook: grouped steps, each with the reason FirePath included it. Checks are local to this view.
+function Playbook({ playbook, drill }) {
+  const [checked, setChecked] = useState({});
+  return <View>
+    {playbook.mappedHere.length > 0 && <Caption style={{ marginTop: 0 }}>Mapped at your address: {playbook.mappedHere.join(', ')}</Caption>}
+    {playbook.groups.map(group => <View key={group.label} style={{ marginTop: 12 }}>
+      <Tag tone={group.label === 'Do now' ? 'warm' : undefined}>{group.label}</Tag>
+      {group.steps.map(step => { const key = `${group.label}:${step.text}`; const on = Boolean(checked[key]); return (
+        <Pressable key={key} accessibilityRole="checkbox" accessibilityState={{ checked: on }} onPress={() => setChecked(current => ({ ...current, [key]: !current[key] }))} style={{ flexDirection: 'row', gap: 10, paddingVertical: 8, borderTopWidth: 1, borderColor: color.line }}>
+          <Text style={{ width: 22, color: color.green, fontWeight: '900', fontSize: 16 }}>{on ? '☑' : '☐'}</Text>
+          <View style={{ flex: 1 }}><Text style={{ color: color.ink, lineHeight: 20, textDecorationLine: on ? 'line-through' : 'none' }}>{step.text}</Text><Text style={{ color: '#7A8A83', fontSize: 11, marginTop: 2 }}>{step.why}</Text></View>
+        </Pressable>); })}
+    </View>)}
+    {drill && <Caption>{Object.keys(checked).filter(k => checked[k]).length} of {playbook.groups.reduce((n, g) => n + g.steps.length, 0)} steps walked through</Caption>}
+  </View>;
+}
+
+function Drill({ me, onChange }) {
+  const [event, setEvent] = useState(null), [playbook, setPlaybook] = useState(null), [error, setError] = useState(''), [busy, setBusy] = useState(false);
+  const open = e => { setEvent(e); setPlaybook(null); setError(''); api('GET', `/api/me/playbook?event=${encodeURIComponent(e)}`).then(setPlaybook).catch(err => setError(err.message)); };
+  const finish = async () => { setBusy(true); try { if (!me.done.drill) onChange(await api('PUT', '/api/me/tasks', { id: 'drill', done: true })); setEvent(null); setPlaybook(null); } catch (err) { setError(err.message); } finally { setBusy(false); } };
+  return <>
+    <Section>Practice drill</Section>
+    <Muted>Pick an alert type to see the plan FirePath would build for {me.user.type === 'business' ? 'your business' : 'your household'} if it were real.{me.done.drill ? ' You have completed a drill.' : ' Finishing one earns points.'}</Muted>
+    <Chips value={event} options={drillEvents.map(e => [e, e.replace(' Warning', '').replace(' Alert', '')])} onChange={open} />
+    <ErrorText>{error}</ErrorText>
+    {event && !playbook && !error && <Muted style={{ marginTop: 10 }}>Building your plan…</Muted>}
+    {playbook && <Card style={{ borderColor: '#E3C98E', backgroundColor: '#FFFCF3' }}>
+      <Text style={{ alignSelf: 'flex-start', backgroundColor: color.goldBg, color: color.gold, fontWeight: '900', fontSize: 11, letterSpacing: 1, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>DRILL · NOT A REAL ALERT</Text>
+      <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>If a {event} covered your address</Text>
+      <Playbook playbook={playbook} drill />
+      <Button busy={busy} onPress={finish}>{me.done.drill ? 'Close drill' : 'Finish drill (+15)'}</Button>
+    </Card>}
+  </>;
+}
+
+export function Alerts({ me, onChange }) {
   const [feed, setFeed] = useState(null), [error, setError] = useState('');
   const load = () => { setError(''); setFeed(null); api('GET', '/api/me/alerts').then(setFeed).catch(e => setError(e.message)); };
   useEffect(load, [me.address?.lat]);
@@ -112,8 +149,10 @@ export function Alerts({ me }) {
           <Muted style={{ marginTop: 4 }}>{a.headline}</Muted>
           {a.instruction ? <Text style={{ color: color.ink, marginTop: 8, lineHeight: 20 }}>{a.instruction}</Text> : null}
           <Caption>Until {time(a.expires)}</Caption>
+          {a.playbook && <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: color.warmLine }}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>Your plan for this alert</Text><Playbook playbook={a.playbook} /></View>}
         </Card>)}
     <Caption>Source: National Weather Service (api.weather.gov). Weather alerts only: they are not City evacuation orders.</Caption>
+    <Drill me={me} onChange={onChange} />
 
     <Section>City emergency alerts</Section>
     <Card><Tag>Official</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>Sign up with the City of Glendale</Text><Muted>Evacuation orders and City emergency messages come from the City's Everbridge system. FirePath does not receive them yet.</Muted><Link onPress={() => Linking.openURL(EVERBRIDGE)}>Sign up with the City ↗</Link><Link onPress={() => Linking.openURL(KNOW_YOUR_ZONE)}>Know your evacuation zone ↗</Link></Card>

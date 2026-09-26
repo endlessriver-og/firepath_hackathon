@@ -17,7 +17,7 @@ Run `npm run map:build` once, after the GIS snapshot is installed, to build the 
 5. **Home.** Readiness score, level, badges and the next steps. Check one off to watch the score move.
 6. **Map.** A city-wide Leaflet map with a filter for each hazard layer plus fire stations, hospitals and schools; zones are shaded by the severity their source defines. Below it, each layer's rating at your address. Tap one to show it on the map.
 7. **Plan.** Search (for example "pets" or "roof") and filter by hazard or status.
-8. **Alerts.** Live National Weather Service alerts for the address point, which are often empty. City signup links. "Needs City data" callouts.
+8. **Alerts.** Every live alert comes with *Your plan for this alert*: steps grouped as Do now, Before you leave and Check on, built from the mapped zones, household members, pets, meeting places and open steps, each saying why it is there. **Practice drill** runs the same playbook for Red Flag, High Wind, Flash Flood, Heat or Air Quality. It's labeled DRILL · NOT A REAL ALERT, and finishing one earns points and the Drilled badge. Live National Weather Service alerts for the address point, which are often empty. City signup links. "Needs City data" callouts.
 9. **Permits.** Pick a project to get the likely permit, notes for this address, the usual requirements, a copyable summary and a link to the Glendale Permits portal.
 10. **Profile.** Edit the address and household, and preview exactly what a responder would see.
 

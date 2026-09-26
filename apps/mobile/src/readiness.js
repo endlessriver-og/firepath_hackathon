@@ -2,7 +2,7 @@
 // Pure functions shared by the Node API and the Expo app (copied by scripts/sync-mobile-demo.mjs).
 import { buildTasks, describeHazard, hazardNames } from './preparedness.js';
 
-const CATEGORY = { alerts: 'alerts', kit: 'kit', plan: 'household', quake: 'earthquake', ground: 'earthquake', pets: 'household', assistance: 'household', apartment: 'household', wildfire: 'wildfire', flood: 'water', zone0: 'wildfire', 'responder-notes': 'household', kids: 'household' };
+const CATEGORY = { alerts: 'alerts', kit: 'kit', plan: 'household', quake: 'earthquake', ground: 'earthquake', pets: 'household', assistance: 'household', apartment: 'household', wildfire: 'wildfire', flood: 'water', zone0: 'wildfire', 'responder-notes': 'household', kids: 'household', drill: 'alerts' };
 const POINTS = { alerts: 20, kit: 30, plan: 20, quake: 15 };
 export const categories = [['all', 'All'], ['wildfire', 'Wildfire'], ['earthquake', 'Earthquake'], ['water', 'Flood'], ['household', 'Household'], ['kit', 'Go bag'], ['alerts', 'Alerts']];
 
@@ -18,6 +18,7 @@ export function buildRecommendations(profile = {}, household = {}, hazards = nul
     const pet = tasks.find(task => task.id === 'pets');
     pet.description = `Plan for ${pets.map(p => `${p.count > 1 ? `${p.count} ` : ''}${p.kind}`).join(', ')}: food, water, medications, carriers or leashes, and a current photo of each.`;
   }
+  tasks.push({ id: 'drill', tag: 'Stay informed', title: 'Run a practice alert drill', description: 'Open Alerts, pick a drill and walk through the plan FirePath builds for your household. It takes two minutes.' });
   if (profile.addressVerified !== 'mail') tasks.push({ id: 'responder-notes', tag: 'Your household', title: 'Verify your address and review your responder notes', description: 'A verified address and a short, consented note (pets, access, who may need help) is what a future City connection would read first.' });
   return tasks.map(task => ({ ...task, category: CATEGORY[task.id] || 'household', points: POINTS[task.id] || (task.tag.startsWith('Mapped') ? 25 : 15) }));
 }
@@ -54,6 +55,7 @@ const BADGES = [
   { id: 'kit', title: 'Go bag packed', when: s => s.done.kit },
   { id: 'plan', title: 'Household plan', when: s => s.done.plan && s.milestone.meeting },
   { id: 'quake', title: 'Quake ready', when: s => s.done.quake },
+  { id: 'drill', title: 'Drilled', when: s => s.done.drill },
   { id: 'pets', title: 'Pets covered', when: s => s.done.pets },
   { id: 'wildfire', title: 'Ember aware', when: s => s.done.wildfire || s.done.zone0 },
 ];
@@ -172,6 +174,7 @@ export function buildBusinessRecommendations(business = {}, hazards = null) {
     { id: 'extinguishers', tag: 'Fire safety', category: 'wildfire', points: 15, title: 'Check extinguishers and exit paths', description: 'Confirm extinguishers are serviced and exits, exit signs and emergency lighting are clear and working.' },
     { id: 'quake', tag: 'Earthquake', category: 'earthquake', points: 15, title: 'Secure shelving, inventory and equipment', description: 'Anchor tall shelving and heavy equipment, and keep heavy stock on low shelves.', url: 'https://www.ready.gov/earthquakes', link: 'Earthquake guidance' },
   ];
+  steps.push({ id: 'drill', tag: 'Stay informed', category: 'alerts', points: 15, title: 'Run a practice alert drill with your managers', description: 'Open Alerts, pick a drill and walk through the plan FirePath builds for your business.' });
   if (business.kind === 'restaurant') steps.push({ id: 'hood', tag: 'Fire safety', category: 'wildfire', points: 15, title: 'Keep kitchen hood suppression serviced', description: 'Kitchen fire suppression systems need regular professional service; keep the latest service tag visible.' });
   if (business.kind === 'care' || Number(business.needsHelp) > 0) steps.push({ id: 'assist', tag: 'Your team', category: 'household', points: 20, title: 'Plan how to move people who need help', description: 'Assign staff to each person who cannot evacuate alone, and keep that plan where the next shift can find it.' });
   if (hazmat.length) steps.push({ id: 'hmbp', tag: 'Hazardous materials', category: 'household', points: 30, title: 'Check whether you must file a Hazardous Materials Business Plan', description: 'Businesses at or above state reporting amounts (generally 55 gallons, 500 pounds or 200 cubic feet) file with Glendale Fire, the local agency, through the state CERS system. Keep an inventory and site map current.', url: HMBP, link: 'Glendale Fire HMBP page' });

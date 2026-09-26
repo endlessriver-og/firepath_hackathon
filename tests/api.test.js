@@ -122,7 +122,9 @@ test('alerts come only from the injected official source and fail closed', async
   const token = await signup(ok.call);
   assert.equal((await ok.call('GET', '/api/me/alerts', null, token)).body.alerts.length, 0, 'no address, no alerts');
   await ok.call('POST', '/api/me/address', { address: '1613 Glencoe Way' }, token);
-  assert.deepEqual((await ok.call('GET', '/api/me/alerts', null, token)).body.alerts, nws);
+  const got = (await ok.call('GET', '/api/me/alerts', null, token)).body.alerts;
+  assert.deepEqual(got.map(({ playbook, ...a }) => a), nws);
+  assert.equal(got[0].playbook.kind, 'fire');
   const down = setup({ alerts: async () => { throw new Error('offline'); } });
   const t2 = await signup(down.call);
   await down.call('POST', '/api/me/address', { address: '1613 Glencoe Way' }, t2);
@@ -185,4 +187,28 @@ test('address normalization abbreviates words and strips city, state and ZIP', (
   assert.equal(normalizeAddress('1601 West Mountain Street, Glendale, CA 91201'), '1601 W Mountain St');
   assert.equal(normalizeAddress('613 east broadway'), '613 E broadway');
   assert.equal(normalizeAddress('2211 N. Verdugo Road, Montrose'), '2211 N Verdugo Rd');
+});
+
+test('alert playbooks personalise steps and live alerts carry them; drills are labelled', async () => {
+  const { call } = setup({ alerts: async () => [{ id: 'rf1', event: 'Red Flag Warning', severity: 'Severe' }] });
+  const token = await signup(call);
+  await call('POST', '/api/me/address', { address: '1613 Glencoe Way' }, token);
+  await call('PUT', '/api/me/household', { members: [{ name: 'Rosa', ageGroup: 'senior' }, { name: 'Mia', ageGroup: 'child' }], pets: [{ kind: 'dogs', count: 2 }], meetNear: 'Corner mailbox' }, token);
+  const live = (await call('GET', '/api/me/alerts', null, token)).body.alerts[0].playbook;
+  const text = JSON.stringify(live);
+  assert.equal(live.kind, 'fire');
+  for (const needle of ['CAL FIRE High zone', '2 dogs', 'Rosa may need help leaving', 'school pickup plan for Mia', 'Corner mailbox', 'does not choose evacuation routes']) assert.ok(text.includes(needle), needle);
+  const drill = (await call('GET', '/api/me/playbook?event=Flash%20Flood%20Warning', null, token)).body;
+  assert.equal(drill.drill, true);
+  assert.ok(JSON.stringify(drill).includes('Never walk or drive through moving water'));
+  assert.equal((await call('GET', '/api/me/playbook?event=Zombie%20Warning', null, token)).status, 400);
+  assert.ok((await call('PUT', '/api/me/tasks', { id: 'drill', done: true }, token)).body.readiness.badges.find(b => b.id === 'drill').earned);
+});
+
+import { buildPlaybook } from '../src/playbooks.js';
+test('business playbook uses assembly point, hazmat and staff count', () => {
+  const pb = buildPlaybook('Red Flag Warning', { type: 'business', business: { employees: 12, assembly: 'NE lot', hazmat: ['propane'], hazmatNote: 'rear cage', contactName: 'Sam' }, hazards: sparr.hazards });
+  const text = JSON.stringify(pb);
+  for (const needle of ['12 staff', 'NE lot', 'rear cage', 'Sam', 'CAL FIRE High zone']) assert.ok(text.includes(needle), needle);
+  assert.equal(buildPlaybook('Tornado Warning').kind, 'general');
 });

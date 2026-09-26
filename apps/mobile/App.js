@@ -56,7 +56,7 @@ export default function App() {
       {tab === 'Home' && <Home me={me} onChange={setMe} go={go} />}
       {tab === 'Map' && <MapTab me={me} layers={layers} setLayers={setLayers} top={top} />}
       {tab === 'Plan' && <Actions me={me} onChange={setMe} />}
-      {tab === 'Alerts' && <Alerts me={me} />}
+      {tab === 'Alerts' && <Alerts me={me} onChange={setMe} />}
       {tab === 'Permits' && <Permits me={me} top={top} />}
       {tab === 'Profile' && <Profile me={me} onChange={setMe} onSignOut={signOut} />}
     </ScrollView>
