@@ -68,7 +68,7 @@ function renderHazards() {
     const value = hazards?.[key], description = value ? describeHazard(key, value) : { tone: 'pending', label: 'Add a location', detail: 'A map layer will appear here.' };
     const meta = value?._meta;
     const asOf = meta?.as_of ? `Snapshot ${new Date(meta.as_of).toLocaleDateString()}` : 'Map snapshot';
-    const detail = value?.notes?.[0] || description.detail;
+    const detail = description.detail;
     const source = meta?.url?.startsWith('https://') ? `<a href="${escape(meta.url)}" target="_blank" rel="noopener">${escape(meta.source || 'View map')} ↗</a>` : '';
     return `<article class="hazard-card ${description.tone}"><div class="hazard-head"><span class="hazard-symbol">${['♨','≈','⌁','◈','△','◌','≋'][index]}</span><span class="status-chip">${description.tone === 'mapped' ? '● ON MAP' : description.tone === 'outside' ? '○ OUTSIDE ZONE' : '– PENDING'}</span></div><h3>${escape(hazardNames[key])}</h3><strong>${escape(description.label)}</strong><p>${escape(detail)}</p><div class="source-line">${source}<small>${escape(asOf)}</small></div></article>`;
   }).join('');

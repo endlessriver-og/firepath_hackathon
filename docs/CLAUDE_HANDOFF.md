@@ -90,6 +90,16 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
 
 ## Verification, deployment and known limits
 
+**Session 2026-09-26 (afternoon):**
+
+- **Mobile:** the app gained first-run onboarding (sample place, then household), a Home summary, persistent progress and meeting places (AsyncStorage), and a second real sample.
+- **Shared logic:** `summarizePlace`, `nextSteps` and a mapped seismic-zone task in `src/preparedness.js`. The seismic layers now show plain-language descriptions instead of GIS metadata notes.
+- **Tests:** `npm test` passes 15/15.
+- **Native bundles:** `npx expo export --platform ios --platform android` bundles.
+- **Browser check:** the full mobile flow was clicked through with `expo start --web` at 390×844.
+- **Still unverified:** no physical device, no iOS simulator (this machine has no Xcode), and the native `react-native-maps` rendering.
+
+
 At the previous build: `npm test` passed **11/11**; `npm run build:demo` completed; `npx expo export --platform android` bundled successfully. The native app was **not** tested on physical iOS or Android hardware and no iOS build was verified. No backend auth/alert integration or authenticated end-to-end security tests exist. A static browser demo is buildable but a Vercel project was not confirmed deployed. The local Git checkout may have a different history from GitHub because earlier work was published through GitHub's tree/commit API; inspect `git status`, `git log` and the remote branch before rebasing, force-pushing or assuming local history is canonical. GitHub's `main` is the shared delivery surface.
 
 The sample's snapshot date is embedded in `src/sample-location.json` and is not continuously refreshed. Treat old map metadata as old data. This handoff reflects a code reading and conversation notes as of the date above; verify upstream SDK, city datasets and availability before deploying or making legal/safety claims.

@@ -63,6 +63,20 @@ The prototype never replaces emergency instructions, certified alarms, or profes
 
 ### Native resident prototype
 
-`apps/mobile` is an Expo iOS/Android prototype with a sample preparedness plan, a native map pin, cached source-labelled hazard summaries and a **local demo** phone notification. It has no live alert delivery or account service. The web responder experience remains a training prototype; see [mobile safety and integration plan](docs/MOBILE_AND_SAFETY.md).
+`apps/mobile` is an Expo iOS/Android resident prototype. A first-run flow picks one of two **public sample places** and asks four household questions (own/rent, house/apartment, pets, someone who needs help leaving). The app then has four tabs:
 
-Run `npm run mobile:sync` after changing the shared sample or task engine, then `cd apps/mobile && npm install && npx expo start`. Use a phone with Expo Go for the local demo. Android and iOS production maps and remote push require platform configuration and development builds.
+- **Home:** what the maps show at the sample point, in plain language; the next three steps, ranked with official alerts first, then mapped-zone steps, then household steps; and the City alert signup.
+- **Plan:** the full checklist with progress, plus the household's meeting places and out-of-area contact.
+- **Map:** the pin plus a source-dated card for each layer.
+- **Alerts:** official links and a clearly labeled **local test** notification.
+
+Profile, checklist progress and meeting places persist on the device through AsyncStorage. The app has no address entry, GPS, account, backend, live alert delivery or route guidance. The web responder experience remains a training prototype; see [mobile safety and integration plan](docs/MOBILE_AND_SAFETY.md).
+
+The two samples are dated GIS snapshots of public places, not homes:
+
+- **Sparr Heights Community Center** (1613 Glencoe Way, a City facility; `src/sample-sparr-heights.json`) is inside a mapped CAL FIRE *High* zone and a state liquefaction zone.
+- **The Civic Center map point** (`src/sample-location.json`) is inside none of the seven layers.
+
+Regenerate a sample with `.venv/bin/python scripts/lookup-hazards.py` after installing the GIS package.
+
+Run `npm run mobile:sync` after changing the shared sample or task engine, then `cd apps/mobile && npm install && npx expo start`. Use a phone with Expo Go for the local demo, or press `w` (or run `npx expo start --web`) to open the same app in a browser. On web the native map is replaced by an OpenStreetMap embed of the sample point. Android and iOS production maps and remote push require platform configuration and development builds.

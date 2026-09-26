@@ -1,5 +1,16 @@
 # Three-minute preparedness demo
 
+**Resident app (phone or browser):** `cd apps/mobile && npx expo start`. Scan the QR code with Expo Go, or press `w` for a browser tab at phone width.
+
+1. Pick **Sparr Heights Community Center**. Say plainly that it is a public place, not anyone's home.
+2. Set the household to *I rent* with pets, then tap **Build my plan**.
+3. Home shows two mapped layers: wildfire (*High*) and liquefaction. The steps adapt to them: renters are asked about building protections.
+4. Check off a step, reload, and show that progress stays.
+5. Open **Change place or household** and pick the Civic Center point. Nothing is mapped there, the caveat says that is not the same as no risk, and the plan shrinks to general steps.
+6. On **Alerts**, point to City signup as the real channel. The notification button is a local test only.
+
+**Browser workspace and responder exercise:**
+
 **Fast path:** open `/?demo=1`. The guided tour loads a public sample map point, moves to the checklist, then opens a separate fictional responder exercise. It runs on any static server; no GIS dependency or hardware is required. Use the steps below for a deeper demonstration.
 
 1. Open the home page. Explain the problem: residents need a view of their **own mapped hazards** and a short, practical household plan.
