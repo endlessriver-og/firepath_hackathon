@@ -98,25 +98,29 @@ export function Home({ me, onChange, go }) {
 
 export function Actions({ me, onChange, sub, setSub }) {
   const [q, setQ] = useState(''), [category, setCategory] = useState('all'), [status, setStatus] = useState('open');
+  const [showAll, setShowAll] = useState(false);
   const [busy, toggle] = useToggle(me, onChange);
   const ordered = checklist(me);
   const results = ordered.filter(t => queryRecommendations([t], { q, category, status, done: me.done }).length);
+  const filtered = Boolean(q.trim()) || category !== 'all' || status !== 'open';
+  const visible = showAll || filtered ? results : results.slice(0, 4);
   const complete = ordered.filter(r => me.done[r.id]).length;
   return <>
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-      <ProgressRing percent={me.readiness.score} size={72} stroke={8} />
-      <View style={{ flex: 1 }}><Title style={{ marginBottom: 2 }}>Checklist</Title><Muted>{complete} of {ordered.length} done</Muted></View>
-    </View>
-    <SubTabs value={sub || 'todo'} options={[['todo', 'Checklist'], ['print', 'Print & post']]} onChange={setSub} />
+    <Title style={{ marginBottom: 2 }}>Your plan</Title>
+    <Muted>{complete} of {ordered.length} steps done. Tap a step for details.</Muted>
+    <SubTabs value={sub || 'todo'} options={[['todo', 'Steps'], ['print', 'Print & post']]} onChange={setSub} />
     {sub === 'print' ? <PrintSheets me={me} /> : <>
-    <Field label="Search" value={q} onChangeText={setQ} placeholder="Try “pets”, “roof”, “water”" autoCapitalize="none" />
-    <View style={{ flexDirection: 'row', gap: 8 }}>
-      <View style={{ flex: 1 }}><Select label="Topic" value={category} options={categories} onChange={v => setCategory(v || 'all')} /></View>
-      <View style={{ flex: 1 }}><Select label="Show" value={status} options={[['open', 'To do'], ['done', 'Done'], ['all', 'All']]} onChange={v => setStatus(v || 'open')} /></View>
-    </View>
-    {results.length ? results.map(task => <TaskCard key={task.id} compact task={task} number={ordered.indexOf(task) + 1} done={Boolean(me.done[task.id])} busy={busy === task.id} onToggle={toggle} />)
-      : <Card><Muted>No recommendations match. Try another word or filter.</Muted></Card>}
-    <Collapsible icon="🧩" title="What City data would add" summary="Skip steps already done; brush-clearance status"><CityDataCallout id="permitHistory" />{me.hazards && describeHazard('wildfire', me.hazards.wildfire).tone === 'mapped' && <CityDataCallout id="brushClearance" />}</Collapsible>
+    <Collapsible title="Find a step" summary="Search and filters">
+      <Field label="Search" value={q} onChangeText={setQ} placeholder="Pets, roof, water…" autoCapitalize="none" />
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={{ flex: 1 }}><Select label="Topic" value={category} options={categories} onChange={v => setCategory(v || 'all')} /></View>
+        <View style={{ flex: 1 }}><Select label="Show" value={status} options={[['open', 'To do'], ['done', 'Done'], ['all', 'All']]} onChange={v => setStatus(v || 'open')} /></View>
+      </View>
+    </Collapsible>
+    {visible.length ? visible.map(task => <TaskCard key={task.id} compact task={task} number={ordered.indexOf(task) + 1} done={Boolean(me.done[task.id])} busy={busy === task.id} onToggle={toggle} />)
+      : <Card><Muted>No steps match. Try another search.</Muted></Card>}
+    {!filtered && results.length > 4 && <Link onPress={() => setShowAll(!showAll)}>{showAll ? 'Show fewer steps' : `See all ${results.length} steps`}</Link>}
+    <Collapsible title="Future City connections" summary="What additional records could add"><CityDataCallout id="permitHistory" />{me.hazards && describeHazard('wildfire', me.hazards.wildfire).tone === 'mapped' && <CityDataCallout id="brushClearance" />}</Collapsible>
     </>}
   </>;
 }
@@ -141,19 +145,31 @@ function Playbook({ playbook, drill }) {
 function Drill({ me, onChange }) {
   const device = useDevice();
   const [event, setEvent] = useState(null), [playbook, setPlaybook] = useState(null), [error, setError] = useState(''), [busy, setBusy] = useState(false);
-  const open = e => { setEvent(e); setPlaybook(null); setError(''); api('GET', `/api/me/playbook?event=${encodeURIComponent(e)}`).then(setPlaybook).catch(err => setError(err.message)); };
-  const finish = async () => { setBusy(true); try { if (!me.done.drill) onChange(await api('PUT', '/api/me/tasks', { id: 'drill', done: true })); setEvent(null); setPlaybook(null); } catch (err) { setError(err.message); } finally { setBusy(false); } };
+  const [practiced, setPracticed] = useState({});
+  const open = e => { setEvent(e); setPlaybook(null); setPracticed({}); setError(''); if (e) api('GET', `/api/me/playbook?event=${encodeURIComponent(e)}`).then(setPlaybook).catch(err => setError(err.message)); };
+  const practiceSteps = playbook ? [
+    ...(playbook.groups.find(g => g.label === 'Do now')?.steps.slice(0, 2) || []),
+    ...(playbook.groups.find(g => g.label === 'Check on')?.steps.slice(0, 1) || []),
+    ...(playbook.groups.find(g => g.label === 'Before you leave')?.steps.slice(0, 1) || []),
+  ].slice(0, 4) : [];
+  const practicedCount = practiceSteps.filter((_, i) => practiced[i]).length;
+  const finish = async () => { setBusy(true); try { if (!me.done.drill) onChange(await api('PUT', '/api/me/tasks', { id: 'drill', done: true })); setEvent(null); setPlaybook(null); setPracticed({}); } catch (err) { setError(err.message); } finally { setBusy(false); } };
   return <>
-    <Muted>Pick an alert type to see the plan FirePath would build for {me.user.type === 'business' ? 'your business' : 'your household'} if it were real.{me.done.drill ? ' You have completed a drill.' : ' Finishing one checks off the drill step.'}</Muted>
+    <Muted>Choose a scenario, say what you would do, then check each action. This is practice, not a real alert.</Muted>
     <Select label="Alert to practice" placeholder="Choose an alert" value={event} options={drillEvents.map(e => [e, e.replace(' Warning', '').replace(' Alert', '')])} onChange={open} />
     <ErrorText>{error}</ErrorText>
-    {event && !playbook && !error && <Muted style={{ marginTop: 10 }}>Building your plan…</Muted>}
+    {event && !playbook && !error && <Muted style={{ marginTop: 10 }}>Preparing your drill…</Muted>}
     {playbook && <Card style={{ borderColor: '#E3C98E', backgroundColor: '#FFFCF3' }}>
       <Text style={{ alignSelf: 'flex-start', backgroundColor: color.goldBg, color: color.gold, fontWeight: '900', fontSize: 11, letterSpacing: 1, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>DRILL · NOT A REAL ALERT</Text>
-      <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>If a {event} covered your address</Text>
-      <Playbook playbook={playbook} drill />
+      <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>Imagine a {event} just arrived</Text>
+      <Muted style={{ marginTop: 6 }}>Practice these {practiceSteps.length} actions out loud or with someone at home.</Muted>
+      {practiceSteps.map((step, i) => <Pressable key={`${i}-${step.text}`} accessibilityRole="checkbox" accessibilityState={{ checked: Boolean(practiced[i]) }} onPress={() => setPracticed(current => ({ ...current, [i]: !current[i] }))} style={{ flexDirection: 'row', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderColor: color.line }}>
+        <Text style={{ width: 26, fontSize: 18, color: color.green, fontWeight: '900' }}>{practiced[i] ? '☑' : '☐'}</Text><Text style={{ flex: 1, color: color.ink, lineHeight: 21 }}>{step.text}</Text>
+      </Pressable>)}
+      <Caption>{practicedCount} of {practiceSteps.length} practiced</Caption>
+      <Collapsible title="See the full plan" summary="More actions for this scenario"><Playbook playbook={playbook} /></Collapsible>
       {device.connected && <Button kind="outline" onPress={() => sendToDevice({ kind: 'drill', hazard: playbook.kind, severity: 'drill', text: `DRILL: ${event}. Not a real alert.` }).catch(e => setError(e.message))}>Sound the in-home device</Button>}
-      <Button busy={busy} onPress={finish}>{me.done.drill ? 'Close drill' : 'Finish drill'}</Button>
+      <Button busy={busy} disabled={practicedCount < practiceSteps.length || !practiceSteps.length} onPress={finish}>{me.done.drill ? 'Close practice' : 'Finish practice'}</Button>
     </Card>}
   </>;
 }
