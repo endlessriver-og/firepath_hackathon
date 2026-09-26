@@ -1,13 +1,23 @@
-// Web: print the sheet from a hidden iframe on this page (no pop-up window needed), then clean up.
+// Web: open the generated plan in its own tab, then launch that tab's print dialog.
 export async function printHtml(html) {
-  const frame = document.createElement('iframe');
-  frame.setAttribute('aria-hidden', 'true');
-  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
-  document.body.appendChild(frame);
-  const doc = frame.contentDocument;
-  doc.open(); doc.write(html); doc.close();
-  await new Promise(resolve => setTimeout(resolve, 250)); // let fonts and layout settle
-  frame.contentWindow.focus();
-  frame.contentWindow.print();
-  setTimeout(() => frame.remove(), 60_000);
+  // This runs directly in the button press, before any await, to avoid pop-up blockers.
+  const page = window.open('', '_blank');
+  if (!page) throw new Error('The plan tab was blocked. Allow pop-ups and tap Print again.');
+
+  page.document.open();
+  page.document.write(html);
+  page.document.close();
+
+  // Some mobile browsers suppress automatic print dialogs. Leave a visible fallback.
+  const style = page.document.createElement('style');
+  style.textContent = '@media print { .firepath-print-action { display: none !important; } }';
+  page.document.head.appendChild(style);
+  const button = page.document.createElement('button');
+  button.className = 'firepath-print-action';
+  button.textContent = 'Print this plan';
+  button.style.cssText = 'display:block;margin:14px 0;padding:10px 16px;border:0;border-radius:8px;background:#1D5B4D;color:white;font:700 15px sans-serif;cursor:pointer';
+  button.addEventListener('click', () => page.print());
+  page.document.body.prepend(button);
+  page.focus();
+  page.print();
 }
