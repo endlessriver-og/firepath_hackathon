@@ -82,17 +82,17 @@ export function Landing({ onSignedIn, onEmergency, onWalkthrough }) {
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Text style={{ fontSize: 15, fontWeight: '900', letterSpacing: 2, color: color.green }}>FIREPATH</Text>
       <Text accessibilityRole="button" onPress={onEmergency} style={{ backgroundColor: '#B3261A', color: '#FFF', fontWeight: '800', fontSize: 12, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, overflow: 'hidden' }}>{t('head.emergency')}</Text></View>
     <LanguageBar />
-    <HeroIllustration />
-    <Text style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 18 }}>{t('land.title')}</Text>
+    <Text style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 22 }}>{t('land.title')}</Text>
     <Muted style={{ marginTop: 8, fontSize: 16 }}>{t('land.sub')}</Muted>
     {onWalkthrough && <Pressable accessibilityRole="button" onPress={onWalkthrough} style={{ marginTop: 14, backgroundColor: '#12302A', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <Text style={{ fontSize: 22 }}>▶</Text>
       <View style={{ flex: 1 }}><Text style={{ color: '#FFF', fontWeight: '800', fontSize: 15 }}>{t('land.tour')}</Text><Text style={{ color: '#CFE3DA', fontSize: 12, marginTop: 2 }}>{t('land.tourSub')}</Text></View>
     </Pressable>}
+    <HeroIllustration height={112} />
     <AddressCheck onResult={setResult} />
     {result && <>
       <Card style={{ borderColor: color.green, borderWidth: 2, marginTop: 22 }}>
-        <Tag>Free for Glendale residents and businesses</Tag>
+        <Tag>Free preparedness plan · City permit fees may apply</Tag>
         <Text style={{ color: color.ink, fontSize: 20, fontWeight: '800' }}>Get a plan for this address</Text>
         <Muted style={{ marginTop: 6 }}>Register to get a step-by-step checklist for your household, live weather alerts with steps for your household, practice drills, and help with permits.</Muted>
         <Button onPress={() => setSignup({ type: 'resident', mode: 'signup' })}>I live here: create my plan</Button>
