@@ -1,5 +1,7 @@
 # FirePath — preparedness for where you live
 
+**New builder:** start with [the complete handoff packet](docs/CLAUDE_HANDOFF.md) for product context, repo map, known limits and next steps.
+
 A Glendale pilot that combines mapped local hazards, a household checklist, official alert links, a local-only draft of useful property facts for possible responder workflows, and an optional USB in-home notification demo. The old fire-routing experiment remains at `/fire-lab.html`.
 
 The main interface has two modes: **Resident** for location, actions and optional property notes; **Responder demo** for a short, source-labeled exercise brief. The responder view includes three fictional scenarios, a compact field layout, and a switch between fictional sample facts and the current browser's saved draft. It has no login, City access, dispatch connection or live calls.
