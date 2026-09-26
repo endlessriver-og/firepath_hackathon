@@ -212,3 +212,18 @@ test('business playbook uses assembly point, hazmat and staff count', () => {
   for (const needle of ['12 staff', 'NE lot', 'rear cage', 'Sam', 'CAL FIRE High zone']) assert.ok(text.includes(needle), needle);
   assert.equal(buildPlaybook('Tornado Warning').kind, 'general');
 });
+
+test('public address check works without an account, stores nothing, and is rate limited', async () => {
+  const { store, call } = setup();
+  const res = await call('POST', '/api/public/check', { address: '1613 Glencoe Way' });
+  assert.equal(res.status, 200);
+  assert.equal(res.body.address, '1613 GLENCOE WAY, GLENDALE, CA, 91208');
+  assert.equal(res.body.layers.find(l => l.key === 'wildfire').label, 'High');
+  assert.equal(res.body.layers.find(l => l.key === 'liquefaction').level, 'zone');
+  assert.ok(res.body.preview.some(p => p.id === 'wildfire'));
+  assert.equal(Object.keys(store.data.users).length, 0);
+  assert.doesNotMatch(JSON.stringify(store.data), /GLENCOE/, 'the checked address is not persisted');
+  let status;
+  for (let i = 0; i < 20; i++) status = (await call('POST', '/api/public/check', { address: '1613 Glencoe Way' })).status;
+  assert.equal(status, 429);
+});

@@ -4,8 +4,9 @@ import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { api, loadSession, saveSession } from './src/api';
-import { AboutYou, AddressPanel, Auth, BusinessDetails, BusinessProfile, HouseholdForm } from './src/onboarding';
+import { AboutYou, AddressPanel, BusinessDetails, BusinessProfile, HouseholdForm } from './src/onboarding';
 import { Actions, Alerts, Home, MapTab, Permits, Profile } from './src/tabs';
+import { Landing } from './src/landing';
 import { Button, ErrorText, color } from './src/ui';
 
 const ONBOARDING = 'firepath-onboarding-step';
@@ -17,6 +18,7 @@ export default function App() {
   const [step, setStep] = useState(0);     // onboarding step 1-3, 0 = done
   const [tab, setTab] = useState('Home');
   const [layers, setLayers] = useState(['combined']);
+  const [pendingAddress, setPendingAddress] = useState(null); // checked on the public page before sign-up
   const go = (next, withLayers) => { if (withLayers) setLayers(withLayers); setTab(next); };
   const [error, setError] = useState('');
   const scroller = useRef(null);
@@ -44,10 +46,10 @@ export default function App() {
 
   if (error) return <Shell><ErrorText>{error}</ErrorText><Button onPress={load}>Try again</Button></Shell>;
   if (me === undefined) return <Shell><ActivityIndicator color={color.green} style={{ marginTop: 80 }} /></Shell>;
-  if (me === null) return <Shell><Auth onSignedIn={(result, isNew) => { setMe(result); if (isNew) goStep(1); }} /></Shell>;
+  if (me === null) return <Shell><Landing onSignedIn={(result, isNew, checked) => { setMe(result); setPendingAddress(isNew ? checked : null); if (isNew) goStep(1); }} /></Shell>;
   const business = me.user.type === 'business';
   if (step === 1) return <Shell>{business ? <BusinessProfile me={me} onSaved={next => { setMe(next); goStep(2); }} onboarding /> : <AboutYou me={me} onSaved={next => { setMe(next); goStep(2); }} />}</Shell>;
-  if (step === 2) return <Shell><AddressPanel me={me} onChange={setMe} onDone={() => goStep(3)} onboarding /></Shell>;
+  if (step === 2) return <Shell><AddressPanel me={me} onChange={setMe} onDone={() => goStep(3)} onboarding initialAddress={pendingAddress} /></Shell>;
   if (step === 3) return <Shell>{business ? <BusinessDetails me={me} onSaved={next => { setMe(next); finish(); }} onboarding /> : <HouseholdForm me={me} onSaved={next => { setMe(next); finish(); }} onboarding />}</Shell>;
 
   return <SafeAreaView style={styles.safe}><StatusBar style="dark" />

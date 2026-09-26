@@ -1,9 +1,10 @@
 // Resident account API for the FirePath prototype. Dependencies are injected so tests can run
 // without the GIS package or the network.
 import { randomUUID } from 'node:crypto';
-import { businessKinds, businessPermitTypes, hazmatKinds, permitGuide, permitTypes, queryRecommendations, readiness, recommendationsFor } from '../src/readiness.js';
+import { buildRecommendations, businessKinds, hazardSeverity, businessPermitTypes, hazmatKinds, permitGuide, permitTypes, queryRecommendations, readiness, recommendationsFor } from '../src/readiness.js';
 import { buildResponderSummary } from '../src/responder.js';
 import { buildPlaybook, drillEvents } from '../src/playbooks.js';
+import { hazardNames } from '../src/preparedness.js';
 import { checkPassword, hashPassword, newCode, newToken, tokenKey } from './auth.mjs';
 
 const SESSION_DAYS = 30, CODE_DAYS = 14, MAX_CODE_ATTEMPTS = 5;
@@ -23,10 +24,34 @@ function occupancy(h) {
 
 const playbookFor = (user, event) => buildPlaybook(event, { type: user.type, household: user.household || {}, business: user.business || {}, hazards: user.hazards, done: user.done || {} });
 
-export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, demoMailbox = true, now = () => Date.now() }) {
+export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, combinedIndex = () => null, demoMailbox = true, now = () => Date.now() }) {
   const { data } = store;
   const failures = new Map(); // email -> [timestamps] of failed logins, in memory only
   const alertCache = new Map();
+  const publicHits = new Map(); // ip -> timestamps; public checks are capped per visitor, in memory only
+  function throttle(req, limit) {
+    const ip = req.socket?.remoteAddress || 'local';
+    const recent = (publicHits.get(ip) || []).filter(t => t > now() - 10 * 60_000);
+    if (recent.length >= limit) fail(429, 'Too many checks from this device. Try again in a few minutes.');
+    publicHits.set(ip, [...recent, now()]);
+  }
+  // Geocode (City geocoder when available) + coordinate hazard lookup. Shared by registration and the public check.
+  async function locate(address, magicKey) {
+    let matched = null, result;
+    if (geocoder) {
+      try { matched = await geocoder.resolve(address, magicKey); }
+      catch (e) {
+        if (e.candidates) fail(422, 'That address matches more than one place in Glendale. Pick one:', { candidates: e.candidates });
+        if (e.streetOnly) fail(422, 'Only the street matched. Add the house number.');
+        fail(503, 'The City address service did not respond. Try again in a moment.');
+      }
+      if (!matched) fail(422, 'No Glendale address matched. Check the house number and street, e.g. "613 E Broadway".');
+    }
+    try { result = await lookupHazards(matched ? { lat: matched.lat, lon: matched.lon } : { address }); } catch { fail(422, 'That address could not be matched in Glendale. Check the street number and name.'); }
+    if (!result?.location?.in_city) fail(422, 'That address is outside the Glendale pilot area.');
+    if (matched) result.location = { ...result.location, matched_address: matched.address, score: matched.score };
+    return result;
+  }
 
   function session(req) {
     const token = /^Bearer (.+)$/.exec(req.headers.authorization || '')?.[1];
@@ -159,20 +184,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       const user = session(req);
       const address = text(body.address, 200);
       if (address.length < 5) fail(400, 'Enter a Glendale street address.');
-      let result, matched = null;
-      if (geocoder) {
-        // FirePath's own City-geocoder step (normalization, suggestions, "did you mean"), then a coordinate lookup.
-        try { matched = await geocoder.resolve(address, text(body.magicKey, 200) || undefined); }
-        catch (e) {
-          if (e.candidates) fail(422, 'That address matches more than one place in Glendale. Pick one:', { candidates: e.candidates });
-          if (e.streetOnly) fail(422, 'Only the street matched. Add the house number.');
-          fail(503, 'The City address service did not respond. Try again in a moment.');
-        }
-        if (!matched) fail(422, 'No Glendale address matched. Check the house number and street, e.g. "613 E Broadway".');
-      }
-      try { result = await lookupHazards(matched ? { lat: matched.lat, lon: matched.lon } : { address }); } catch { fail(422, 'That address could not be matched in Glendale. Check the street number and name.'); }
-      if (!result?.location?.in_city) fail(422, 'That address is outside the Glendale pilot area.');
-      if (matched) result.location = { ...result.location, matched_address: matched.address, score: matched.score };
+      const result = await locate(address, text(body.magicKey, 200) || undefined);
       Object.assign(user, {
         address: result.location.matched_address || address,
         lat: result.location.lat, lon: result.location.lon,
@@ -214,6 +226,24 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       user.verification = null;
       store.save();
       return { body: view(user) };
+    },
+
+    // Public, no account: check any Glendale address. Nothing is stored.
+    'GET /api/public/suggest': async (req, body, url) => {
+      throttle(req, 200);
+      if (!geocoder) return { body: { suggestions: [] } };
+      try { return { body: { suggestions: await geocoder.suggest(text(url.searchParams.get('q'), 120)) } }; }
+      catch { return { body: { suggestions: [], unavailable: true } }; }
+    },
+
+    'POST /api/public/check': async (req, body) => {
+      throttle(req, 20);
+      const address = text(body.address, 200);
+      if (address.length < 5) fail(400, 'Enter a Glendale street address.');
+      const result = await locate(address, text(body.magicKey, 200) || undefined);
+      const layers = Object.keys(hazardNames).map(key => ({ key, name: hazardNames[key], ...hazardSeverity(key, result.hazards[key]), source: result.hazards[key]?._meta?.source || null }));
+      const preview = buildRecommendations({}, {}, result.hazards).filter(r => r.tag.startsWith('Mapped') || r.id === 'alerts').slice(0, 3).map(({ id, title, description }) => ({ id, title, description }));
+      return { body: { address: result.location.matched_address || address, lat: result.location.lat, lon: result.location.lon, layers, combined: combinedIndex(result.location.lat, result.location.lon), preview, checkedAt: new Date(now()).toISOString() } };
     },
 
     'GET /api/address/suggest': async (req, body, url) => {

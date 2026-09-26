@@ -6,9 +6,9 @@ import { businessKinds, hazmatKinds } from './readiness';
 import MapPanel from './MapPanel';
 import { Button, Caption, Card, CityDataCallout, ErrorText, Field, Link, Muted, Section, Segment, Step, Tag, Title, Toggle, color, s } from './ui';
 
-export function Auth({ onSignedIn }) {
-  const [mode, setMode] = useState('signup');
-  const [form, setForm] = useState({ name: '', email: '', password: '', type: 'resident' });
+export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'resident' }) {
+  const [mode, setMode] = useState(initialMode);
+  const [form, setForm] = useState({ name: '', email: '', password: '', type: initialType });
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const set = patch => setForm(current => ({ ...current, ...patch }));
   async function submit() {
@@ -70,21 +70,16 @@ export function AboutYou({ me, onSaved }) {
 }
 
 // Address registration + mailed-code verification. Used in onboarding and on the Profile tab.
-export function AddressPanel({ me, onChange, onDone, onboarding }) {
-  const [address, setAddress] = useState('');
+export function AddressPanel({ me, onChange, onDone, onboarding, initialAddress }) {
+  const [address, setAddress] = useState(initialAddress || '');
   const [editing, setEditing] = useState(!me.address);
   const [busy, setBusy] = useState(''), [error, setError] = useState('');
   const [mailbox, setMailbox] = useState(null), [code, setCode] = useState('');
-  const [suggestions, setSuggestions] = useState([]), [candidates, setCandidates] = useState([]), [picked, setPicked] = useState('');
+  const [candidates, setCandidates] = useState([]);
   const run = async (key, fn) => { setBusy(key); setError(''); try { await fn(); } catch (e) { setError(e.message); setCandidates(e.data?.candidates || []); } finally { setBusy(''); } };
-  const lookup = (text = address, magicKey) => run('lookup', async () => { setSuggestions([]); setCandidates([]); onChange(await api('POST', '/api/me/address', { address: text, magicKey })); setEditing(false); setMailbox(null); });
-  // City geocoder suggestions as the user types (debounced; skipped right after a suggestion is picked).
-  useEffect(() => {
-    if (!editing || address.trim().length < 4 || address === picked) { setSuggestions([]); return; }
-    const timer = setTimeout(() => api('GET', `/api/address/suggest?q=${encodeURIComponent(address)}`).then(r => setSuggestions(r.suggestions || [])).catch(() => setSuggestions([])), 250);
-    return () => clearTimeout(timer);
-  }, [address, editing]);
-  const pick = item => { setAddress(item.text); setPicked(item.text); setSuggestions([]); lookup(item.text, item.magicKey); };
+  const lookup = (text = address, magicKey) => run('lookup', async () => { setCandidates([]); onChange(await api('POST', '/api/me/address', { address: text, magicKey })); setEditing(false); setMailbox(null); });
+  // An address checked on the public page before sign-up is looked up straight away.
+  useEffect(() => { if (initialAddress && !me.address) { setAddress(initialAddress); lookup(initialAddress); } }, []);
   const mail = () => run('mail', async () => { const result = await api('POST', '/api/me/address/mail'); setMailbox(result.demoMailbox); onChange(result); });
   const verify = () => run('verify', async () => { onChange(await api('POST', '/api/me/address/verify', { code })); setMailbox(null); setCode(''); });
   const a = me.address;
@@ -95,13 +90,9 @@ export function AddressPanel({ me, onChange, onDone, onboarding }) {
     {onboarding && <Title>{me.user.type === 'business' ? 'Where is the business?' : 'Where is home?'}</Title>}
     {editing ? <>
       <Muted>We check your address against seven state and federal hazard maps.</Muted>
-      <Field label="Glendale street address" hint="Sent to the City of Glendale's address lookup (geocoder) to find the map point." value={address} onChangeText={setAddress} placeholder="Start typing, e.g., 1613 Glencoe" autoComplete="off" onSubmitEditing={() => lookup()} maxLength={200} />
-      {suggestions.length > 0 && <View accessibilityRole="list" style={{ backgroundColor: '#FFF', borderWidth: 1, borderColor: '#D5DDD5', borderRadius: 12, marginTop: 4, overflow: 'hidden' }}>
-        {suggestions.map((item, i) => <Pressable key={item.text} accessibilityRole="button" accessibilityLabel={`Use ${item.text}`} onPress={() => pick(item)} style={{ padding: 13, borderTopWidth: i ? 1 : 0, borderColor: color.line }}><Text style={{ color: color.ink }}>{item.text}</Text></Pressable>)}
-        <Caption style={{ marginTop: 0, padding: 8, paddingTop: 4 }}>Suggestions from the City of Glendale address list</Caption>
-      </View>}
+      <AddressSearch value={address} onChangeText={setAddress} onPick={(text, magicKey) => lookup(text, magicKey)} onSubmit={() => lookup()} suggestPath="/api/address/suggest" hint="Sent to the City of Glendale's address lookup (geocoder) to find the map point." />
       <ErrorText>{error}</ErrorText>
-      {candidates.length > 0 && <View style={{ marginTop: 6 }}>{candidates.map(c => <Button key={c} kind="outline" style={{ marginTop: 8 }} onPress={() => { setAddress(c); setPicked(c); lookup(c); }}>{c}</Button>)}</View>}
+      {candidates.length > 0 && <View style={{ marginTop: 6 }}>{candidates.map(c => <Button key={c} kind="outline" style={{ marginTop: 8 }} onPress={() => { setAddress(c); lookup(c); }}>{c}</Button>)}</View>}
       <Button busy={busy === 'lookup'} disabled={address.trim().length < 5} onPress={() => lookup()}>Find my address</Button>
       {busy === 'lookup' && <Caption>Checking the City's address points and seven hazard maps. This can take up to 20 seconds.</Caption>}
       {a && <Link onPress={() => setEditing(false)}>Cancel</Link>}
@@ -238,5 +229,24 @@ export function BusinessDetails({ me, onSaved, onboarding }) {
     <ErrorText>{error}</ErrorText>
     <Button busy={busy} onPress={save}>{onboarding ? 'Finish setup' : 'Save details'}</Button>
     {saved && !onboarding && <Caption>Saved.</Caption>}
+  </>;
+}
+
+
+// Address field with City of Glendale suggestions (debounced). Used by the public check and registration.
+export function AddressSearch({ value, onChangeText, onPick, onSubmit, suggestPath, hint, label = 'Glendale street address' }) {
+  const [suggestions, setSuggestions] = useState([]), [picked, setPicked] = useState('');
+  useEffect(() => {
+    if (value.trim().length < 4 || value === picked) { setSuggestions([]); return; }
+    const timer = setTimeout(() => api('GET', `${suggestPath}?q=${encodeURIComponent(value)}`).then(r => setSuggestions(r.suggestions || [])).catch(() => setSuggestions([])), 250);
+    return () => clearTimeout(timer);
+  }, [value]);
+  const pick = item => { setPicked(item.text); onChangeText(item.text); setSuggestions([]); onPick(item.text, item.magicKey); };
+  return <>
+    <Field label={label} hint={hint} value={value} onChangeText={onChangeText} placeholder="Start typing, e.g., 1613 Glencoe" autoComplete="off" onSubmitEditing={onSubmit} maxLength={200} />
+    {suggestions.length > 0 && <View accessibilityRole="list" style={{ backgroundColor: '#FFF', borderWidth: 1, borderColor: '#D5DDD5', borderRadius: 12, marginTop: 4, overflow: 'hidden' }}>
+      {suggestions.map((item, i) => <Pressable key={item.text} accessibilityRole="button" accessibilityLabel={`Use ${item.text}`} onPress={() => pick(item)} style={{ padding: 13, borderTopWidth: i ? 1 : 0, borderColor: color.line }}><Text style={{ color: color.ink }}>{item.text}</Text></Pressable>)}
+      <Caption style={{ marginTop: 0, padding: 8, paddingTop: 4 }}>Suggestions from the City of Glendale address list</Caption>
+    </View>}
   </>;
 }

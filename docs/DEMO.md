@@ -10,6 +10,7 @@ GLENDALE_GIS_PYTHON=.venv/bin/python npm start
 ```
 Run `npm run map:build` once, after the GIS snapshot is installed, to build the hazard map layers. Then open <http://localhost:5173/app/>. For live editing, also run `cd apps/mobile && npx expo start` and open <http://localhost:8081>; it calls the same API on port 5173.
 
+0. **Public check (no account).** The signed-out screen is "What's mapped at your Glendale address?" Type an address, pick a City suggestion, and see how many of the 7 maps include it, the combined index with its breakdown, the heat grid, each layer's rating and where to start. **I live here** or **I run a business here** leads to sign-up, and step 2 then registers that same address automatically. Public checks are not stored and are rate-limited per visitor.
 1. **Create account.** Name, email and password. Stored only in `data/firepath-dev.json` on this machine.
 2. **Step 1, household.** Add people with an age group and a "may need help leaving" flag. Choose own or rent, and house or apartment.
 3. **Step 2, address.** Any Glendale street address goes to the City geocoder plus the 7 hazard maps (the GIS package must be installed). Then **Mail me a code** shows the code in a labeled *demo mailbox*; enter it to verify.

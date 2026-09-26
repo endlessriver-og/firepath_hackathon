@@ -51,6 +51,16 @@ export function CityDataCallout({ id }) {
   </View>;
 }
 
+// Severity dots: filled up to the level on sources with a 3-step scale; binary layers get a pill instead.
+export function SeverityBadge({ severity }) {
+  if (severity.level === 'zone') return <Text style={{ alignSelf: 'flex-start', backgroundColor: '#F3E3EF', color: '#7B2D8B', fontWeight: '800', fontSize: 11, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, overflow: 'hidden' }}>IN MAPPED ZONE</Text>;
+  if (typeof severity.level !== 'number') return <Text style={{ color: color.muted, fontWeight: '700', fontSize: 12 }}>{severity.label}</Text>;
+  return <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} accessibilityLabel={`Severity ${severity.label}`}>
+    {[1, 2, 3].map(n => <View key={n} style={{ width: 16, height: 8, borderRadius: 4, backgroundColor: n <= severity.level ? ['#F5CF4A', '#E8641E', '#B3261A'][severity.level - 1] : '#E0E5DE' }} />)}
+    <Text style={{ marginLeft: 6, color: color.ink, fontWeight: '800', fontSize: 12 }}>{severity.label}</Text>
+  </View>;
+}
+
 export function ScoreBar({ value }) {
   return <View style={s.track}><View style={[s.fill, { width: `${Math.min(Math.max(value, 0), 100)}%` }]} /></View>;
 }

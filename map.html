@@ -133,7 +133,7 @@ let homeMarker = null;
     const city = L.geoJSON(await geo('city_boundary'), { style: { color: '#1D5B4D', weight: 2, fill: false, dashArray: '6 4' }, interactive: false }).addTo(map);
     map.fitBounds(city.getBounds(), { padding: [8, 8], animate: false });
   } catch { map.setView([34.17, -118.25], 12); document.getElementById('legend').insertAdjacentHTML('afterbegin', '<div class="note"><b>Map layers are not built on this server.</b> Run scripts/build-map-layers.py.</div>'); }
-  if (home) { homeMarker = L.circleMarker(home, { radius: 9, color: '#FFF', weight: 3, fillColor: '#17372E', fillOpacity: 1 }).addTo(map).bindTooltip('Your home', { permanent: true, direction: 'top', offset: [0, -8] }); map.setView(home, 14, { animate: false }); }
+  if (home) { homeMarker = L.circleMarker(home, { radius: 9, color: '#FFF', weight: 3, fillColor: '#17372E', fillOpacity: 1 }).addTo(map).bindTooltip(escape(params.get('label') || 'Your home'), { permanent: true, direction: 'top', offset: [0, -8] }); map.setView(home, 14, { animate: false }); }
   for (const key of active) await draw(key).catch(() => {});
 })();
 </script>
