@@ -79,11 +79,11 @@ export function Home({ me, onChange, go }) {
 
     <Section>{me.user.type === 'business' ? 'Your site' : 'Your home'}</Section>
     {!me.address ? <Card><Muted>Register your address to see which hazard maps include it.</Muted><Link onPress={() => go('Profile')}>Add your address →</Link></Card> : <>
-      <Collapsible icon="🗺" title="What the maps show" summary={place.mapped.length ? place.mapped.map(i => `${i.name} · ${hazardSeverity(i.key, me.hazards[i.key]).label}`).join('  ·  ') : 'No mapped hazard zone here'}>
+      <Collapsible icon="🗺" title="What the maps show" summary={place.mapped.length ? place.mapped.map(i => `${i.name} · in mapped zone`).join('  ·  ') : 'No checked map shows a zone here'}>
         <Caption>{me.address.text} · {me.address.verified === 'mail' ? 'verified' : 'not yet verified'}</Caption>
         {place.mapped.map(item => <View key={item.key} style={{ flexDirection: 'row', gap: 12, backgroundColor: color.warmBg, borderWidth: 1, borderColor: color.warmLine, borderRadius: 14, padding: 14, marginTop: 8 }}>
           <Text style={{ color: color.warm }}>●</Text><View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{item.name} · {hazardSeverity(item.key, me.hazards[item.key]).label}</Text><Muted>{item.label}</Muted><Link style={{ marginTop: 6 }} onPress={() => go('Map', [item.key])}>See zones on the map →</Link></View></View>)}
-        <Caption>Planning maps, not live incidents. Not mapped here: {place.outside.map(i => i.name.toLowerCase()).join(', ') || 'none'}. That is not the same as no risk.</Caption>
+        <Caption>Outside a mapped zone does not mean no risk. These are planning maps, not live incidents.</Caption>
       </Collapsible>
       <HomeRecords me={me} />
     </>}
