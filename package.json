@@ -8,6 +8,8 @@
     "test": "node --test",
     "audio:plan": "node scripts/generate-audio.mjs",
     "build:demo": "node scripts/build-demo.mjs",
-    "mobile:sync": "node scripts/sync-mobile-demo.mjs"
+    "mobile:sync": "node scripts/sync-mobile-demo.mjs",
+    "device:check": ".venv/bin/python scripts/device_check.py",
+    "device:flash": ".venv/bin/python scripts/device_check.py --flash"
   }
 }

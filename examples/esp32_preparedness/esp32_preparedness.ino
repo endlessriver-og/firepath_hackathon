@@ -17,6 +17,7 @@ void setup() {
   pinMode(BUZZER_PIN, OUTPUT);
   digitalWrite(BUZZER_PIN, LOW);
   analogReadResolution(12);
+  Serial.println("{\"type\":\"ready\",\"firmware\":\"firepath-preparedness\",\"warmup_ms\":30000}");
 }
 
 void loop() {
@@ -39,6 +40,7 @@ void loop() {
       // needs strict JSON parsing, authentication, and a defined alert source.
       if (commandLine.indexOf("\"type\":\"alert\"") >= 0 && commandLine.indexOf("\"source\":\"demo\"") >= 0) {
         beepUntil = millis() + 3000;
+        Serial.println("{\"type\":\"ack\",\"command\":\"alert\",\"source\":\"demo\"}");
       }
       commandLine = "";
     } else if (c != '\r' && commandLine.length() < 300) commandLine += c;

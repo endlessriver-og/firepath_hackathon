@@ -9,12 +9,32 @@ The photo from the hardware planning session proposes a polycarbonate case, MQ-2
 3. Power by USB, open serial at 115200, and allow the MQ-2 to warm up. The hard-coded threshold is for bench demonstration and must be calibrated; it has no safety meaning.
 4. In a desktop Chromium browser on localhost, open **Alerts & device → Connect USB device**. Choose the ESP32 port. Click **Send demo alert**: the board beeps for three seconds. A threshold crossing sends a sensor message to the browser.
 
+## Live test
+
+One-time setup (no admin password needed):
+1. Install [`arduino-cli`](https://github.com/arduino/arduino-cli/releases) and add the ESP32 core: `arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json && arduino-cli core update-index && arduino-cli core install esp32:esp32`.
+2. Install pyserial into the project venv: `uv pip install --python .venv/bin/python pyserial`.
+
+With the board on USB:
+- `npm run device:flash` compiles, uploads and runs the test. It finds the board by USB chip (CP210x, CH340/CH9102, FTDI or Espressif native USB), waits for the `ready` line, sends the same SIMULATED alert as the web app, and passes on the `ack`. You should hear about 3 seconds of beeping.
+- `npm run device:check` runs the same test without re-flashing. Add `-- --listen 90` to watch MQ-2 events; the sketch ignores the sensor for the first 30 seconds.
+- **Browser path:** `npm start`, then in desktop Chrome open <http://localhost:5173/#alerts>. Click **Connect USB device**, choose the board, then click **Send demo alert**. Close the terminal test first: only one program can hold the serial port at a time.
+
+If the upload fails, hold **BOOT**, tap **EN/RST**, release **BOOT**, and retry. If no port appears, the USB cable may be charge-only.
+
 ## Line-delimited JSON contract
 
 Board to browser (local sensor observation):
 
 ```json
 {"type":"sensor","sensor":"mq2","active":true,"value":2200}
+```
+
+Board to host (boot and acknowledgement, used by the live test script):
+
+```json
+{"type":"ready","firmware":"firepath-preparedness","warmup_ms":30000}
+{"type":"ack","command":"alert","source":"demo"}
 ```
 
 Browser to board (explicit simulation):
