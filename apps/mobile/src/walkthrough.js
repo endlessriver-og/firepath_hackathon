@@ -27,17 +27,17 @@ export const walkthroughIntro = {
 };
 
 export const TOUR_STEPS = [
-  { chapter: 'Personalized', tab: 'Home', title: 'A plan for these people, at this address',
+  { chapter: 'Personalized', tab: 'Home', title: 'A plan for your household',
     body: 'Dana\'s household: three people, a grandmother who needs help leaving, two dogs, in a CAL FIRE High zone. The line under the ring shows exactly what the plan was built from.' },
   { chapter: 'Personalized', tab: 'Home', title: 'The City\'s own records, per address',
     body: 'Permits, inspections and the parcel number come straight from the City\'s public permit portal. The parcel is the same key the City uses across departments.', tryIt: 'Open "City records" to see recent inspections.' },
-  { chapter: 'Personalized', tab: 'Map', title: 'Mapped hazards across the city',
+  { chapter: 'Hazard maps', tab: 'Map', title: 'See what is mapped nearby',
     body: 'The Combined view adds public mapped layers into a FirePath planning index for each 150-meter square, not an official danger rating. Tap any spot to see how its score adds up. Each layer below links to the agency\'s official map. Switch View to 3D to see the zones draped over the real hillsides and buildings.', tryIt: 'Tap anywhere on the map, then try the 3D view.' },
   { chapter: 'Actionable', tab: 'Plan', sub: 'todo', title: 'A short, numbered checklist',
     body: 'Official alerts first, then the steps the mapped hazards call for, then this household\'s needs. Everything links to the official guidance.' },
-  { chapter: 'Actionable', tab: 'Alerts', sub: 'drill', title: 'Practice an alert for this household',
+  { chapter: 'Alerts and drills', tab: 'Alerts', sub: 'drill', title: 'Practice an emergency',
     body: 'Live National Weather Service alerts for the address come with a plan. Run a drill to see one: it names Rosa, the dogs and the meeting place.', tryIt: 'Pick "Red Flag".' },
-  { chapter: 'Actionable', tab: 'Home', emergency: true, title: 'When it is happening now',
+  { chapter: 'Emergency', tab: 'Home', emergency: true, title: 'Get help when it matters',
     body: 'One tap from anywhere: what is happening, Call 911, then five calm steps for this household.', tryIt: 'Pick "Told to evacuate".' },
   { chapter: 'Actionable', tab: 'Plan', sub: 'print', title: 'Plans that work with no power or signal',
     body: 'A custom one-page plan for the fridge, plus standard sheets like Drop, Cover, Hold On.', tryIt: 'Print "Our emergency plan".' },
@@ -45,7 +45,7 @@ export const TOUR_STEPS = [
     body: 'FirePath read all 75 of the City\'s permit types, so plain words find the official permit. Host at a City venue: a night market on Artsakh Paseo becomes a ready-to-file package.', tryIt: 'Pick Artsakh Avenue Paseo, then Night market.' },
   { chapter: 'Connected', tab: 'Systems', title: 'Data, software and devices on one record',
     body: 'Everything FirePath connects, marked Live, Prototype or Needs City. Plug in the in-home device and its row turns to Connected.' },
-  { chapter: 'A new approach', tab: 'Walkthrough', final: true, overlay: 'Scroll for how FirePath answers each judging criterion, and what we would build with the City next.', title: 'Preparedness keyed to the parcel, and two-way',
+  { chapter: 'Next steps', tab: 'Walkthrough', final: true, overlay: 'See what needs a City partnership.', title: 'What comes next',
     body: 'Public City data can inform a plan today. With City approval, a verified parcel link and consent could carry resident-reported facts to responders in their existing workflow.' },
 ];
 
