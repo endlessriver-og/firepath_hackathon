@@ -572,31 +572,3 @@ export function Systems({ go }) {
 }
 
 
-// The facts a plan was built from, so personalization is visible: "High fire zone · 3 people · Rosa may need help · 2 dogs".
-export function personalFacts(me) {
-  if (!me) return [];
-  const facts = [];
-  if (me.hazards) for (const item of summarizePlace(me.hazards).mapped) facts.push(item.key === 'wildfire' ? `${hazardSeverity('wildfire', me.hazards.wildfire).label} fire zone` : item.name);
-  if (me.user.type === 'business') {
-    const b = me.business || {};
-    if (b.employees) facts.push(`${b.employees} staff`);
-    if ((b.hazmat || []).length) facts.push('hazardous materials on site');
-    if (b.assembly) facts.push('assembly point set');
-  } else {
-    const h = me.household || {};
-    if (h.people) facts.push(`${h.people} ${h.people === 1 ? 'person' : 'people'}`);
-    for (const m of (h.members || []).filter(m => m.needsHelp || m.ageGroup === 'senior')) facts.push(`${m.name} may need help`);
-    if ((h.members || []).some(m => m.ageGroup === 'child')) facts.push('kids at home');
-    for (const p of h.pets || []) facts.push(`${p.count > 1 ? `${p.count} ` : ''}${p.kind}`);
-    if (h.meetNear || h.meetFar) facts.push('meeting places set');
-  }
-  return facts;
-}
-
-export function BuiltFrom({ me, light }) {
-  const facts = personalFacts(me);
-  if (!facts.length) return null;
-  return <Text accessibilityLabel={`Built for you from: ${facts.join(', ')}`} style={{ fontSize: 12, lineHeight: 18, marginTop: 8, color: light ? '#CFE3DA' : color.muted }}>
-    <Text style={{ fontWeight: '800', color: light ? '#FFF' : color.green }}>Built for you from: </Text>{facts.join(' · ')}
-  </Text>;
-}

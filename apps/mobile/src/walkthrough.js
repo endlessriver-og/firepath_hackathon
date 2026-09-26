@@ -28,7 +28,7 @@ export const walkthroughIntro = {
 
 export const TOUR_STEPS = [
   { chapter: 'Personalized', tab: 'Home', title: 'A plan for your household',
-    body: 'Dana\'s household: three people, a grandmother who needs help leaving, two dogs, in a CAL FIRE High zone. The line under the ring shows exactly what the plan was built from.' },
+    body: 'Dana\'s household: three people, a grandmother who needs help leaving, two dogs, in a CAL FIRE High zone.' },
   { chapter: 'Personalized', tab: 'Home', title: 'The City\'s own records, per address',
     body: 'Permits, inspections and the parcel number come straight from the City\'s public permit portal. The parcel is the same key the City uses across departments.', tryIt: 'Open "City records" to see recent inspections.' },
   { chapter: 'Hazard maps', tab: 'Map', title: 'See what is mapped nearby',
@@ -86,7 +86,6 @@ export const criteria = [
   { name: 'Presentation', weight: 15, question: 'Is there clarity in storytelling and visual design?',
     answer: 'One story: an address, the people there, and what to do. A five-stop judge path starts instantly with a fictional household; the full tour is optional.',
     evidence: [
-      'Every plan says what it was built from.',
       'A numbered checklist, a graded hazard map, and an Emergency button always one tap away.',
       'Everything is honestly labelled: Live, Prototype or Needs City.',
     ] },

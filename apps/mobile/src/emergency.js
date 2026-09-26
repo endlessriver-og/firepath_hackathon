@@ -4,7 +4,6 @@ import * as Speech from 'expo-speech';
 import { emergencyGuideIn, emergencySituations } from './playbooks';
 import { SPEECH_LANG, useI18n } from './i18n';
 import { Caption, LanguageSettings, Link, Muted, color } from './ui';
-import { BuiltFrom } from './tabs';
 
 // "Emergency now": pick what is happening, get a short list for this household or business.
 // Calm, large targets, 911 first. Works signed out with general guidance.
@@ -46,7 +45,6 @@ export function EmergencyNow({ me, onClose }) {
   return <>
     <Link style={{ marginTop: 0 }} onPress={() => { Speech.stop(); setId(null); }}>{t('em.else')}</Link>
     <Text style={{ fontSize: 30, fontWeight: '800', color: color.ink, marginTop: 10 }}>{t(`sit.${guide.id}`)}</Text>
-    <BuiltFrom me={me} />
     {call911}
     <Pressable accessibilityRole="button" onPress={readAloud} style={{ marginTop: 10, borderWidth: 2, borderColor: color.green, borderRadius: 14, padding: 13, alignItems: 'center' }}><Text style={{ color: color.green, fontWeight: '900', fontSize: 16 }}>{speaking ? t('em.stop') : t('em.read')}</Text></Pressable>
     {!guide.translated && lang !== 'en' && <Caption>{t('em.englishOnly')}</Caption>}
