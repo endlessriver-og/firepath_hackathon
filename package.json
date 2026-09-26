@@ -13,5 +13,8 @@
     "device:flash": ".venv/bin/python scripts/device_check.py --flash",
     "map:build": ".venv/bin/python scripts/build-map-layers.py",
     "public": "bash scripts/public.sh"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.8.0"
   }
 }

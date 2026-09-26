@@ -6,4 +6,7 @@ audio/*.mp3
 __pycache__/
 *.pyc
 dist/
-data/
+data/*
+!data/map-layers/
+.vercel
+.env*

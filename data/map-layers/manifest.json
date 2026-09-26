@@ -1,0 +1,59 @@
+{
+ "snapshot": "20260926",
+ "layers": {
+  "wildfire": {
+   "source": "CAL FIRE Fire Hazard Severity Zones (LRA, 2025)",
+   "features": 5,
+   "bytes": 85691
+  },
+  "flood": {
+   "source": "FEMA National Flood Hazard Layer",
+   "features": 12,
+   "bytes": 22528
+  },
+  "fault": {
+   "source": "California Geological Survey",
+   "features": 3,
+   "bytes": 1229
+  },
+  "liquefaction": {
+   "source": "California Geological Survey",
+   "features": 8,
+   "bytes": 21242
+  },
+  "landslide": {
+   "source": "California Geological Survey",
+   "features": 340,
+   "bytes": 347217
+  },
+  "dam_inundation": {
+   "source": "California DWR, Division of Safety of Dams",
+   "features": 12,
+   "bytes": 1563174
+  },
+  "debris_flow": {
+   "source": "USGS",
+   "features": 0,
+   "bytes": 42
+  }
+ },
+ "places": {
+  "fire_stations": {
+   "kind": "Fire station",
+   "features": 9
+  },
+  "hospitals": {
+   "kind": "Hospital",
+   "features": 3
+  },
+  "schools": {
+   "kind": "School",
+   "features": 27
+  }
+ },
+ "combined": {
+  "cells": 3240,
+  "grid_m": 150,
+  "max": 11
+ }
+}

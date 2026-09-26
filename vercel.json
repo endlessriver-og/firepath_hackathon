@@ -3,5 +3,17 @@
   "framework": null,
   "buildCommand": "npm run build:demo",
   "outputDirectory": "dist",
-  "installCommand": "npm install --prefix apps/mobile"
+  "installCommand": "npm install && npm install --prefix apps/mobile",
+  "functions": {
+    "api/index.mjs": { "includeFiles": "{data/map-layers/combined.json,src/glendale-permits.json}", "maxDuration": 60 },
+    "api/gis.py": { "maxDuration": 60, "memory": 2048 }
+  },
+  "redirects": [{ "source": "/", "destination": "/app/", "permanent": false }],
+  "rewrites": [
+    { "source": "/classic", "destination": "/index.html" },
+    { "source": "/api/gis", "destination": "/api/gis" },
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/app/(.*)", "destination": "/app/index.html" }
+  ],
+  "headers": [{ "source": "/map-layers/(.*)", "headers": [{ "key": "cache-control", "value": "public, max-age=3600" }] }]
 }

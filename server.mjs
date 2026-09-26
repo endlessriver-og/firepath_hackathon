@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import { resolve, extname, sep } from 'node:path';
 import { createApi, fetchNwsAlerts } from './server/api.mjs';
 import { createParcels } from './server/parcels.mjs';
+import { createCombinedIndex } from './server/combined.mjs';
 import { openStore } from './server/store.mjs';
 import { createGeocoder } from './server/geocode.mjs';
 import { createCityRecords } from './server/city-records.mjs';
@@ -31,15 +32,7 @@ function lookup(payload) {
   });
 }
 
-// Combined planning index (built by scripts/build-map-layers.py): nearest ~150 m cell to a point.
-let combined;
-function combinedIndex(lat, lon) {
-  try { combined ??= JSON.parse(readFileSync(resolve(root, 'data/map-layers/combined.json'), 'utf8')); } catch { return null; }
-  let best = null, bestD = Infinity;
-  for (const cell of combined.cells) { const d = (cell[0] - lat) ** 2 + ((cell[1] - lon) * 0.83) ** 2; if (d < bestD) { bestD = d; best = cell; } }
-  const inCell = best && Math.sqrt(bestD) * 111_000 <= combined.grid_m;
-  return { score: inCell ? best[2] : 0, max: combined.max, parts: inCell ? best[3].split(',').map(code => ({ label: combined.labels[code], points: combined.weights[code] })) : [] };
-}
+const combinedIndex = createCombinedIndex(resolve(root, 'data/map-layers/combined.json'));
 const hazardHits = new Map();
 const api = createApi({ store: openStore(process.env.FIREPATH_DATA || resolve(root, 'data/firepath-dev.json')), lookupHazards: lookup, fetchAlerts: fetchNwsAlerts, geocoder: createGeocoder(), combinedIndex, cityRecords: createCityRecords(), parcelAt: createParcels(), permitCatalog: JSON.parse(readFileSync(resolve(root, 'src/glendale-permits.json'), 'utf8')), demoMailbox: process.env.FIREPATH_DEMO_MAILBOX !== '0' });
 // The Expo dev server (port 8081) calls this API cross-origin with a bearer token; no cookies are used.
