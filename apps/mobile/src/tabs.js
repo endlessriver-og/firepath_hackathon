@@ -15,7 +15,7 @@ import { AddressCheck, CityRecords } from './landing';
 import { eventTemplates, venues, VENUE_NOTE } from './venues';
 import { AddressPanel, AddressSearch, BusinessDetails, BusinessProfile, HouseholdForm } from './onboarding';
 import { Toggle } from './ui';
-import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, Section, Segment, Select, SeverityBadge, Tag, Title, color, s } from './ui';
+import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, ProgressRing, Section, Segment, Select, SeverityBadge, Tag, Title, color, s } from './ui';
 
 const EVERBRIDGE = 'https://www.glendaleca.gov/Everbridge';
 const KNOW_YOUR_ZONE = 'https://www.glendaleca.gov/government/departments/fire-department/other-links/emergency-preparedness-response/know-your-zone';
@@ -28,13 +28,16 @@ function useToggle(me, onChange) {
   }];
 }
 
-export function TaskCard({ task, done, busy, onToggle }) {
+// Checklist order: official alerts first, then mapped-hazard steps, then household, then general.
+export const checklist = me => nextSteps(me.recommendations, {}, me.recommendations.length);
+
+export function TaskCard({ task, number, done, busy, onToggle }) {
   return <View style={[s.card, { flexDirection: 'row', gap: 14 }, done && { opacity: 0.62 }]}>
     <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: done, busy }} accessibilityLabel={task.title} onPress={() => onToggle(task.id)} style={{ width: 30, height: 30, borderRadius: 9, borderWidth: 2, borderColor: color.green, backgroundColor: done ? color.green : 'transparent', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
       <Text style={{ color: '#FFF', fontWeight: '900' }}>{busy ? '…' : done ? '✓' : ''}</Text>
     </Pressable>
     <View style={{ flex: 1 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Tag tone={task.tag.startsWith('Mapped') ? 'warm' : undefined}>{task.tag}</Tag><Text style={{ color: color.gold, fontWeight: '800', fontSize: 11 }}>+{task.points}</Text></View>
+      <Tag tone={task.tag.startsWith('Mapped') ? 'warm' : undefined}>{number ? `${number} · ${task.tag}` : task.tag}</Tag>
       <Text style={{ color: color.ink, fontSize: 16, fontWeight: '700', marginBottom: 3, textDecorationLine: done ? 'line-through' : 'none' }}>{task.title}</Text>
       {!done && <Muted>{task.description}</Muted>}
       {!done && task.url && <Link onPress={() => Linking.openURL(task.url)}>{task.link || 'Read guidance'} ↗</Link>}
@@ -52,19 +55,19 @@ export function Home({ me, onChange, go }) {
   const r = me.readiness;
   const [busy, toggle] = useToggle(me, onChange);
   const place = me.hazards ? summarizePlace(me.hazards) : null;
-  const next = nextSteps(me.recommendations, me.done);
+  const ordered = checklist(me);
+  const next = ordered.filter(t => !me.done[t.id]).slice(0, 3);
+  const done = ordered.length - ordered.filter(t => !me.done[t.id]).length, total = ordered.length;
   return <>
     <Text style={s.muted}>{me.user.type === 'business' ? me.business?.name || 'Your business' : `Hi ${me.user.name.split(' ')[0]}`}</Text>
-    <Card style={{ marginTop: 8, backgroundColor: color.green, borderColor: color.green }}>
-      <Text style={{ color: '#CFE3DA', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>READINESS</Text>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 10 }}><Text style={{ color: '#FFF', fontSize: 44, fontWeight: '900' }}>{r.score}</Text><Text style={{ color: '#FFF', fontSize: 18, fontWeight: '800' }}>{r.level}</Text></View>
-      <View style={{ height: 10, backgroundColor: '#3E7667', borderRadius: 5, overflow: 'hidden' }}><View style={{ height: 10, width: `${r.score}%`, backgroundColor: '#F2C46D' }} /></View>
-      <Text style={{ color: '#CFE3DA', fontSize: 12, marginTop: 8 }}>{r.nextLevel ? `${r.nextLevel.at - r.score} points to ${r.nextLevel.name}` : 'Every step is done. Review your plan every few months.'}</Text>
+    <Card style={{ marginTop: 8, backgroundColor: color.green, borderColor: color.green, flexDirection: 'row', alignItems: 'center', gap: 18 }}>
+      <ProgressRing percent={r.score} track="#3E7667" fill="#F2C46D" textColor="#FFF" />
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: '#CFE3DA', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>YOUR CHECKLIST</Text>
+        <Text style={{ color: '#FFF', fontSize: 20, fontWeight: '800', marginTop: 2 }}>{done} of {total} done</Text>
+        <Text style={{ color: '#CFE3DA', fontSize: 13, marginTop: 4 }}>{done === total ? 'All done. Review your plan every few months.' : 'Work down the list; the most important steps come first.'}</Text>
+      </View>
     </Card>
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>{r.badges.map(b =>
-      <View key={b.id} accessibilityLabel={`${b.title}${b.earned ? ', earned' : ', not yet earned'}`} style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, backgroundColor: b.earned ? color.goldBg : '#ECEFEA', borderWidth: 1, borderColor: b.earned ? '#E3C98E' : '#E0E5DE' }}>
-        <Text style={{ fontSize: 12, fontWeight: '700', color: b.earned ? color.gold : '#9AA8A2' }}>{b.earned ? '★ ' : '☆ '}{b.title}</Text>
-      </View>)}</View>
 
     <Section>{me.user.type === 'business' ? 'What the maps show at your site' : 'What the maps show at home'}</Section>
     {!me.address ? <Card><Muted>Register your address to see which hazard maps include it.</Muted><Link onPress={() => go('Profile')}>Add your address →</Link></Card> : <>
@@ -76,9 +79,9 @@ export function Home({ me, onChange, go }) {
       <HomeRecords me={me} />
     </>}
 
-    <Section>Your next steps</Section>
-    {next.map(task => <TaskCard key={task.id} task={task} done={false} busy={busy === task.id} onToggle={toggle} />)}
-    <Link onPress={() => go('Plan')}>Search all {me.recommendations.length} recommendations →</Link>
+    <Section>Next on your list</Section>
+    {next.map(task => <TaskCard key={task.id} task={task} number={ordered.indexOf(task) + 1} done={false} busy={busy === task.id} onToggle={toggle} />)}
+    <Link onPress={() => go('Plan')}>See the full checklist ({total}) →</Link>
     <Section>Public resources</Section>
     <Resources compact />
   </>;
@@ -87,16 +90,20 @@ export function Home({ me, onChange, go }) {
 export function Actions({ me, onChange }) {
   const [q, setQ] = useState(''), [category, setCategory] = useState('all'), [status, setStatus] = useState('open');
   const [busy, toggle] = useToggle(me, onChange);
-  const results = queryRecommendations(me.recommendations, { q, category, status, done: me.done });
-  const complete = me.recommendations.filter(r => me.done[r.id]).length;
+  const ordered = checklist(me);
+  const results = ordered.filter(t => queryRecommendations([t], { q, category, status, done: me.done }).length);
+  const complete = ordered.filter(r => me.done[r.id]).length;
   return <>
-    <Title>Recommendations</Title>
-    <Muted>Built from your address and profile. {complete} of {me.recommendations.length} done.</Muted>
-    <ScoreBar value={(complete / me.recommendations.length) * 100} />
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+      <ProgressRing percent={me.readiness.score} size={72} stroke={8} />
+      <View style={{ flex: 1 }}><Title style={{ marginBottom: 2 }}>Checklist</Title><Muted>{complete} of {ordered.length} done. Built from your address and profile.</Muted></View>
+    </View>
     <Field label="Search" value={q} onChangeText={setQ} placeholder="Try “pets”, “roof”, “water”" autoCapitalize="none" />
-    <Chips value={category} options={categories} onChange={setCategory} />
-    <Chips value={status} options={[['open', 'To do'], ['done', 'Done'], ['all', 'All']]} onChange={setStatus} />
-    {results.length ? results.map(task => <TaskCard key={task.id} task={task} done={Boolean(me.done[task.id])} busy={busy === task.id} onToggle={toggle} />)
+    <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View style={{ flex: 1 }}><Select label="Topic" value={category} options={categories} onChange={v => setCategory(v || 'all')} /></View>
+      <View style={{ flex: 1 }}><Select label="Show" value={status} options={[['open', 'To do'], ['done', 'Done'], ['all', 'All']]} onChange={v => setStatus(v || 'open')} /></View>
+    </View>
+    {results.length ? results.map(task => <TaskCard key={task.id} task={task} number={ordered.indexOf(task) + 1} done={Boolean(me.done[task.id])} busy={busy === task.id} onToggle={toggle} />)
       : <Card><Muted>No recommendations match. Try another word or filter.</Muted></Card>}
     <PrintSheets me={me} />
     <CityDataCallout id="permitHistory" />
@@ -127,7 +134,7 @@ function Drill({ me, onChange }) {
   const finish = async () => { setBusy(true); try { if (!me.done.drill) onChange(await api('PUT', '/api/me/tasks', { id: 'drill', done: true })); setEvent(null); setPlaybook(null); } catch (err) { setError(err.message); } finally { setBusy(false); } };
   return <>
     <Section>Practice drill</Section>
-    <Muted>Pick an alert type to see the plan FirePath would build for {me.user.type === 'business' ? 'your business' : 'your household'} if it were real.{me.done.drill ? ' You have completed a drill.' : ' Finishing one earns points.'}</Muted>
+    <Muted>Pick an alert type to see the plan FirePath would build for {me.user.type === 'business' ? 'your business' : 'your household'} if it were real.{me.done.drill ? ' You have completed a drill.' : ' Finishing one checks off the drill step.'}</Muted>
     <Chips value={event} options={drillEvents.map(e => [e, e.replace(' Warning', '').replace(' Alert', '')])} onChange={open} />
     <ErrorText>{error}</ErrorText>
     {event && !playbook && !error && <Muted style={{ marginTop: 10 }}>Building your plan…</Muted>}
@@ -135,7 +142,7 @@ function Drill({ me, onChange }) {
       <Text style={{ alignSelf: 'flex-start', backgroundColor: color.goldBg, color: color.gold, fontWeight: '900', fontSize: 11, letterSpacing: 1, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>DRILL · NOT A REAL ALERT</Text>
       <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>If a {event} covered your address</Text>
       <Playbook playbook={playbook} drill />
-      <Button busy={busy} onPress={finish}>{me.done.drill ? 'Close drill' : 'Finish drill (+15)'}</Button>
+      <Button busy={busy} onPress={finish}>{me.done.drill ? 'Close drill' : 'Finish drill'}</Button>
     </Card>}
   </>;
 }

@@ -84,7 +84,7 @@ export function Landing({ onSignedIn, onEmergency }) {
       <Card style={{ borderColor: color.green, borderWidth: 2, marginTop: 22 }}>
         <Tag>Free for Glendale residents and businesses</Tag>
         <Text style={{ color: color.ink, fontSize: 20, fontWeight: '800' }}>Get a plan for this address</Text>
-        <Muted style={{ marginTop: 6 }}>Register to get a household plan and readiness score, live weather alerts with steps for your household, practice drills, and help with permits.</Muted>
+        <Muted style={{ marginTop: 6 }}>Register to get a step-by-step checklist for your household, live weather alerts with steps for your household, practice drills, and help with permits.</Muted>
         <Button onPress={() => setSignup({ type: 'resident', mode: 'signup' })}>I live here: create my plan</Button>
         <Button kind="outline" onPress={() => setSignup({ type: 'business', mode: 'signup' })}>I run a business here</Button>
       </Card>

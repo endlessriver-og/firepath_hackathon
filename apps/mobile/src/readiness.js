@@ -81,7 +81,8 @@ export function readiness(recommendations, done = {}, profile = {}, household = 
   const steps = business ? businessMilestones(profile, household) : milestones(profile, household);
   const possible = steps.reduce((sum, m) => sum + m.points, 0) + recommendations.reduce((sum, r) => sum + r.points, 0);
   const earned = steps.filter(m => m.done).reduce((sum, m) => sum + m.points, 0) + recommendations.filter(r => done[r.id]).reduce((sum, r) => sum + r.points, 0);
-  const score = possible ? Math.round((earned / possible) * 100) : 0;
+  // Shown to users as a plain percentage of the visible checklist (no points).
+  const score = recommendations.length ? Math.round((recommendations.filter(r => done[r.id]).length / recommendations.length) * 100) : 0;
   const levelIndex = LEVELS.reduce((found, [min], index) => score >= min ? index : found, 0);
   const next = LEVELS[levelIndex + 1];
   const state = { done, milestone: Object.fromEntries(steps.map(m => [m.id, m.done])) };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import Svg, { Circle } from 'react-native-svg';
 import { cityData } from './city-data';
 
 export const color = { bg: '#F5F6F1', ink: '#17372E', green: '#1D5B4D', muted: '#53655E', line: '#E2E8E1', soft: '#E6EFE9', warm: '#B4502B', warmBg: '#FFF9F5', warmLine: '#E9C2AE', gold: '#8A5A12', goldBg: '#F6E6C8', blue: '#2E5A88', blueBg: '#EAF1F8' };
@@ -89,6 +90,19 @@ export function Collapsible({ title, summary, icon, initiallyOpen = false, child
       <Text style={{ color: color.green, fontSize: 18, fontWeight: '900' }}>{open ? '−' : '+'}</Text>
     </Pressable>
     {open && <View style={{ paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderColor: color.line }}>{children}</View>}
+  </View>;
+}
+
+// Completion ring: percent done, drawn with SVG so it looks the same on web, iOS and Android.
+export function ProgressRing({ percent, size = 96, stroke = 10, track = '#DDE4DC', fill = color.green, label, textColor = color.ink }) {
+  const r = (size - stroke) / 2, c = 2 * Math.PI * r, p = Math.min(Math.max(percent, 0), 100);
+  return <View accessibilityRole="progressbar" accessibilityLabel={`${p}% complete`} style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+    <Svg width={size} height={size} style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}>
+      <Circle cx={size / 2} cy={size / 2} r={r} stroke={track} strokeWidth={stroke} fill="none" />
+      <Circle cx={size / 2} cy={size / 2} r={r} stroke={fill} strokeWidth={stroke} fill="none" strokeLinecap="round" strokeDasharray={`${c} ${c}`} strokeDashoffset={c * (1 - p / 100)} />
+    </Svg>
+    <Text style={{ fontSize: size * 0.24, fontWeight: '900', color: textColor }}>{p}%</Text>
+    {label ? <Text style={{ fontSize: 10, color: textColor, opacity: 0.8, marginTop: -2 }}>{label}</Text> : null}
   </View>;
 }
 
