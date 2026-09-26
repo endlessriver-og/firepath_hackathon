@@ -28,6 +28,9 @@ export function CityRecords({ records, initiallyOpen }) {
   </Collapsible>;
 }
 
+// A hazard layer counts as "in zone" when the map places the address inside any zone or level.
+const inZone = l => l.level === 'zone' || (typeof l.level === 'number' && l.level > 0);
+
 export function AddressCheck({ onResult, onRegister, showPreview = false, label }) {
   const { t } = useI18n();
   const [address, setAddress] = useState('');
@@ -63,9 +66,9 @@ export function AddressCheck({ onResult, onRegister, showPreview = false, label 
       <CityRecords records={result.records} />
       <MapFrame src={`${apiBase()}/map.html?layers=combined&label=This%20address&lat=${result.lat}&lon=${result.lon}`} style={{ height: 320, borderRadius: 17, marginTop: 12, borderWidth: 1, borderColor: color.line }} />
       <Section>Seven hazard maps</Section>
-      <Caption style={{ marginTop: 0 }}>✓ In mapped zone · ○ Outside mapped zone · ? Map unavailable. These are planning maps, not live alerts.</Caption>
-      {result.layers.map(l => <View key={l.key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 1, borderColor: color.line }}>
-        <Text style={{ flex: 1, color: color.ink, fontWeight: '700' }}>{l.name}</Text><Text style={{ color: l.level === 'zone' || (typeof l.level === 'number' && l.level > 0) ? color.warm : color.green, fontWeight: '800', fontSize: 12 }}>{l.level === 'zone' || (typeof l.level === 'number' && l.level > 0) ? '✓ In zone' : l.level === 'unknown' ? '? Unavailable' : '○ Outside zone'}</Text>
+      <Caption style={{ marginTop: 0 }}>⚠ In zone · ○ Outside · ? Unavailable. Planning maps, not live alerts.</Caption>
+      {[...result.layers].sort((a, b) => inZone(b) - inZone(a)).map(l => <View key={l.key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 1, borderColor: color.line }}>
+        <Text style={{ flex: 1, color: color.ink, fontWeight: '700' }}>{l.name}</Text><Text style={{ color: inZone(l) ? color.warm : color.muted, fontWeight: '800', fontSize: 12 }}>{inZone(l) ? `⚠ ${typeof l.level === 'number' ? l.label : 'In zone'}` : l.level === 'unknown' ? '? Unavailable' : '○ Outside'}</Text>
       </View>)}
       <Collapsible title="Map sources" summary="Official maps and dates">{result.layers.map(l => hazardViewers[l.key] && <Link key={l.key} onPress={() => Linking.openURL(hazardViewers[l.key].url)}>{l.name}: official map ↗</Link>)}<Caption>Checked {result.checkedAt.slice(0, 10)}. Planning maps, not live incidents or evacuation orders.</Caption></Collapsible>
       {showPreview && result.preview.length > 0 && <><Section>Where to start</Section>

@@ -448,10 +448,10 @@ export function MapTab({ me, layers, setLayers, top }) {
     <Select label="Map view" value={view3d ? '3d' : '2d'} options={[['2d', 'Flat map'], ['3d', '3D terrain']]} onChange={v => setView3d(v === '3d')} />
     <Caption>Tap the map to inspect a location. Shading shows planning zones, not live incidents.</Caption>
     {me.hazards ? <>
-      <Collapsible icon="🗺" title="At your address" summary="✓ In zone · ○ Outside zone · ? Unavailable">
+      <Collapsible icon="🗺" title="At your address" summary={`${order.filter(k => describeHazard(k, me.hazards[k]).tone === 'mapped').length} of ${order.length} maps show a zone here`}>
       {order.map(key => { const sev = hazardSeverity(key, me.hazards[key]); const meta = me.hazards[key]?._meta || {}; const on = layers.includes(key); return (
         <Pressable key={key} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => { setLayers([key]); top?.(); }} style={[s.card, on && { borderColor: color.green, borderWidth: 2 }]}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}><Text style={{ color: color.ink, fontSize: 15, fontWeight: '800' }}>{hazardNames[key]}</Text><Text style={{ color: describeHazard(key, me.hazards[key]).tone === 'mapped' ? color.warm : color.green, fontWeight: '800', fontSize: 12 }}>{describeHazard(key, me.hazards[key]).tone === 'mapped' ? '✓ In zone' : describeHazard(key, me.hazards[key]).tone === 'unknown' ? '? Unavailable' : '○ Outside zone'}</Text></View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}><Text style={{ color: color.ink, fontSize: 15, fontWeight: '800' }}>{hazardNames[key]}</Text><Text style={{ color: describeHazard(key, me.hazards[key]).tone === 'mapped' ? color.warm : color.muted, fontWeight: '800', fontSize: 12 }}>{describeHazard(key, me.hazards[key]).tone === 'mapped' ? `⚠ ${typeof sev.level === 'number' ? sev.label : 'In zone'}` : describeHazard(key, me.hazards[key]).tone === 'unknown' ? '? Unavailable' : '○ Outside'}</Text></View>
           {hazardViewers[key] && <Link style={{ marginTop: 6 }} onPress={() => Linking.openURL(hazardViewers[key].url)}>Official map: {hazardViewers[key].name} ↗</Link>}
         </Pressable>); })}
       </Collapsible>
