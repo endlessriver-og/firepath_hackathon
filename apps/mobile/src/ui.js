@@ -82,7 +82,7 @@ export function SeverityBadge({ severity }) {
 export function Collapsible({ title, summary, icon, initiallyOpen = false, children, tone }) {
   const [open, setOpen] = useState(initiallyOpen);
   return <View style={[s.card, { padding: 0, overflow: 'hidden' }, tone === 'blue' && { borderColor: '#C9D8EA' }]}>
-    <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={() => setOpen(!open)} style={{ flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 }}>
+    <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} aria-expanded={open} onPress={() => setOpen(!open)} style={{ flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 }}>
       {icon ? <Text style={{ fontSize: 20 }}>{icon}</Text> : null}
       <View style={{ flex: 1 }}>
         <Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>{title}</Text>
@@ -157,6 +157,18 @@ export const s = StyleSheet.create({
 });
 
 // Language and text-size pickers (dropdowns). Shown on the landing page, in Profile and in Emergency.
+// Slim single row for the top of the public page: globe + language, Aa + text size.
+export function LanguageBar() {
+  const { lang, setLang, scale, setScale } = useI18n();
+  const pick = (value, options, onChange, label, width) => <View style={{ flex: width, borderWidth: 1, borderColor: '#D5DDD5', borderRadius: 10, backgroundColor: '#FFF', overflow: 'hidden' }}>
+    <Picker accessibilityLabel={label} selectedValue={value} onValueChange={onChange} style={{ height: 38, borderWidth: 0, backgroundColor: 'transparent', color: color.ink, fontSize: 13, paddingHorizontal: 8 }}>{options.map(([k, t]) => <Picker.Item key={k} label={t} value={k} />)}</Picker>
+  </View>;
+  return <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 12 }}>
+    <Text style={{ fontSize: 16 }}>🌐</Text>{pick(lang, LANGS, v => setLang(v || 'en'), 'Language', 1.6)}
+    <Text style={{ fontSize: 14, fontWeight: '900', color: color.ink }}>Aa</Text>{pick(String(scale), [['1', 'A'], ['1.2', 'A+'], ['1.4', 'A++']], v => setScale(Number(v) || 1), 'Text size', 0.8)}
+  </View>;
+}
+
 export function LanguageSettings({ compact }) {
   const { lang, setLang, scale, setScale, t } = useI18n();
   return <View style={compact ? { flexDirection: 'row', gap: 8 } : null}>

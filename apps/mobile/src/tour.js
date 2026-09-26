@@ -3,12 +3,14 @@ import { Pressable, Text, View } from 'react-native';
 import { criteria, partnership, TOUR_STEPS, walkthroughIntro } from './walkthrough';
 import { useState } from 'react';
 import { Button, Caption, Link, Muted, Section, color } from './ui';
+import { HeroIllustration } from './illustration';
 
 // Hub: the one-minute version and the door into the guided tour. `closing` shows the final chapter.
 export function WalkthroughHub({ onStart, onClose, busy, error, closing }) {
   const chapters = [...new Set(TOUR_STEPS.map(s => s.chapter))];
   return <>
     {onClose && <Link style={{ marginTop: 0 }} onPress={onClose}>← Back</Link>}
+    <HeroIllustration height={150} dark={closing} />
     <Text style={{ color: '#367363', fontSize: 11, fontWeight: '800', letterSpacing: 2, marginTop: 14 }}>{closing ? 'A NEW APPROACH' : walkthroughIntro.eyebrow.toUpperCase()}</Text>
     <Text style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 8 }}>{closing ? TOUR_STEPS.at(-1).title : walkthroughIntro.heading}</Text>
     <Muted style={{ marginTop: 10, fontSize: 16, lineHeight: 24 }}>{closing ? TOUR_STEPS.at(-1).body : walkthroughIntro.lede}</Muted>

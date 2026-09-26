@@ -4,7 +4,7 @@ import { api, saveSession } from './api';
 import { summarizePlace } from './preparedness';
 import { businessKinds, hazmatKinds } from './readiness';
 import MapPanel from './MapPanel';
-import { Button, Caption, Card, CityDataCallout, ErrorText, Field, Link, Muted, Section, Segment, Select, Step, Tag, Title, Toggle, color, s } from './ui';
+import { Button, Caption, Card, CityDataCallout, Collapsible, ErrorText, Field, Link, Muted, Section, Segment, Select, Step, Tag, Title, Toggle, color, s } from './ui';
 
 export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'resident' }) {
   const [mode, setMode] = useState(initialMode);
@@ -144,7 +144,7 @@ export function HouseholdForm({ me, onSaved, onboarding }) {
     {onboarding ? <Title>What should responders know?</Title> : <Section>Household details</Section>}
     <Muted>Short, practical facts only. No medical diagnoses, door codes or anything you would not want shown to a responder.</Muted>
 
-    <Text style={[s.fieldLabel, { marginTop: 20 }]}>Pets and animals</Text>
+    <Collapsible icon="🐾" initiallyOpen={onboarding} title="Pets and animals" summary={form.pets.length ? form.pets.map(p => `${p.count} ${p.kind}`).join(', ') : 'None added'}>
     {form.pets.map((p, i) => <View key={`${p.kind}-${i}`} style={[s.toggleRow, { marginTop: 8 }]}>
       <Text style={{ flex: 1, color: color.ink }}>{p.count} {p.kind}{p.where ? ` · ${p.where}` : ''}</Text>
       <Link style={{ marginTop: 0 }} onPress={() => set({ pets: form.pets.filter((_, j) => j !== i) })}>Remove</Link>
@@ -155,13 +155,20 @@ export function HouseholdForm({ me, onSaved, onboarding }) {
     </View>
     <Field label="Where they usually are" value={pet.where} onChangeText={where => setPet({ ...pet, where })} placeholder="e.g., backyard, upstairs bedroom" maxLength={80} />
     <Button kind="outline" disabled={!pet.kind.trim()} onPress={addPet}>+ Add animal</Button>
+    </Collapsible>
 
+    <Collapsible icon="🧑‍🦽" initiallyOpen={onboarding} title="Help, access and shutoffs" summary={[form.assistance && 'help noted', form.access && 'access noted', form.utilities && 'shutoffs noted'].filter(Boolean).join(' · ') || 'Nothing added yet'}>
     <Field label="Anyone who may need help leaving" hint="Describe the help, not a diagnosis." value={form.assistance} onChangeText={assistance => set({ assistance })} placeholder="e.g., uses a wheelchair; needs a step-free exit" maxLength={120} />
     <Field label="Access note" hint="General access only. Never lock codes." value={form.access} onChangeText={access => set({ access })} placeholder="e.g., side gate on the left, dog in yard" maxLength={140} />
     <Field label="Utility shutoffs" value={form.utilities} onChangeText={utilities => set({ utilities })} placeholder="e.g., gas meter on the east wall" maxLength={120} />
+    </Collapsible>
+
+    <Collapsible icon="📍" initiallyOpen={onboarding} title="Meeting places and contact" summary={[form.meetNear, form.meetFar].filter(Boolean).join(' · ') || 'Not set yet'}>
     <Field label="Meeting place near home" value={form.meetNear} onChangeText={meetNear => set({ meetNear })} placeholder="e.g., the corner mailbox" maxLength={80} />
     <Field label="Meeting place outside the neighborhood" value={form.meetFar} onChangeText={meetFar => set({ meetFar })} placeholder="e.g., Montrose library" maxLength={80} />
     <Field label="Out-of-area contact" value={form.contact} onChangeText={contact => set({ contact })} placeholder="e.g., Aunt Rosa in Fresno" maxLength={80} />
+    </Collapsible>
+
     <Toggle label="Share with responders when the City connects" detail="Today FirePath is not connected to 911, dispatch or the City. Turning this on records your consent for a future connection; you can turn it off any time." value={form.shareWithResponders} onChange={shareWithResponders => set({ shareWithResponders })} />
     <CityDataCallout id="cad" />
     <ErrorText>{error}</ErrorText>

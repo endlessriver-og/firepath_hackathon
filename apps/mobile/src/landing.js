@@ -6,8 +6,9 @@ import { Auth, AddressSearch } from './onboarding';
 import { Resources } from './tabs';
 import { hazardViewers } from './resources';
 import { Linking } from 'react-native';
-import { Button, Caption, Card, Collapsible, ErrorText, LanguageSettings, Link, Muted, Section, SeverityBadge, Tag, color } from './ui';
+import { Button, Caption, Card, Collapsible, ErrorText, LanguageBar, Link, Muted, Section, SeverityBadge, Tag, color } from './ui';
 import { useI18n } from './i18n';
+import { HeroIllustration } from './illustration';
 
 // Public front door: anyone can check a Glendale address without an account. Results end in a
 // call to register for alerts, a household plan and permit help for that address.
@@ -80,8 +81,9 @@ export function Landing({ onSignedIn, onEmergency, onWalkthrough }) {
   return <>
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Text style={{ fontSize: 15, fontWeight: '900', letterSpacing: 2, color: color.green }}>FIREPATH</Text>
       <Text accessibilityRole="button" onPress={onEmergency} style={{ backgroundColor: '#B3261A', color: '#FFF', fontWeight: '800', fontSize: 12, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, overflow: 'hidden' }}>{t('head.emergency')}</Text></View>
-    <LanguageSettings compact />
-    <Text style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 14 }}>{t('land.title')}</Text>
+    <LanguageBar />
+    <HeroIllustration />
+    <Text style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 18 }}>{t('land.title')}</Text>
     <Muted style={{ marginTop: 8, fontSize: 16 }}>{t('land.sub')}</Muted>
     {onWalkthrough && <Pressable accessibilityRole="button" onPress={onWalkthrough} style={{ marginTop: 14, backgroundColor: '#12302A', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <Text style={{ fontSize: 22 }}>▶</Text>
