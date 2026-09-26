@@ -12,10 +12,11 @@ const scenarios = [
   { blocked: ['KITCHEN'], drill: false },
   { blocked: ['KITCHEN', 'WEST_HALL'], drill: false }
 ];
-const messages = [...new Set(scenarios.flatMap(s => {
+const records = scenarios.flatMap(s => {
   const routes = computeRoutes(s.blocked);
-  return rooms.map(room => guidance(room, routes[room], { language, drill: s.drill, blocked: s.blocked }).text);
-}))];
+  return rooms.map(room => guidance(room, routes[room], { language, drill: s.drill, blocked: s.blocked }));
+});
+const messages = [...new Set(records.map(record => record.text))];
 
 console.log(`${messages.length} fixed ${language} phrases for the demo.`);
 if (!generate) {
@@ -32,6 +33,9 @@ await mkdir(dir, { recursive: true });
 let manifest = {};
 try { manifest = JSON.parse(await readFile(resolve(dir, 'manifest.json'), 'utf8')); }
 catch { /* First language generated in this folder. */ }
+let deviceManifest = {};
+try { deviceManifest = JSON.parse(await readFile(resolve(dir, 'device-manifest.json'), 'utf8')); }
+catch { /* First language generated in this folder. */ }
 for (const [index, text] of messages.entries()) {
   const hash = createHash('sha256').update(text).digest('hex').slice(0, 16);
   const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voice)}?output_format=mp3_44100_128`, {
@@ -42,7 +46,9 @@ for (const [index, text] of messages.entries()) {
   if (!response.ok) throw new Error(`ElevenLabs returned HTTP ${response.status} for clip ${index + 1}. Stopping without updating the manifest.`);
   await writeFile(resolve(dir, `${hash}.mp3`), Buffer.from(await response.arrayBuffer()));
   manifest[text] = `./audio/${hash}.mp3`;
+  for (const record of records.filter(record => record.text === text)) deviceManifest[`${language}:${record.id}`] = `${hash}.mp3`;
   console.log(`Saved clip ${index + 1}/${messages.length}`);
 }
 await writeFile(resolve(dir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+await writeFile(resolve(dir, 'device-manifest.json'), JSON.stringify(deviceManifest, null, 2));
 console.log('Audio cached locally. Restart or refresh FirePath to use it.');

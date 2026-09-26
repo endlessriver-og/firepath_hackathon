@@ -79,7 +79,7 @@ export function guidance(room, route, { language = 'en', drill = false, blocked 
   const steps = es ? `Salga de ${nodes[room]?.label || room}. ${turn ? `Gire a la ${turn === 'right' ? 'derecha' : 'izquierda'} en el pasillo. ` : ''}Continúe hacia ${destination}.` : `Leave ${nodes[room]?.label || room}. ${turn ? `Turn ${turn} at the hallway. ` : ''}Continue to ${destination}.`;
   const hazard = blocked.includes('WEST_HALL') ? (es ? 'Evite el pasillo oeste.' : 'Avoid the west hall.') : blocked.includes('KITCHEN') ? (es ? 'Evite la cocina.' : 'Avoid the kitchen.') : '';
   return {
-    id: `${drill ? 'DRILL' : 'ALERT'}_${route.exit}`,
+    id: `${drill ? 'DRILL' : 'ALERT'}_${room}_${route.exit}${blocked.length ? '_' + [...blocked].sort().join('_') : ''}`,
     text: `${prefix}${steps}${hazard ? ` ${hazard}` : ''}`
   };
 }

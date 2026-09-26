@@ -51,6 +51,7 @@ Route selection is deterministic. Language is selected from templates; no langua
 ## Optional ElevenLabs audio
 
 `npm run audio:plan` lists the number of phrases without contacting the API. To generate and cache nine English demo phrases, set `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID` in your shell, then run `node scripts/generate-audio.mjs --generate`. Add `--spanish` to generate nine Spanish phrases. The browser uses a cached clip when its exact reviewed phrase is present and otherwise falls back to browser speech. The API key stays on the local machine; generated MP3 files are ignored by Git.
+The script also writes `audio/device-manifest.json`, which maps each `language:message_id` to a local MP3 filename for a physical audio player.
 
 The script follows ElevenLabs' [official text-to-speech endpoint](https://elevenlabs.io/docs/api-reference/text-to-speech/convert) and [API-key guidance](https://elevenlabs.io/docs/api-reference/authentication). These calls consume the account's generation credits; the default command is a dry run.
 

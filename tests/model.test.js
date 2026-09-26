@@ -24,6 +24,7 @@ test('never suggests a route through a blocked start or disconnected exits', () 
 test('speech message selects validated route and drill mode', () => {
   const route = routeFrom('ROOM_B', []);
   assert.match(guidance('ROOM_B', route, { language: 'es', drill: true }).text, /salida este/);
-  assert.equal(guidance('ROOM_B', route).id, 'ALERT_EAST_EXIT');
+  assert.equal(guidance('ROOM_B', route).id, 'ALERT_ROOM_B_EAST_EXIT');
   assert.match(guidance('ROOM_A', routeFrom('ROOM_A', ['WEST_HALL']), { blocked: ['WEST_HALL'] }).text, /Turn left at the hallway.*Avoid the west hall/);
+  assert.notEqual(guidance('ROOM_A', routeFrom('ROOM_A', ['WEST_HALL']), { blocked: ['WEST_HALL'] }).id, guidance('ROOM_B', route).id);
 });

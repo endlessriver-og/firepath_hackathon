@@ -70,7 +70,7 @@
 
         <section id="devices-view" class="view"><div class="settings-grid"><div class="panel settings-panel"><div class="eyebrow">HARDWARE INTEGRATION</div><h2>Bridge to physical nodes</h2><p>Connect a USB serial controller with newline-delimited JSON. Buttons become hazard events; each notifier receives its own guidance command.</p><div class="device-line"><b>Bedroom A</b><span>NODE_ROOM_A</span><em>READY</em></div><div class="device-line"><b>Bedroom B</b><span>NODE_ROOM_B</span><em>READY</em></div><div class="device-line"><b>Bedroom C</b><span>NODE_ROOM_C</span><em>READY</em></div><button id="serial-btn" class="solid-button">Connect serial hardware</button><p id="serial-status" class="device-note">Simulator is active. Chrome or Edge on localhost supports the serial bridge.</p></div><div class="panel plan-panel"><div class="eyebrow">ONE SMALL CONTRACT</div><h2>Events in. Guidance out.</h2><pre>{"type":"hazard","node":"KITCHEN","active":true}
 {"type":"hazard","node":"WEST_HALL","active":true}</pre><p>Each change sends a command for every notifier:</p><pre>{"type":"guidance","node":"ROOM_A",
- "message_id":"ALERT_EAST_EXIT",
+ "message_id":"ALERT_ROOM_A_EAST_EXIT_KITCHEN_WEST_HALL",
  "exit":"EAST_EXIT",
  "text":"Fire alert. From Bedroom A..."}</pre><p>See <code>docs/HARDWARE.md</code> for wiring assumptions, valid IDs and testing steps. The browser speaks guidance locally; a microcontroller can map message IDs to cached audio.</p></div></div></section>
       </div>
