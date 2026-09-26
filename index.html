@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#101f2d" />
+  <title>FirePath | Home safety prototype</title>
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">✳</span><div><strong>FirePath</strong><small>HOME SAFETY SYSTEM</small></div></div>
+      <div class="sidebar-rule"></div>
+      <p class="sidebar-label">WORKSPACE</p>
+      <nav aria-label="Views">
+        <button class="nav-item active" data-view="command"><span>▦</span> Live command</button>
+        <button class="nav-item" data-view="household"><span>⌂</span> Household plan</button>
+        <button class="nav-item" data-view="devices"><span>◉</span> Devices & bridge</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sidebar-rule"></div>
+        <span class="demo-tag"><span class="tiny-dot"></span> INTERACTIVE PROTOTYPE</span>
+        <p>Fictional floor plan and simulated hazards. This system is not a certified fire alarm.</p>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar"><div class="crumb">GLENDALE HOME <span>/</span> <b id="header-view">LIVE COMMAND</b></div><div class="top-actions"><button id="present-btn" class="present-button">▣ Present mode</button><span id="connection-pill" class="connection-pill">● Simulator connected</span><span class="avatar">FP</span></div></header>
+      <div class="content">
+        <section class="intro"><div><div class="eyebrow">RESIDENT SAFETY / LIVE OPERATIONS</div><h1 id="page-title">Know the route. Adapt when it changes.</h1><p id="page-subtitle">One home plan for practice and for a changing emergency.</p></div><div id="mode-badge" class="mode-badge"><span>●</span> Ready to practice</div></section>
+
+        <section id="command-view" class="view active-view">
+          <div class="metrics">
+            <div class="metric"><span>HOME PROFILE</span><strong id="home-name">The Rivera home</strong><small id="home-address">Glendale, California</small></div>
+            <div class="metric"><span>ACTIVE HAZARDS</span><strong id="hazard-count">0</strong><small id="hazard-caption">All routes available</small></div>
+            <div class="metric"><span>SAFE EXITS</span><strong id="safe-exits">2 of 2</strong><small>West exit · East exit</small></div>
+            <div class="metric"><span>GUIDANCE ZONES</span><strong id="device-count">3 simulated</strong><small>Bedroom A · B · C</small></div>
+          </div>
+
+          <div class="main-grid">
+            <div class="panel map-panel">
+              <div class="panel-header"><div><div class="eyebrow">BUILDING MODEL / FLOOR 01</div><h2>Live floor plan</h2></div><div class="map-key"><span><i class="dot teal"></i> Safe route</span><span><i class="dot red"></i> Hazard</span></div></div>
+              <div class="map-frame"><svg id="floor-map" viewBox="0 0 950 490" role="img" aria-label="Fictional floor plan showing rooms, exits, hazards and evacuation paths"></svg></div>
+              <div class="map-footer"><div><span class="pulse-icon">◎</span> <b id="map-status">All corridors clear</b><small id="map-substatus">Tap a scenario below to see the home respond.</small></div><span class="map-id">FP-HOME-001 · SIMULATION</span></div>
+            </div>
+            <div class="right-stack">
+              <div class="panel control-panel"><div class="eyebrow">DEMO CONTROLS</div><h2>Run a scenario</h2><p>Trigger simulated detectors. Routes and guidance update immediately.</p>
+                <button id="drill-btn" class="action primary"><span>▷</span><span><b>Run household drill</b><small>Practice each room's planned exit</small></span><span>↗</span></button>
+                <button id="fire-btn" class="action"><span>♨</span><span><b>Detect kitchen fire</b><small>Activate the first hazard</small></span><span>↗</span></button>
+                <button id="smoke-btn" class="action"><span>≋</span><span><b>West hall fills with smoke</b><small>Watch Bedroom A reroute</small></span><span>↗</span></button>
+                <button id="reset-btn" class="reset">↺ Reset simulation</button>
+              </div>
+              <div class="panel event-panel"><div class="panel-header compact"><div><div class="eyebrow">INCIDENT LOG</div><h2>Recent activity</h2></div><span class="live-indicator">LIVE</span></div><div id="event-log" class="event-log"></div></div>
+            </div>
+          </div>
+          <div class="panel guidance-panel"><div class="panel-header"><div><div class="eyebrow">LOCATION-SPECIFIC RESPONSE</div><h2>Guidance by room</h2></div><button id="speak-btn" class="text-button">◖)) Play announcements</button></div><div id="guidance-grid" class="guidance-grid"></div></div>
+        </section>
+
+        <section id="household-view" class="view">
+          <div class="settings-grid"><div class="panel settings-panel"><div class="eyebrow">BEFORE AN EMERGENCY</div><h2>Make the plan yours</h2><p>These choices personalize the practice plan and stay in this browser.</p>
+            <label>Household name<input id="household-input" maxlength="55" placeholder="The Rivera home" /></label>
+            <label>Glendale address or neighborhood<input id="address-input" maxlength="90" placeholder="Glendale, California" /></label>
+            <label>Outside meeting point<input id="meeting-input" maxlength="90" placeholder="Across the street by the big tree" /></label>
+            <label>Guidance language<select id="language-select"><option value="en">English</option><option value="es">Spanish</option></select></label>
+            <label>Household consideration<select id="needs-select"><option value="none">None selected</option><option value="mobility">Someone needs a step-free route</option><option value="assistance">Someone may need assistance</option></select></label>
+            <button id="save-plan" class="solid-button">Save household plan</button><small class="form-note">The sample map has no verified accessibility information. Selectable needs are recorded for a future reviewed plan; they do not override routes here.</small>
+          </div><div class="panel plan-panel"><div class="eyebrow">PERSONAL PREPAREDNESS</div><h2>Your practice plan</h2><div class="plan-feature"><span>01</span><div><b>Know both exits</b><p>West and east exits are marked on the sample floor plan. Practice the way out from each bedroom.</p></div></div><div class="plan-feature"><span>02</span><div><b>Set a meeting point</b><p id="meeting-preview">Across the street by the big tree.</p></div></div><div class="plan-feature"><span>03</span><div><b>Plan for the household</b><p id="needs-preview">No extra assistance noted. Rehearse out loud from each bedroom.</p></div></div><div class="callout">The model demonstrates location-specific guidance. A real household plan needs local review, an outside meeting point, and regular practice.</div><button id="plan-drill-btn" class="solid-button secondary">Start a drill →</button></div></div>
+        </section>
+
+        <section id="devices-view" class="view"><div class="settings-grid"><div class="panel settings-panel"><div class="eyebrow">HARDWARE INTEGRATION</div><h2>Bridge to physical nodes</h2><p>Connect a USB serial controller with newline-delimited JSON. Buttons become hazard events; each notifier receives its own guidance command.</p><div class="device-line"><b>Bedroom A</b><span>NODE_ROOM_A</span><em>READY</em></div><div class="device-line"><b>Bedroom B</b><span>NODE_ROOM_B</span><em>READY</em></div><div class="device-line"><b>Bedroom C</b><span>NODE_ROOM_C</span><em>READY</em></div><button id="serial-btn" class="solid-button">Connect serial hardware</button><p id="serial-status" class="device-note">Simulator is active. Chrome or Edge on localhost supports the serial bridge.</p></div><div class="panel plan-panel"><div class="eyebrow">ONE SMALL CONTRACT</div><h2>Events in. Guidance out.</h2><pre>{"type":"hazard","node":"KITCHEN","active":true}
+{"type":"hazard","node":"WEST_HALL","active":true}</pre><p>Each change sends a command for every notifier:</p><pre>{"type":"guidance","node":"ROOM_A",
+ "message_id":"ALERT_EAST_EXIT",
+ "exit":"EAST_EXIT",
+ "text":"Fire alert. From Bedroom A..."}</pre><p>See <code>docs/HARDWARE.md</code> for wiring assumptions, valid IDs and testing steps. The browser speaks guidance locally; a microcontroller can map message IDs to cached audio.</p></div></div></section>
+      </div>
+    </main>
+  </div>
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>
