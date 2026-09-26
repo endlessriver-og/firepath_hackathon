@@ -10,36 +10,24 @@ import { Button, Caption, Card, ErrorText, Link, Muted, Section, SeverityBadge, 
 
 // Public front door: anyone can check a Glendale address without an account. Results end in a
 // call to register for alerts, a household plan and permit help for that address.
-export function Landing({ onSignedIn, onEmergency }) {
+// Search + results for any Glendale address (public endpoint; nothing stored). Used on the public
+// page and, when signed in, to check places other than your own address.
+export function AddressCheck({ onResult, showPreview = true, label }) {
   const [address, setAddress] = useState('');
-  const [result, setResult] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [candidates, setCandidates] = useState([]);
-  const [signup, setSignup] = useState(null); // null | { type, mode }
-
+  const [result, setResult] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [candidates, setCandidates] = useState([]), [checked, setChecked] = useState('');
   async function check(text = address, magicKey) {
-    setBusy(true); setError(''); setCandidates([]); setResult(null);
-    try { setResult(await api('POST', '/api/public/check', { address: text, magicKey })); }
+    setChecked(text); setBusy(true); setError(''); setCandidates([]); setResult(null); onResult?.(null);
+    try { const r = await api('POST', '/api/public/check', { address: text, magicKey }); setResult(r); onResult?.(r); }
     catch (e) { setError(e.message); setCandidates(e.data?.candidates || []); }
     finally { setBusy(false); }
   }
-
-  if (signup) return <>
-    <Link style={{ marginTop: 0 }} onPress={() => setSignup(null)}>← Back to the address check</Link>
-    {result && <Caption>Signing up for {result.address}. We'll set it up as your address in step 2.</Caption>}
-    <Auth initialMode={signup.mode} initialType={signup.type} onSignedIn={(me, isNew) => onSignedIn(me, isNew, result?.address)} />
-  </>;
-
   const mapped = result?.layers.filter(l => l.level === 'zone' || (typeof l.level === 'number' && l.level > 0)) || [];
   return <>
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Text style={{ fontSize: 15, fontWeight: '900', letterSpacing: 2, color: color.green }}>FIREPATH</Text>
-      <Text accessibilityRole="button" onPress={onEmergency} style={{ backgroundColor: '#B3261A', color: '#FFF', fontWeight: '800', fontSize: 12, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, overflow: 'hidden' }}>Emergency</Text></View>
-    <Text style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 14 }}>What's mapped at your Glendale address?</Text>
-    <Muted style={{ marginTop: 8 }}>Check any address against seven state and federal hazard maps. No account needed.</Muted>
-    <AddressSearch value={address} onChangeText={setAddress} onPick={check} onSubmit={() => check()} suggestPath="/api/public/suggest" hint="Sent to the City of Glendale's address lookup. FirePath does not store public checks." />
+    <AddressSearch label={label} value={address} onChangeText={setAddress} onPick={check} onSubmit={() => check()} suggestPath="/api/public/suggest" settled={checked} hint="Sent to the City of Glendale's address lookup. FirePath does not store address checks." />
     <ErrorText>{error}</ErrorText>
     {candidates.map(c => <Button key={c} kind="outline" style={{ marginTop: 8 }} onPress={() => { setAddress(c); check(c); }}>{c}</Button>)}
     <Button busy={busy} disabled={address.trim().length < 5} onPress={() => check()}>Check this address</Button>
     {busy && <Caption>Checking the City's address points and seven hazard maps…</Caption>}
-
     {result && <>
       <Card style={{ backgroundColor: color.green, borderColor: color.green }}>
         <Text style={{ color: '#CFE3DA', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>{result.address}</Text>
@@ -53,10 +41,31 @@ export function Landing({ onSignedIn, onEmergency }) {
         <View><Text style={{ color: color.ink, fontWeight: '700' }}>{l.name}</Text>{hazardViewers[l.key] && <Text accessibilityRole="link" style={{ color: '#086B56', fontSize: 12, marginTop: 2 }} onPress={() => Linking.openURL(hazardViewers[l.key].url)}>Official map ↗</Text>}</View><SeverityBadge severity={l} />
       </View>)}
       <Caption>Planning maps from CAL FIRE, FEMA, the California Geological Survey, California DWR and USGS, checked {result.checkedAt.slice(0, 10)}. Not live incidents or evacuation orders.</Caption>
-
-      {result.preview.length > 0 && <><Section>Where to start</Section>
+      {showPreview && result.preview.length > 0 && <><Section>Where to start</Section>
         {result.preview.map(p => <Card key={p.id}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{p.title}</Text><Muted style={{ marginTop: 4 }}>{p.description}</Muted></Card>)}</>}
+    </>}
+  </>;
+}
 
+// Public front door: anyone can check a Glendale address without an account. Results end in a
+// call to register for alerts, a household plan and permit help for that address.
+export function Landing({ onSignedIn, onEmergency }) {
+  const [result, setResult] = useState(null);
+  const [signup, setSignup] = useState(null); // null | { type, mode }
+
+  if (signup) return <>
+    <Link style={{ marginTop: 0 }} onPress={() => setSignup(null)}>← Back to the address check</Link>
+    {result && <Caption>Signing up for {result.address}. We'll set it up as your address in step 2.</Caption>}
+    <Auth initialMode={signup.mode} initialType={signup.type} onSignedIn={(me, isNew) => onSignedIn(me, isNew, result?.address)} />
+  </>;
+
+  return <>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Text style={{ fontSize: 15, fontWeight: '900', letterSpacing: 2, color: color.green }}>FIREPATH</Text>
+      <Text accessibilityRole="button" onPress={onEmergency} style={{ backgroundColor: '#B3261A', color: '#FFF', fontWeight: '800', fontSize: 12, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, overflow: 'hidden' }}>Emergency</Text></View>
+    <Text style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 14 }}>What's mapped at your Glendale address?</Text>
+    <Muted style={{ marginTop: 8 }}>Check any address against seven state and federal hazard maps. No account needed.</Muted>
+    <AddressCheck onResult={setResult} />
+    {result && <>
       <Card style={{ borderColor: color.green, borderWidth: 2, marginTop: 22 }}>
         <Tag>Free for Glendale residents and businesses</Tag>
         <Text style={{ color: color.ink, fontSize: 20, fontWeight: '800' }}>Get a plan for this address</Text>

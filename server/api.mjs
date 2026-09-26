@@ -311,9 +311,13 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       const user = session(req);
       const answers = Object.fromEntries(['commercial', 'publicWay', 'tents', 'flame', 'fireworks', 'filming'].map(k => [k, body.answers?.[k] === true]));
       const attendees = Math.min(Math.max(Number.parseInt(body.attendees, 10) || 0, 0), 1_000_000);
-      const plan = planEvent(permitCatalog, answers, { hazards: user.hazards, attendees });
-      const summary = [`Event: ${text(body.name, 100) || 'unnamed event'}${attendees ? `, about ${attendees} people` : ''}`, `Location: ${user.address || 'not set'}`, `Organizer: ${user.type === 'business' ? `${user.business?.name || 'business'} · ${user.name}` : user.name}`, 'Likely City of Glendale permits:', ...plan.items.map(i => `- ${i.type}${i.workClass && !i.type.includes(i.workClass) ? ` (${i.workClass})` : ''}`), 'Prepared with FirePath. Not a City submission; confirm requirements with the City of Glendale.'].join('\n');
-      return { body: { ...plan, summary, portal: permitCatalog.portal, crawledAt: permitCatalog.crawledAt } };
+      // The event can be somewhere other than the account's address (e.g. a business hosting off-site).
+      let site = { address: user.address, hazards: user.hazards };
+      const location = text(body.location, 200);
+      if (location) { const found = await locate(location, text(body.magicKey, 200) || undefined); site = { address: found.location.matched_address || location, hazards: found.hazards }; }
+      const plan = planEvent(permitCatalog, answers, { hazards: site.hazards, attendees });
+      const summary = [`Event: ${text(body.name, 100) || 'unnamed event'}${attendees ? `, about ${attendees} people` : ''}`, `Location: ${site.address || 'not set'}`, `Organizer: ${user.type === 'business' ? `${user.business?.name || 'business'} · ${user.name}` : user.name}`, 'Likely City of Glendale permits:', ...plan.items.map(i => `- ${i.type}${i.workClass && !i.type.includes(i.workClass) ? ` (${i.workClass})` : ''}`), 'Prepared with FirePath. Not a City submission; confirm requirements with the City of Glendale.'].join('\n');
+      return { body: { ...plan, location: site.address || 'not set', summary, portal: permitCatalog.portal, crawledAt: permitCatalog.crawledAt } };
     },
 
     'GET /api/me/responder': async req => {

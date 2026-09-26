@@ -234,13 +234,14 @@ export function BusinessDetails({ me, onSaved, onboarding }) {
 
 
 // Address field with City of Glendale suggestions (debounced). Used by the public check and registration.
-export function AddressSearch({ value, onChangeText, onPick, onSubmit, suggestPath, hint, label = 'Glendale street address' }) {
+// `settled` is text the parent already looked up (e.g. via its own button); no suggestions for it.
+export function AddressSearch({ value, onChangeText, onPick, onSubmit, suggestPath, hint, label = 'Glendale street address', settled }) {
   const [suggestions, setSuggestions] = useState([]), [picked, setPicked] = useState('');
   useEffect(() => {
-    if (value.trim().length < 4 || value === picked) { setSuggestions([]); return; }
+    if (value.trim().length < 4 || value === picked || value === settled) { setSuggestions([]); return; }
     const timer = setTimeout(() => api('GET', `${suggestPath}?q=${encodeURIComponent(value)}`).then(r => setSuggestions(r.suggestions || [])).catch(() => setSuggestions([])), 250);
     return () => clearTimeout(timer);
-  }, [value]);
+  }, [value, settled]);
   const pick = item => { setPicked(item.text); onChangeText(item.text); setSuggestions([]); onPick(item.text, item.magicKey); };
   return <>
     <Field label={label} hint={hint} value={value} onChangeText={onChangeText} placeholder="Start typing, e.g., 1613 Glencoe" autoComplete="off" onSubmitEditing={onSubmit} maxLength={200} />

@@ -11,9 +11,10 @@ import { eventQuestions } from './permit-catalog';
 import { hazardViewers, resourceGroups, RESOURCES_CHECKED } from './resources';
 import { businessPosterPrintout, householdPlanPrintout, standardPrintout, standardPrintouts } from './printouts';
 import { printHtml } from './print';
-import { AddressPanel, BusinessDetails, BusinessProfile, HouseholdForm } from './onboarding';
+import { AddressCheck } from './landing';
+import { AddressPanel, AddressSearch, BusinessDetails, BusinessProfile, HouseholdForm } from './onboarding';
 import { Toggle } from './ui';
-import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, Section, SeverityBadge, Tag, Title, color, s } from './ui';
+import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, Section, Segment, SeverityBadge, Tag, Title, color, s } from './ui';
 
 const EVERBRIDGE = 'https://www.glendaleca.gov/Everbridge';
 const KNOW_YOUR_ZONE = 'https://www.glendaleca.gov/government/departments/fire-department/other-links/emergency-preparedness-response/know-your-zone';
@@ -199,9 +200,10 @@ function PermitSearch({ me }) {
 function EventPlanner({ me }) {
   const [open, setOpen] = useState(false), [name, setName] = useState(''), [attendees, setAttendees] = useState(''), [answers, setAnswers] = useState({});
   const [plan, setPlan] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false);
+  const [where, setWhere] = useState('mine'), [location, setLocation] = useState(''), [locationKey, setLocationKey] = useState(null);
   async function build() {
     setBusy(true); setError(''); setCopied(false);
-    try { setPlan(await api('POST', '/api/me/permits/event', { name, attendees: Number(attendees) || 0, answers })); } catch (e) { setError(e.message); } finally { setBusy(false); }
+    try { setPlan(await api('POST', '/api/me/permits/event', { name, attendees: Number(attendees) || 0, answers, ...(where === 'other' ? { location, magicKey: locationKey } : {}) })); } catch (e) { setError(e.message); } finally { setBusy(false); }
   }
   if (!open) return <Card style={{ borderColor: color.green, borderWidth: 1.5 }}>
     <Tag>New</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '800' }}>Plan an event</Text>
@@ -211,11 +213,14 @@ function EventPlanner({ me }) {
   return <Card style={{ borderColor: color.green, borderWidth: 1.5 }}>
     <Text style={{ color: color.ink, fontSize: 17, fontWeight: '800' }}>Plan an event</Text>
     <Field label="Event name" value={name} onChangeText={setName} placeholder="e.g., Harvest fair" maxLength={100} />
+    <Segment label="Where?" value={where} options={[['mine', me.user.type === 'business' ? 'At my business' : 'At my home'], ['other', 'Another location']]} onChange={v => { setPlan(null); setWhere(v); }} />
+    {where === 'other' && <AddressSearch label="Event address" value={location} onChangeText={t => { setLocation(t); setLocationKey(null); setPlan(null); }} onPick={(t, key) => { setLocation(t); setLocationKey(key); }} onSubmit={() => {}} suggestPath="/api/public/suggest" />}
     <Field label="Expected attendance" value={attendees} onChangeText={t => setAttendees(t.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="e.g., 250" maxLength={7} />
     {eventQuestions.map(([key, label]) => <Toggle key={key} label={label} value={Boolean(answers[key])} onChange={v => { setPlan(null); setAnswers(current => ({ ...current, [key]: v })); }} />)}
     <ErrorText>{error}</ErrorText>
     <Button busy={busy} onPress={build}>Get my permit list</Button>
     {plan && <View style={{ marginTop: 14 }}>
+      <Caption style={{ marginTop: 0 }}>Location: {plan.location}</Caption>
       <Tag>{`Likely City permits · ${plan.items.length}`}</Tag>
       {plan.items.map(i => <View key={`${i.type}-${i.workClass}`} style={{ paddingVertical: 8, borderTopWidth: 1, borderColor: color.line }}>
         <Text style={{ color: color.ink, fontWeight: '700' }}>{i.type}{i.workClass && !i.type.includes(i.workClass) ? ` · ${i.workClass}` : ''}</Text>
@@ -291,9 +296,18 @@ export function MapTab({ me, layers, setLayers, top }) {
     const rank = k => { const l = hazardSeverity(k, me.hazards[k]).level; return typeof l === 'number' ? -l : l === 'zone' ? -1.5 : 1; };
     return rank(a) - rank(b);
   }) : [];
+  const [other, setOther] = useState(false);
+  const mode = <Chips value={other ? 'other' : 'mine'} options={[['mine', me.user.type === 'business' ? 'My business' : 'My home'], ['other', 'Check another address']]} onChange={v => setOther(v === 'other')} />;
+  if (other) return <>
+    <Title>Check any address</Title>
+    {mode}
+    <Muted style={{ marginTop: 10 }}>Look up an event site, a relative's home or a place you are thinking of moving. This does not change your registered address and is not saved.</Muted>
+    <AddressCheck showPreview={false} />
+  </>;
   return <>
     <Title>Hazard map</Title>
-    <Muted>Tap a filter on the map, or a layer below, to shade its zones across Glendale.</Muted>
+    {mode}
+    <Muted style={{ marginTop: 10 }}>Tap a filter on the map, or a layer below, to shade its zones across Glendale.</Muted>
     <MapFrame key={src} src={src} style={{ height: 460, borderRadius: 17, marginTop: 12, borderWidth: 1, borderColor: color.line }} />
     {me.hazards ? <>
       <Section>At your address</Section>

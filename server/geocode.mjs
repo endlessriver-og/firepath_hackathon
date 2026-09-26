@@ -34,7 +34,8 @@ export function createGeocoder(fetchImpl = fetch) {
       const json = await get('suggest', { text: q, maxSuggestions: 10 }, fetchImpl);
       const seen = new Set();
       const dir = q.split(' ').find(w => /^[NSEW]$/.test(w));
-      return (json.suggestions || []).filter(s => /GLENDALE/i.test(s.text)).filter(s => !dir || !/^\d+\s+[NSEW]\s/.test(streetPart(s.text)) || new RegExp(`^\\d+\\s+${dir}\\s`).test(streetPart(s.text))).filter(s => !seen.has(streetPart(s.text)) && seen.add(streetPart(s.text))).slice(0, 6).map(s => ({ text: s.text, magicKey: s.magicKey }));
+      const wantsNumber = /^\d/.test(q); // typed a house number: hide street-only and ramp entries
+      return (json.suggestions || [])   .filter(s => /GLENDALE/i.test(s.text)).filter(s => !wantsNumber || /^\d/.test(s.text)).filter(s => !dir || !/^\d+\s+[NSEW]\s/.test(streetPart(s.text)) || new RegExp(`^\\d+\\s+${dir}\\s`).test(streetPart(s.text))).filter(s => !seen.has(streetPart(s.text)) && seen.add(streetPart(s.text))).slice(0, 6).map(s => ({ text: s.text, magicKey: s.magicKey }));
     },
 
     // Returns { address, lat, lon, score } or throws { candidates } when the choice is ambiguous.

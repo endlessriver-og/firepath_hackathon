@@ -257,3 +257,19 @@ test('emergency-now guides exist for every situation and use saved household fac
   assert.ok(emergencyGuide('fire', ctx).steps.length <= 7, 'kept short');
   assert.equal(emergencyGuide('alien-invasion', ctx), null);
 });
+
+test('event plan can target another address and uses that site\'s hazards', async () => {
+  const permitCatalog = JSON.parse(readCatalog(new URL('../src/glendale-permits.json', import.meta.url)));
+  const civicLookup = JSON.parse(readCatalog(new URL('../src/sample-location.json', import.meta.url)));
+  const store = { data: { users: {}, sessions: {} }, save() {} };
+  const handle = createApi({ store, permitCatalog, fetchAlerts: async () => [], lookupHazards: async p => p.address === '613 E Broadway' ? { ...civicLookup, location: { ...civicLookup.location, matched_address: '613 E BROADWAY' } } : sparr });
+  const call = async (method, path, body, token) => { const req = { method, headers: token ? { authorization: `Bearer ${token}` } : {}, async *[Symbol.asyncIterator]() { if (body) yield JSON.stringify(body); } }; const res = { writeHead(s) { this.status = s; }, end(t) { this.body = JSON.parse(t); } }; await handle(req, res, new URL(path, 'http://localhost')); return res; };
+  const token = await signup(call);
+  await call('POST', '/api/me/address', { address: '1613 Glencoe Way' }, token);
+  const home = (await call('POST', '/api/me/permits/event', { answers: { flame: true } }, token)).body;
+  assert.ok(home.notes.some(n => /CAL FIRE/.test(n)), 'home is in a fire zone');
+  const away = (await call('POST', '/api/me/permits/event', { answers: { flame: true }, location: '613 E Broadway' }, token)).body;
+  assert.equal(away.location, '613 E BROADWAY');
+  assert.ok(!away.notes.some(n => /CAL FIRE/.test(n)), 'off-site event uses the off-site hazards');
+  assert.equal((await call('GET', '/api/me', null, token)).body.address.text, '1613 GLENCOE WAY, GLENDALE, CA, 91208', 'registered address unchanged');
+});
