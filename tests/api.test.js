@@ -247,3 +247,13 @@ test('permit catalog search and event plan use the City catalog and the address 
   assert.ok(plan.notes.some(n => /security, medical and traffic/.test(n)));
   assert.match(plan.summary, /Harvest fair, about 600 people/);
 });
+
+import { emergencyGuide, emergencySituations } from '../src/playbooks.js';
+test('emergency-now guides exist for every situation and use saved household facts', () => {
+  const ctx = { type: 'resident', hazards: sparr.hazards, household: { members: [{ name: 'Rosa', ageGroup: 'senior' }], pets: [{ kind: 'dogs', count: 2 }], meetFar: 'Montrose library', contact: 'Aunt Rosa' } };
+  for (const s of emergencySituations) assert.ok(emergencyGuide(s.id, ctx).steps.length >= 3, s.id);
+  const evac = JSON.stringify(emergencyGuide('evacuate', ctx));
+  for (const needle of ['2 dogs', 'Rosa has a ride', 'Montrose library', 'Genasys']) assert.ok(evac.includes(needle), needle);
+  assert.ok(emergencyGuide('fire', ctx).steps.length <= 7, 'kept short');
+  assert.equal(emergencyGuide('alien-invasion', ctx), null);
+});

@@ -3,11 +3,14 @@ import { Text, View } from 'react-native';
 import { api, apiBase } from './api';
 import MapFrame from './MapFrame';
 import { Auth, AddressSearch } from './onboarding';
+import { Resources } from './tabs';
+import { hazardViewers } from './resources';
+import { Linking } from 'react-native';
 import { Button, Caption, Card, ErrorText, Link, Muted, Section, SeverityBadge, Tag, color } from './ui';
 
 // Public front door: anyone can check a Glendale address without an account. Results end in a
 // call to register for alerts, a household plan and permit help for that address.
-export function Landing({ onSignedIn }) {
+export function Landing({ onSignedIn, onEmergency }) {
   const [address, setAddress] = useState('');
   const [result, setResult] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [candidates, setCandidates] = useState([]);
   const [signup, setSignup] = useState(null); // null | { type, mode }
@@ -27,7 +30,8 @@ export function Landing({ onSignedIn }) {
 
   const mapped = result?.layers.filter(l => l.level === 'zone' || (typeof l.level === 'number' && l.level > 0)) || [];
   return <>
-    <Text style={{ fontSize: 15, fontWeight: '900', letterSpacing: 2, color: color.green }}>FIREPATH</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Text style={{ fontSize: 15, fontWeight: '900', letterSpacing: 2, color: color.green }}>FIREPATH</Text>
+      <Text accessibilityRole="button" onPress={onEmergency} style={{ backgroundColor: '#B3261A', color: '#FFF', fontWeight: '800', fontSize: 12, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, overflow: 'hidden' }}>Emergency</Text></View>
     <Text style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 14 }}>What's mapped at your Glendale address?</Text>
     <Muted style={{ marginTop: 8 }}>Check any address against seven state and federal hazard maps. No account needed.</Muted>
     <AddressSearch value={address} onChangeText={setAddress} onPick={check} onSubmit={() => check()} suggestPath="/api/public/suggest" hint="Sent to the City of Glendale's address lookup. FirePath does not store public checks." />
@@ -46,7 +50,7 @@ export function Landing({ onSignedIn }) {
       <MapFrame src={`${apiBase()}/map.html?layers=combined&label=This%20address&lat=${result.lat}&lon=${result.lon}`} style={{ height: 320, borderRadius: 17, marginTop: 12, borderWidth: 1, borderColor: color.line }} />
       <Section>Layer by layer</Section>
       {result.layers.map(l => <View key={l.key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderColor: color.line }}>
-        <Text style={{ color: color.ink, fontWeight: '700' }}>{l.name}</Text><SeverityBadge severity={l} />
+        <View><Text style={{ color: color.ink, fontWeight: '700' }}>{l.name}</Text>{hazardViewers[l.key] && <Text accessibilityRole="link" style={{ color: '#086B56', fontSize: 12, marginTop: 2 }} onPress={() => Linking.openURL(hazardViewers[l.key].url)}>Official map ↗</Text>}</View><SeverityBadge severity={l} />
       </View>)}
       <Caption>Planning maps from CAL FIRE, FEMA, the California Geological Survey, California DWR and USGS, checked {result.checkedAt.slice(0, 10)}. Not live incidents or evacuation orders.</Caption>
 
@@ -63,6 +67,8 @@ export function Landing({ onSignedIn }) {
     </>}
     <Link onPress={() => setSignup({ type: 'resident', mode: 'login' })} style={{ marginTop: 22 }}>Already registered? Sign in</Link>
     {!result && <Link onPress={() => setSignup({ type: 'resident', mode: 'signup' })}>Create an account</Link>}
+    <Section>Public resources</Section>
+    <Resources compact />
     <Caption style={{ marginTop: 18 }}>FirePath is a Glendale pilot prototype, not a City of Glendale service. For emergencies, follow official instructions and call 911.</Caption>
   </>;
 }

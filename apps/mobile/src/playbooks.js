@@ -81,3 +81,65 @@ export function buildPlaybook(event, { type = 'resident', household = {}, busine
     groups: [['Do now', now], ['Before you leave', leave], ['Check on', checkOn]].filter(([, steps]) => steps.length).map(([label, steps]) => ({ label, steps })),
   };
 }
+
+// "Emergency now": short, calm steps for what is happening right now. Weather situations reuse the
+// alert playbooks; earthquake, evacuation and power outage have their own. Always leads with 911.
+export const emergencySituations = [
+  { id: 'earthquake', label: 'Earthquake', icon: '≋' },
+  { id: 'fire', label: 'Fire nearby', icon: '♨', event: 'Red Flag Warning' },
+  { id: 'evacuate', label: 'Told to evacuate', icon: '➜' },
+  { id: 'flood', label: 'Flooding', icon: '≈', event: 'Flash Flood Warning' },
+  { id: 'power', label: 'Power out', icon: '⚡' },
+  { id: 'smoke', label: 'Smoke', icon: '☁', event: 'Air Quality Alert' },
+  { id: 'heat', label: 'Extreme heat', icon: '☀', event: 'Excessive Heat Warning' },
+];
+
+export const emergencyLinks = {
+  earthquake: [['MyShake early warning', 'https://myshake.berkeley.edu/']],
+  fire: [['Your evacuation zone (Genasys Protect)', 'https://protect.genasys.com/'], ['CAL FIRE incidents', 'https://www.fire.ca.gov/incidents']],
+  evacuate: [['Your evacuation zone (Genasys Protect)', 'https://protect.genasys.com/'], ['211 LA shelters and help', 'https://211la.org/']],
+  flood: [['NWS Los Angeles', 'https://www.weather.gov/lox/']],
+  power: [['Glendale Water & Power outages', 'https://www.glendaleca.gov/government/departments/glendale-water-and-power/safety-security/power-outages']],
+  smoke: [['AirNow air quality', 'https://www.airnow.gov/']],
+  heat: [['211 LA (cooling centers and help)', 'https://211la.org/']],
+};
+
+export function emergencyGuide(id, ctx = {}) {
+  const situation = emergencySituations.find(s => s.id === id);
+  if (!situation) return null;
+  const links = emergencyLinks[id] || [];
+  if (situation.event) {
+    const pb = buildPlaybook(situation.event, ctx);
+    const steps = pb.groups.flatMap(g => g.steps).slice(0, 7);
+    return { id, title: situation.label, steps, links };
+  }
+  const h = ctx.household || {}, b = ctx.business || {}, business = ctx.type === 'business';
+  const pets = (h.pets || []).map(p => `${p.count > 1 ? `${p.count} ` : ''}${p.kind}`);
+  const helpers = business ? [] : (h.members || []).filter(m => m.needsHelp || m.ageGroup === 'senior').map(m => m.name);
+  const s = (text, why) => ({ text, why });
+  const steps = {
+    earthquake: [
+      s('Drop, Cover, Hold On until the shaking stops. Expect aftershocks and do it again each time.', 'Standard earthquake safety'),
+      s('Check for injuries. Put on shoes before walking over glass or debris.', 'Most injuries come after the shaking'),
+      s('If you smell gas or hear hissing, get everyone out and call the gas company from outside.', h.utilities || b.utilities ? `Your shutoff note: ${h.utilities || b.utilities}` : 'Gas leaks cause fires after quakes'),
+      business ? s(`Get everyone to the assembly point${b.assembly ? `: ${b.assembly}` : ''} and count heads.`, 'Your business plan') : s(`Check on ${helpers.length ? helpers.join(' and ') : 'everyone in your household'}, then neighbors who live alone.`, helpers.length ? 'People you said may need help' : 'Household check'),
+      s('Text instead of calling so lines stay open for emergencies.', 'Networks jam after big quakes'),
+    ],
+    evacuate: [
+      s('Leave now. Follow the route officials give; roads you usually use may be closed.', 'Official instructions come first'),
+      business ? s(`Get staff and visitors to ${b.assembly || 'your assembly point'}, count heads, then leave as directed.`, 'Your business plan') : s(`Take go bags, medications, chargers${pets.length ? ` and the ${pets.join(', ')}` : ''}.`, pets.length ? 'Pets you saved' : 'Your go bag'),
+      ...helpers.map(n => s(`Make sure ${n} has a ride and is leaving now.`, 'May need help leaving')),
+      !business && (h.meetNear || h.meetFar) ? s(`If separated, meet at ${h.meetFar || h.meetNear}.`, 'Your saved meeting place') : null,
+      !business && h.contact ? s(`Text ${h.contact} where you are going.`, 'Your out-of-area contact') : null,
+      s('If you have time: close windows and doors, leave lights on, and do not lock gates responders may need.', 'Helps crews working in your area'),
+    ].filter(Boolean),
+    power: [
+      s('Use flashlights, not candles. Unplug sensitive electronics.', 'Fire safety during outages'),
+      s('Keep the fridge and freezer closed; food stays cold for about 4 hours (a full freezer about 48).', 'Food safety'),
+      ...(business ? [] : helpers.map(n => s(`Check on ${n}, especially if they rely on powered medical equipment.`, 'May need help'))),
+      s('Report the outage and check restoration times with Glendale Water & Power.', 'Your utility'),
+      s('Treat dark traffic signals as four-way stops.', 'Traffic safety'),
+    ],
+  }[id];
+  return { id, title: situation.label, steps, links };
+}

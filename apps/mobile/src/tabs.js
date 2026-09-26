@@ -8,6 +8,9 @@ import { describeHazard, hazardNames, nextSteps, summarizePlace } from './prepar
 import { PERMIT_PORTAL, businessPermitTypes, categories, hazardSeverity, permitTypes, queryRecommendations } from './readiness';
 import { drillEvents } from './playbooks';
 import { eventQuestions } from './permit-catalog';
+import { hazardViewers, resourceGroups, RESOURCES_CHECKED } from './resources';
+import { businessPosterPrintout, householdPlanPrintout, standardPrintout, standardPrintouts } from './printouts';
+import { printHtml } from './print';
 import { AddressPanel, BusinessDetails, BusinessProfile, HouseholdForm } from './onboarding';
 import { Toggle } from './ui';
 import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, Section, SeverityBadge, Tag, Title, color, s } from './ui';
@@ -67,6 +70,8 @@ export function Home({ me, onChange, go }) {
     <Section>Your next steps</Section>
     {next.map(task => <TaskCard key={task.id} task={task} done={false} busy={busy === task.id} onToggle={toggle} />)}
     <Link onPress={() => go('Plan')}>Search all {me.recommendations.length} recommendations →</Link>
+    <Section>Public resources</Section>
+    <Resources compact />
   </>;
 }
 
@@ -84,6 +89,7 @@ export function Actions({ me, onChange }) {
     <Chips value={status} options={[['open', 'To do'], ['done', 'Done'], ['all', 'All']]} onChange={setStatus} />
     {results.length ? results.map(task => <TaskCard key={task.id} task={task} done={Boolean(me.done[task.id])} busy={busy === task.id} onToggle={toggle} />)
       : <Card><Muted>No recommendations match. Try another word or filter.</Muted></Card>}
+    <PrintSheets me={me} />
     <CityDataCallout id="permitHistory" />
     {me.hazards && describeHazard('wildfire', me.hazards.wildfire).tone === 'mapped' && <CityDataCallout id="brushClearance" />}
   </>;
@@ -297,9 +303,53 @@ export function MapTab({ me, layers, setLayers, top }) {
           <Muted>{describeHazard(key, me.hazards[key]).detail}</Muted>
           {sev.scale ? <Caption>{sev.scale}</Caption> : null}
           <Caption style={{ marginTop: 4 }}>{meta.source || 'Unknown source'} · checked {meta.as_of ? meta.as_of.slice(0, 10) : 'unknown'} · {on ? 'showing on map' : 'tap to show on map'}</Caption>
+          {hazardViewers[key] && <Link style={{ marginTop: 6 }} onPress={() => Linking.openURL(hazardViewers[key].url)}>Official map: {hazardViewers[key].name} ↗</Link>}
         </Pressable>); })}
     </> : <Card><Muted>Register your address to see how each layer rates at your home.</Muted></Card>}
     <CityDataCallout id="evacuationZones" />
     <CityDataCallout id="closures" />
+  </>;
+}
+
+
+// Official public resources, grouped. `limit` shows the first group only (with a "see all" toggle).
+export function Resources({ compact }) {
+  const [all, setAll] = useState(!compact);
+  const groups = all ? resourceGroups : resourceGroups.slice(0, 1);
+  return <>
+    {groups.map(g => <View key={g.title} style={{ marginTop: 14 }}>
+      <Tag>{g.title}</Tag>
+      {g.items.map(r => <Pressable key={r.url} accessibilityRole="link" onPress={() => Linking.openURL(r.url)} style={{ paddingVertical: 9, borderTopWidth: 1, borderColor: color.line }}>
+        <Text style={{ color: '#086B56', fontWeight: '700' }}>{r.name} ↗</Text>
+        <Text style={{ color: color.muted, fontSize: 13, marginTop: 2 }}>{r.what}</Text>
+      </Pressable>)}
+    </View>)}
+    {compact && <Link onPress={() => setAll(!all)}>{all ? 'Show fewer' : `See all ${resourceGroups.reduce((n, g) => n + g.items.length, 0)} public resources`}</Link>}
+    <Caption>Links checked {RESOURCES_CHECKED}. FirePath is not affiliated with these agencies.</Caption>
+  </>;
+}
+
+// Print-and-post sheets: a custom one from the account's saved data, plus standard guidance sheets.
+export function PrintSheets({ me }) {
+  const [error, setError] = useState('');
+  const business = me.user.type === 'business';
+  const run = async html => { setError(''); try { await printHtml(html); } catch (e) { setError(e.message); } };
+  const custom = () => business
+    ? businessPosterPrintout({ business: me.business, address: me.address?.text, hazards: me.hazards, name: me.user.name })
+    : householdPlanPrintout({ name: me.user.name, address: me.address?.text, hazards: me.hazards, household: me.household });
+  return <>
+    <Section>Print and post</Section>
+    <Muted>One-page sheets for the fridge, the front door or the break room. Anything not saved yet prints as a blank line to fill in by hand.</Muted>
+    <Card style={{ borderColor: color.green, borderWidth: 1.5 }}>
+      <Tag>Made for you</Tag>
+      <Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>{business ? `${me.business?.name || 'Business'}: in an emergency` : 'Our emergency plan'}</Text>
+      <Muted style={{ marginTop: 4 }}>{business ? 'Assembly point, key contact, hazardous materials and evacuation steps for staff.' : 'Who lives here, meeting places, contacts, pets, shutoffs and your mapped hazards.'}</Muted>
+      <Button onPress={() => run(custom())}>Print</Button>
+    </Card>
+    {standardPrintouts.map(d => <View key={d.id} style={[s.card, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 }]}>
+      <Text style={{ color: color.ink, fontWeight: '700', flex: 1 }}>{d.title}</Text>
+      <Pressable accessibilityRole="button" onPress={() => run(standardPrintout(d.id))} style={{ borderWidth: 1.5, borderColor: color.green, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }}><Text style={{ color: color.green, fontWeight: '800' }}>Print</Text></Pressable>
+    </View>)}
+    <ErrorText>{error}</ErrorText>
   </>;
 }
