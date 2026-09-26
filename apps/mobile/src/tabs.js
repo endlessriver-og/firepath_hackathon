@@ -33,6 +33,19 @@ function useToggle(me, onChange) {
 // Checklist order: official alerts first, then mapped-hazard steps, then household, then general.
 export const checklist = me => nextSteps(me.recommendations, {}, me.recommendations.length);
 
+const shortTaskTitles = {
+  alerts: 'Sign up for City alerts', kit: 'Pack a go bag', plan: 'Make a contact plan',
+  quake: 'Secure heavy items', pets: 'Pack for pets', assistance: 'Arrange help and backup power',
+  apartment: 'Know your building exits', kids: 'Plan school pickup',
+  zone0: 'Clear combustibles near the building', wildfire: 'Review wildfire protections',
+  ground: 'Ask about seismic safety', flood: 'Review flood coverage',
+  drill: 'Practice an alert', 'responder-notes': 'Review responder notes',
+  contacts: 'Set up a staff contact tree', assembly: 'Choose an assembly point',
+  continuity: 'Make a continuity plan', extinguishers: 'Check extinguishers and exits',
+  hood: 'Service kitchen suppression', assist: 'Plan help for evacuation',
+  hmbp: 'Check hazardous materials filing',
+};
+
 export function TaskCard({ task, number, done, busy, onToggle, compact }) {
   const [open, setOpen] = useState(!compact);
   return <View style={[s.card, { flexDirection: 'row', gap: 14 }, compact && { paddingVertical: 12 }, done && { opacity: 0.62 }]}>
@@ -41,7 +54,7 @@ export function TaskCard({ task, number, done, busy, onToggle, compact }) {
     </Pressable>
     <View style={{ flex: 1 }}>
       <Tag tone={task.tag.startsWith('Mapped') ? 'warm' : undefined}>{number ? `${number} · ${task.tag}` : task.tag}</Tag>
-      <Text onPress={compact ? () => setOpen(!open) : undefined} style={{ color: color.ink, fontSize: 16, fontWeight: '700', marginBottom: 3, textDecorationLine: done ? 'line-through' : 'none' }}>{task.title}{compact ? <Text style={{ color: color.green }}>{open ? '  −' : '  +'}</Text> : null}</Text>
+      <Text onPress={compact ? () => setOpen(!open) : undefined} style={{ color: color.ink, fontSize: 16, fontWeight: '700', marginBottom: 3, textDecorationLine: done ? 'line-through' : 'none' }}>{shortTaskTitles[task.id] || task.title}{compact ? <Text style={{ color: color.green }}>{open ? '  −' : '  +'}</Text> : null}</Text>
       {!done && open && <Muted>{task.description}</Muted>}
       {!done && open && task.url && <Link onPress={() => Linking.openURL(task.url)}>{task.link || 'Read guidance'} ↗</Link>}
     </View>
