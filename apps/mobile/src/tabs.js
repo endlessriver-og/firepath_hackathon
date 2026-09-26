@@ -91,7 +91,7 @@ export function Home({ me, onChange, go }) {
     <Link onPress={() => go('Plan')}>{t('home.seeAll', { total })}</Link>
 
     <Section>{me.user.type === 'business' ? 'Your site' : 'Your home'}</Section>
-    {!me.address ? <Card><Muted>Register your address to see which hazard maps include it.</Muted><Link onPress={() => go('Profile')}>Add your address →</Link></Card> : <>
+    {!me.address ? <Card><Muted>Register your address to see which hazard maps include it.</Muted><Link onPress={() => go('Profile', null, 'address')}>Add your address →</Link></Card> : <>
       <Collapsible icon="🗺" title="What the maps show" summary={place.mapped.length ? place.mapped.map(i => { const sev = hazardSeverity(i.key, me.hazards[i.key]); return `⚠ ${i.name}${typeof sev.level === 'number' ? ` ${sev.label}` : ''}`; }).join('   ') : 'No checked map shows a zone here'}>
         <Caption>{me.address.text} · {me.address.verified === 'mail' ? 'verified' : 'not yet verified'}</Caption>
         {place.mapped.map(item => <View key={item.key} style={{ flexDirection: 'row', gap: 12, backgroundColor: color.warmBg, borderWidth: 1, borderColor: color.warmLine, borderRadius: 14, padding: 14, marginTop: 8 }}>

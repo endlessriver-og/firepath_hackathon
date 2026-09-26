@@ -49,7 +49,7 @@ function App() {
     }
     goTour(0, mode);
   } // checked on the public page before sign-up
-  const go = (next, withLayers) => { if (withLayers) setLayers(withLayers); setTab(next); };
+  const go = (next, withLayers, sub) => { if (withLayers) setLayers(withLayers); if (sub) setSubs(current => ({ ...current, [next]: sub })); setTab(next); };
   const [error, setError] = useState('');
   const scroller = useRef(null);
   const top = () => scroller.current?.scrollTo({ y: 0, animated: false });

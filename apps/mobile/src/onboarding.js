@@ -98,19 +98,19 @@ export function AddressPanel({ me, onChange, onDone, onboarding, initialAddress 
       <ErrorText>{error}</ErrorText>
       {candidates.length > 0 && <View style={{ marginTop: 6 }}>{candidates.map(c => <Button key={c} kind="outline" style={{ marginTop: 8 }} onPress={() => { setAddress(c); lookup(c); }}>{c}</Button>)}</View>}
       <Button busy={busy === 'lookup'} disabled={address.trim().length < 5} onPress={() => lookup()}>Find my address</Button>
-      {busy === 'lookup' && <Caption>Checking the City's address points and seven hazard maps. This can take up to 20 seconds.</Caption>}
+      {busy === 'lookup' && <Caption>Checking seven hazard maps. This can take up to 20 seconds.</Caption>}
       {a && <Link onPress={() => setEditing(false)}>Cancel</Link>}
     </> : <>
       <Card>
         <Tag>{a.verified === 'mail' ? 'VERIFIED BY MAIL' : 'MATCHED · NOT YET VERIFIED'}</Tag>
         <Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>{a.text}</Text>
-        {place && <Muted style={{ marginTop: 6 }}>{place.mapped.length ? `Mapped here: ${place.mapped.map(i => `${i.name.toLowerCase()} (${i.label})`).join(', ')}.` : 'None of the 7 hazard maps flag this point. That is not the same as no risk.'}</Muted>}
+        {place && <Muted style={{ marginTop: 6 }}>{place.mapped.length ? place.mapped.map(i => `⚠ ${i.name}`).join('   ') : 'No hazard map flags this point. That does not mean no risk.'}</Muted>}
         <Link onPress={() => setEditing(true)}>Use a different address</Link>
       </Card>
       <MapPanel style={{ height: 180, borderRadius: 17, marginTop: 12 }} point={{ latitude: a.lat, longitude: a.lon }} title="Your registered address" />
       {a.verified !== 'mail' && <Card>
         <Tag tone="gold">{me.user.type === 'business' ? 'Verify this is your business' : 'Verify you live here'}</Tag>
-        <Muted>{me.user.type === 'business' ? 'Matching an address shows it exists, not that you operate there. We mail a 6-digit code to the business address; entering it verifies the location. Verification does not prove ownership.' : 'Matching an address shows it exists, not that you live there. We mail a 6-digit code to the address; entering it verifies your household. Verification does not prove ownership.'}</Muted>
+        <Muted>{me.user.type === 'business' ? 'We mail a 6-digit code to the business. It confirms the location, not ownership.' : 'We mail a 6-digit code to this address. It confirms you live here, not ownership.'}</Muted>
         {!a.codePending && !mailbox && <Button kind="outline" busy={busy === 'mail'} onPress={mail}>Mail me a code</Button>}
         {mailbox && <View style={{ backgroundColor: color.goldBg, borderRadius: 12, padding: 12, marginTop: 14 }}><Text style={{ color: color.gold, fontWeight: '800', fontSize: 11, letterSpacing: 1 }}>DEMO MAILBOX</Text><Text style={{ color: color.ink, fontSize: 24, fontWeight: '800', letterSpacing: 4, marginVertical: 4 }}>{mailbox.code}</Text><Text style={{ color: color.gold, fontSize: 12 }}>{mailbox.note}</Text></View>}
         {(a.codePending || mailbox) && <>
@@ -141,7 +141,7 @@ export function HouseholdForm({ me, onSaved, onboarding }) {
   return <>
     {onboarding && <Step n={3} of={3} label="Details for emergencies" />}
     {onboarding ? <Title>What should responders know?</Title> : <Section>Household details</Section>}
-    <Muted>Short, practical facts only. No medical diagnoses, door codes or anything you would not want shown to a responder.</Muted>
+    <Muted>Only what a responder should know. No diagnoses or door codes.</Muted>
 
     <Collapsible icon="🐾" initiallyOpen={onboarding} title="Pets and animals" summary={form.pets.length ? form.pets.map(p => `${p.count} ${p.kind}`).join(', ') : 'None added'}>
     {form.pets.map((p, i) => <View key={`${p.kind}-${i}`} style={[s.toggleRow, { marginTop: 8 }]}>
@@ -168,8 +168,7 @@ export function HouseholdForm({ me, onSaved, onboarding }) {
     <Field label="Out-of-area contact" value={form.contact} onChangeText={contact => set({ contact })} placeholder="e.g., Aunt Rosa in Fresno" maxLength={80} />
     </Collapsible>
 
-    <Toggle label="Share with responders when the City connects" detail="Today FirePath is not connected to 911, dispatch or the City. Turning this on records your consent for a future connection; you can turn it off any time." value={form.shareWithResponders} onChange={shareWithResponders => set({ shareWithResponders })} />
-    <CityDataCallout id="cad" />
+    <Toggle label="Share with responders when the City connects" detail="Not connected to 911 or the City yet. You can turn this off any time." value={form.shareWithResponders} onChange={shareWithResponders => set({ shareWithResponders })} />
     <ErrorText>{error}</ErrorText>
     <Button busy={busy} onPress={save}>{onboarding ? 'Finish setup' : 'Save details'}</Button>
     {saved && !onboarding && <Caption>Saved.</Caption>}
@@ -234,7 +233,7 @@ export function BusinessDetails({ me, onSaved, onboarding }) {
     <Field label="Staff assembly point" value={form.assembly} onChangeText={assembly => set({ assembly })} placeholder="e.g., parking lot, northeast corner" maxLength={100} />
     <Field label="Access note" hint="General access only. Never lock or alarm codes." value={form.access} onChangeText={access => set({ access })} placeholder="e.g., rear door off the alley" maxLength={140} />
     <Field label="Utility shutoffs" value={form.utilities} onChangeText={utilities => set({ utilities })} placeholder="e.g., gas meter at rear wall" maxLength={120} />
-    <Toggle label="Share with responders when the City connects" detail="Today FirePath is not connected to 911, dispatch or the City. This records consent for a future connection." value={form.shareWithResponders} onChange={shareWithResponders => set({ shareWithResponders })} />
+    <Toggle label="Share with responders when the City connects" detail="Not connected to 911 or the City yet. You can turn this off any time." value={form.shareWithResponders} onChange={shareWithResponders => set({ shareWithResponders })} />
     <CityDataCallout id="fireInspections" />
     <ErrorText>{error}</ErrorText>
     <Button busy={busy} onPress={save}>{onboarding ? 'Finish setup' : 'Save details'}</Button>

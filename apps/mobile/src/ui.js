@@ -59,13 +59,15 @@ export function Chips({ value, options, onChange }) {
   return <View style={s.chips}>{options.map(([key, text]) => <Pressable key={key} accessibilityRole="button" accessibilityState={{ selected: value === key }} onPress={() => onChange(key)} style={[s.chip, value === key && s.chipOn]}><Text style={[s.chipText, value === key && { color: '#FFF' }]}>{text}</Text></Pressable>)}</View>;
 }
 
-// "If we had City data" callout, fed by src/city-data.js so every screen says it the same way.
+// "If we had City data" callout, fed by src/city-data.js: one headline, details on tap.
 export function CityDataCallout({ id }) {
   const item = cityData[id];
-  return <View style={s.callout}>
-    <Text style={s.calloutTag}>NEEDS CITY DATA</Text>
-    <Text style={s.calloutText}>With the City's <Text style={{ fontWeight: '800' }}>{item.dataset}</Text> (for example, <Text style={{ fontStyle: 'italic' }}>{item.example}</Text>), FirePath could {item.unlocks}.</Text>
-  </View>;
+  const [open, setOpen] = React.useState(false);
+  return <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={() => setOpen(!open)} style={s.callout}>
+    <Text style={s.calloutTag}>NEEDS CITY DATA {open ? '−' : '+'}</Text>
+    <Text style={[s.calloutText, { fontWeight: '800' }]}>{item.title}</Text>
+    {open && <Text style={[s.calloutText, { marginTop: 4 }]}>With the City's {item.dataset} (for example, <Text style={{ fontStyle: 'italic' }}>{item.example}</Text>), FirePath could {item.unlocks}.</Text>}
+  </Pressable>;
 }
 
 // Severity dots: filled up to the level on sources with a 3-step scale; binary layers get a pill instead.
