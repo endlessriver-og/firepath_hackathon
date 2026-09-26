@@ -28,7 +28,7 @@
     <main>
       <header class="topbar"><div class="crumb">GLENDALE HOME <span>/</span> <b id="header-view">LIVE COMMAND</b></div><div class="top-actions"><button id="present-btn" class="present-button">▣ Present mode</button><span id="connection-pill" class="connection-pill">● Simulator connected</span><span class="avatar">FP</span></div></header>
       <div class="content">
-        <section class="intro"><div><div class="eyebrow">RESIDENT SAFETY / LIVE OPERATIONS</div><h1 id="page-title">Know the route. Adapt when it changes.</h1><p id="page-subtitle">One home plan for practice and for a changing emergency.</p></div><div id="mode-badge" class="mode-badge"><span>●</span> Ready to practice</div></section>
+        <section class="intro"><div><div class="eyebrow">RESIDENT SAFETY / LIVE OPERATIONS</div><h1 id="page-title">Know the route. Adapt when it changes.</h1><p id="page-subtitle">One home plan for practice and for a changing emergency.</p></div><div id="mode-badge" class="mode-badge" role="status" aria-live="polite"><span>●</span> Ready to practice</div></section>
 
         <section id="command-view" class="view active-view">
           <div class="metrics">
@@ -51,7 +51,7 @@
                 <button id="smoke-btn" class="action"><span>≋</span><span><b>West hall fills with smoke</b><small>Watch Bedroom A reroute</small></span><span>↗</span></button>
                 <button id="reset-btn" class="reset">↺ Reset simulation</button>
               </div>
-              <div class="panel event-panel"><div class="panel-header compact"><div><div class="eyebrow">INCIDENT LOG</div><h2>Recent activity</h2></div><span class="live-indicator">LIVE</span></div><div id="event-log" class="event-log"></div></div>
+              <div class="panel event-panel"><div class="panel-header compact"><div><div class="eyebrow">INCIDENT LOG</div><h2>Recent activity</h2></div><span class="live-indicator">LIVE</span></div><div id="event-log" class="event-log" aria-live="polite"></div></div>
             </div>
           </div>
           <div class="panel guidance-panel"><div class="panel-header"><div><div class="eyebrow">LOCATION-SPECIFIC RESPONSE</div><h2>Guidance by room</h2></div><button id="speak-btn" class="text-button">◖)) Play announcements</button></div><div id="guidance-grid" class="guidance-grid"></div></div>

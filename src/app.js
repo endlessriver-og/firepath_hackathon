@@ -21,6 +21,8 @@ function log(message, type = 'system') {
 
 function makeMap(routes) {
   const active = state.mode !== 'ready';
+  const routeSummary = rooms.map(room => `${nodes[room].label}: ${routes[room] ? nodes[routes[room].exit].label : 'no confirmed route'}`).join('; ');
+  $('floor-map').setAttribute('aria-label', `Sample home floor plan. Hazards: ${[...state.blocked].map(id => nodes[id].label).join(', ') || 'none'}. ${routeSummary}`);
   const lines = edges.map(([a, b]) => `<line x1="${nodes[a].x}" y1="${nodes[a].y}" x2="${nodes[b].x}" y2="${nodes[b].y}" stroke="${state.blocked.has(a) || state.blocked.has(b) ? '#e68270' : '#c9d5d2'}" stroke-width="${state.blocked.has(a) || state.blocked.has(b) ? 13 : 16}" stroke-linecap="round"/>`).join('');
   const routeColors = { ROOM_A: '#18a58a', ROOM_B: '#3a91b3', ROOM_C: '#b69a45' };
   const paths = active ? rooms.map(room => {
