@@ -201,6 +201,7 @@ export function Alerts({ me, onChange, sub, setSub }) {
 }
 
 const CITY_FEE_SCHEDULE = 'https://www.glendaleca.gov/government/departments/finance/revenue/citywide-fee-schedule';
+const withPermitPricing = (summary, outside = false) => `${summary}\n\nPermit pricing: City fees depend on project scope; request a quote before budgeting. Check the current Citywide Fee Schedule: ${CITY_FEE_SCHEDULE}${outside ? '\nOther-agency fees: confirm directly with each issuing agency.' : ''}`;
 
 // The public catalog has permit names and work classes, not a final fee for every project.
 function PermitPrice({ otherAgency = false }) {
@@ -272,7 +273,7 @@ function EventPlanner({ me }) {
         <Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{i.why}</Text>
       </View>)}
       {plan.notes.map(n => <Text key={n} style={{ color: /CAL FIRE/.test(n) ? color.warm : color.ink, lineHeight: 20, marginTop: 8 }}>• {n}</Text>)}
-      <Button kind="outline" onPress={async () => { await Clipboard.setStringAsync(plan.summary); setCopied(true); }}>{copied ? 'Copied ✓' : 'Copy summary'}</Button>
+      <Button kind="outline" onPress={async () => { await Clipboard.setStringAsync(withPermitPricing(plan.summary)); setCopied(true); }}>{copied ? 'Copied ✓' : 'Copy summary'}</Button>
       <Button onPress={() => Linking.openURL(plan.portal)}>Apply in Glendale Permits ↗</Button>
     </View>}
     <Link onPress={() => { setOpen(false); setPlan(null); }}>Close</Link>
@@ -328,7 +329,7 @@ function VenuePlanner({ me }) {
       {pkg.timeline.map(t => <View key={t.when + t.what} style={{ flexDirection: 'row', gap: 10, paddingVertical: 6 }}><Text style={{ width: 110, color: color.green, fontWeight: '800', fontSize: 12 }}>{t.when}</Text><Text style={{ flex: 1, color: color.ink }}>{t.what}</Text></View>)}
       {pkg.notes.map(n => <Text key={n} style={{ color: /CAL FIRE/.test(n) ? color.warm : color.ink, lineHeight: 20, marginTop: 8 }}>• {n}</Text>)}
       <View style={s.callout}><Text style={s.calloutTag}>EXAMPLE PACKAGE</Text><Text style={s.calloutText}>{VENUE_NOTE}</Text></View>
-      <Button kind="outline" onPress={async () => { await Clipboard.setStringAsync(pkg.summary); setCopied(true); }}>{copied ? 'Copied ✓' : 'Copy package summary'}</Button>
+      <Button kind="outline" onPress={async () => { await Clipboard.setStringAsync(withPermitPricing(pkg.summary, pkg.outside.length > 0)); setCopied(true); }}>{copied ? 'Copied ✓' : 'Copy package summary'}</Button>
       <Button onPress={() => Linking.openURL(pkg.portal)}>Apply in Glendale Permits ↗</Button>
     </View>}
   </Card>;
@@ -348,8 +349,8 @@ export function Permits({ me, top, sub, setSub }) {
     <FeeGuide />
     {guide.notes.length > 0 && <Card style={{ borderColor: color.warmLine, backgroundColor: color.warmBg }}><Tag tone="warm">For your address</Tag>{guide.notes.map(n => <Text key={n} style={{ color: color.ink, lineHeight: 20, marginTop: 6 }}>• {n}</Text>)}</Card>}
     <Card><Tag>What you'll usually need</Tag>{guide.needs.map(n => <Text key={n} style={{ color: color.ink, lineHeight: 22 }}>☐ {n}</Text>)}</Card>
-    <Card><Tag>Your project summary</Tag><Text selectable style={{ color: color.ink, fontFamily: 'Courier', fontSize: 12, lineHeight: 18 }}>{guide.summary}</Text>
-      <Button kind="outline" onPress={async () => { await Clipboard.setStringAsync(guide.summary); setCopied(true); }}>{copied ? 'Copied ✓' : 'Copy summary'}</Button></Card>
+    <Card><Tag>Your project summary</Tag><Text selectable style={{ color: color.ink, fontFamily: 'Courier', fontSize: 12, lineHeight: 18 }}>{withPermitPricing(guide.summary)}</Text>
+      <Button kind="outline" onPress={async () => { await Clipboard.setStringAsync(withPermitPricing(guide.summary)); setCopied(true); }}>{copied ? 'Copied ✓' : 'Copy summary'}</Button></Card>
     <Button onPress={() => Linking.openURL(PERMIT_PORTAL)}>Open Glendale Permits portal ↗</Button>
     {guide.url !== PERMIT_PORTAL && <Link onPress={() => Linking.openURL(guide.url)}>City guidance for this project ↗</Link>}
     <CityDataCallout id="permitZones" />
