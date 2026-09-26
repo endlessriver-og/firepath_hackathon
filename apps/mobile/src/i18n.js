@@ -11,9 +11,9 @@ const dict = {
   en: {
     'nav.map': 'Map', 'nav.plan': 'Plan', 'nav.home': 'Home', 'nav.alerts': 'Alerts', 'nav.permits': 'Permits',
     'head.emergency': 'Emergency', 'head.close': 'Close', 'head.pilot': 'PILOT', 'head.business': 'BUSINESS',
-    'land.title': "What's mapped at your Glendale address?",
-    'land.sub': 'Check any address against seven state and federal hazard maps. No account needed.',
-    'land.tour': 'See FirePath in 90 seconds', 'land.tourSub': 'Five guided stops with a fictional household. No sign-up.',
+    'land.title': 'Your place. Your plan.',
+    'land.sub': 'Find local hazards, prepare your household and navigate City permits in one place.',
+    'land.tour': 'Explore the app', 'land.tourSub': 'Five guided stops. No sign-up.',
     'land.addr': 'Glendale street address', 'land.addrHint': "Sent to the City of Glendale's address lookup. FirePath does not store address checks.",
     'land.placeholder': 'Start typing, e.g., 1613 Glencoe', 'land.check': 'Check this address', 'land.checking': "Checking the City's address points and seven hazard maps…",
     'land.signin': 'Already registered? Sign in', 'land.create': 'Create an account', 'land.resources': 'Public resources',
