@@ -1,6 +1,6 @@
 # Three-minute preparedness demo
 
-**Resident app (phone or browser):** `cd apps/mobile && npx expo start`. Scan the QR code with Expo Go, or press `w` for a browser tab at phone width.
+**Resident app (phone or browser):** `cd apps/mobile && npx expo start`. Scan the QR code with Expo Go, or press `w` for a browser tab at phone width. Without a dev server, `npm run build:demo` puts the same app at `dist/app/`; any static host serves it. Before each run-through, tap **Start over** at the bottom of Home to clear the previous presenter's progress.
 
 1. Pick **Sparr Heights Community Center**. Say plainly that it is a public place, not anyone's home.
 2. Set the household to *I rent* with pets, then tap **Build my plan**.

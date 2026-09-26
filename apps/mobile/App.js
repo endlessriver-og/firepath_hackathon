@@ -27,6 +27,7 @@ export default function App() {
   const tasks = buildTasks(state.profile, hazards);
   const toggle = id => update({ done: { ...state.done, [id]: !state.done[id] } });
   const restart = () => { setTab('Home'); update({ stage: 'place' }); };
+  const startOver = () => { setTab('Home'); AsyncStorage.removeItem(STORE).catch(() => {}); setState(initial); };
 
   if (state.stage === 'place') return <Screen><PlacePicker selected={state.sampleId} onPick={sampleId => update({ sampleId, stage: 'household' })} /></Screen>;
   if (state.stage === 'household') return <Screen><Household profile={state.profile} onChange={profile => update({ profile })} onBack={() => update({ stage: 'place' })} onDone={() => { setTab('Home'); update({ stage: 'app' }); }} /></Screen>;
@@ -34,7 +35,7 @@ export default function App() {
   return <SafeAreaView style={styles.safe}><StatusBar style="dark" />
     <View style={styles.header}><Text style={styles.brand}>FIREPATH</Text><Text style={styles.pill}>DEMO</Text></View>
     <ScrollView contentContainerStyle={styles.content}>
-      {tab === 'Home' && <Home sample={sample} tasks={tasks} done={state.done} onToggle={toggle} onChange={restart} go={setTab} />}
+      {tab === 'Home' && <Home sample={sample} tasks={tasks} done={state.done} onToggle={toggle} onChange={restart} onStartOver={startOver} go={setTab} />}
       {tab === 'Plan' && <Plan tasks={tasks} done={state.done} onToggle={toggle} plan={state.plan} onPlan={plan => update({ plan })} />}
       {tab === 'Map' && <MapTab sample={sample} />}
       {tab === 'Alerts' && <Alerts />}
@@ -95,7 +96,7 @@ function PlaceCard({ sample, onChange }) {
   </View>;
 }
 
-function Home({ sample, tasks, done, onToggle, onChange, go }) {
+function Home({ sample, tasks, done, onToggle, onChange, onStartOver, go }) {
   const place = summarizePlace(sample.data.hazards);
   const complete = tasks.filter(task => done[task.id]).length;
   const next = nextSteps(tasks, done);
@@ -119,6 +120,7 @@ function Home({ sample, tasks, done, onToggle, onChange, go }) {
       <Text style={styles.muted}>FirePath does not receive or send live alerts. The City's Everbridge system does.</Text>
       <Text style={styles.link} onPress={() => Linking.openURL(EVERBRIDGE)}>Sign up with the City ↗</Text>
     </View>
+    <Pressable accessibilityRole="button" onPress={onStartOver}><Text style={[styles.caption, styles.center]}>Start over · clears the demo data saved on this device</Text></Pressable>
   </>;
 }
 

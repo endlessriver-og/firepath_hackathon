@@ -97,6 +97,8 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
 - **Tests:** `npm test` passes 15/15.
 - **Native bundles:** `npx expo export --platform ios --platform android` bundles.
 - **Browser check:** the full mobile flow was clicked through with `expo start --web` at 390×844.
+- **Static phone app:** `npm run build:demo` exports the mobile app to `dist/app/`, which was verified on a plain static server. `vercel.json` now installs `apps/mobile` deps, but no Vercel build has been run.
+- **Start over:** a button on Home clears the device's demo data.
 - **Still unverified:** no physical device, no iOS simulator (this machine has no Xcode), and the native `react-native-maps` rendering.
 
 

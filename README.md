@@ -22,7 +22,7 @@ For a quick walkthrough, open <http://localhost:5173/?demo=1> or click **Take th
 
 The walkthrough can also run on a simple static host: serve `index.html` and `src/` from the project root, for example `python3 -m http.server 5173`, then open `/?demo=1`. On a static host the sample works, but personal address lookups require the Node server and separately installed Glendale GIS package. The app explains that limitation if someone attempts one.
 
-For a shareable static preview, run `npm run build:demo` and publish the generated `dist/` directory. The included `vercel.json` sets that build command and output directory for a Vercel project connected to this repository. Only the frontend, the dated public sample snapshot and the separate fire-routing lab enter `dist/`; no local household data or Python backend files are included. This is a demo deployment path, not a live-alert or address-lookup service.
+For a shareable static preview, run `cd apps/mobile && npm install` once, then `npm run build:demo`, and publish the generated `dist/` directory. It contains the browser workspace at `/` and the resident phone app as a static web export at `/app/`, so a judge can open `/app/` on any phone without Expo Go. The included `vercel.json` sets that build command and output directory for a Vercel project connected to this repository. Only the frontend, the dated public sample snapshot and the separate fire-routing lab enter `dist/`; no local household data or Python backend files are included. This is a demo deployment path, not a live-alert or address-lookup service.
 
 ## Enable real mapped hazard lookup
 
