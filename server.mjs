@@ -88,9 +88,9 @@ http.createServer(async (req, res) => {
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(result)); return;
     }
     if (req.method !== 'GET') throw new Error('Not found');
-    if (pathname !== '/classic' && pathname !== '/fire-lab.html' && pathname !== '/map.html' && !pathname.startsWith('/src/') && !pathname.startsWith('/audio/')) throw new Error('Outside public assets');
+    if (pathname !== '/classic' && pathname !== '/fire-lab.html' && pathname !== '/map.html' && pathname !== '/map3d.html' && !pathname.startsWith('/src/') && !pathname.startsWith('/audio/')) throw new Error('Outside public assets');
     const file = resolve(root, '.' + (pathname === '/classic' ? '/index.html' : pathname));
-    if (![resolve(root, 'index.html'), resolve(root, 'fire-lab.html'), resolve(root, 'map.html')].includes(file) && !file.startsWith(srcRoot + sep) && !file.startsWith(audioRoot + sep)) throw new Error('Invalid path');
+    if (![resolve(root, 'index.html'), resolve(root, 'fire-lab.html'), resolve(root, 'map.html'), resolve(root, 'map3d.html')].includes(file) && !file.startsWith(srcRoot + sep) && !file.startsWith(audioRoot + sep)) throw new Error('Invalid path');
     const info = await stat(file);
     if (!info.isFile()) throw new Error('Not a file');
     res.writeHead(200, { 'content-type': mime[extname(file)] || 'application/octet-stream', 'cache-control': 'no-store' });

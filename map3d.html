@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FirePath 3D map</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5/dist/maplibre-gl.css">
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5/dist/maplibre-gl.js"></script>
+<style>
+  :root { --ink: #17372E; --muted: #64756E; --green: #1D5B4D; }
+  html, body { margin: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: #E6EFE9; }
+  #map { position: absolute; inset: 0; }
+  .panel { position: absolute; left: 10px; top: 10px; right: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; pointer-events: none; }
+  .panel > * { pointer-events: auto; }
+  select, button { font: 700 14px/1 inherit; color: var(--ink); background: #FFF; border: 1px solid #C9D4CC; border-radius: 12px; padding: 9px 12px; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+  button { cursor: pointer; }
+  #legend { position: absolute; left: 10px; bottom: 28px; max-width: min(250px, calc(100% - 70px)); background: rgba(255,255,255,.94); border-radius: 12px; padding: 10px 12px; font-size: 12px; line-height: 1.4; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+  #legend b { font-size: 11px; letter-spacing: .08em; color: #367363; }
+  .ramp { height: 8px; border-radius: 4px; margin: 5px 0; background: linear-gradient(90deg,#F5CF4A,#E8641E,#B3261A); }
+  .home { width: 18px; height: 18px; border-radius: 50%; background: var(--ink); border: 3px solid #FFF; box-shadow: 0 0 0 6px rgba(232,100,30,.35); }
+  @media (max-width: 500px) { #legend .fine { display: none; } #legend { bottom: 10px; } .maplibregl-ctrl-bottom-right { margin-bottom: 0; } }
+  #fallback { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; text-align: center; padding: 24px; }
+</style>
+</head>
+<body>
+<div id="map" role="region" aria-label="Glendale 3D hazard map"></div>
+<div class="panel">
+  <select id="layer" aria-label="Hazard layer"></select>
+  <button id="spin" aria-pressed="false">Orbit</button>
+  <button id="reset">Recenter</button>
+</div>
+<div id="legend" aria-live="polite"></div>
+<div id="fallback"><div><b>3D needs WebGL, which this browser has turned off.</b><br>The flat map shows the same hazard zones.</div></div>
+<script>
+// 3D view of the same public planning layers as map.html: OpenStreetMap buildings extruded to their
+// mapped heights, real terrain (so the Verdugos and San Rafael Hills rise), and hazard zones draped on top.
+const LAYERS = {
+  combined: { name: 'Combined planning index' },
+  wildfire: { name: 'Wildfire', colors: { 3: '#B3261A', 2: '#E8641E', 1: '#F5CF4A' }, levels: { 3: 'Very high', 2: 'High', 1: 'Moderate' } },
+  flood: { name: 'Flood', colors: { 3: '#1F5FAD', 1: '#8DB9E8', unknown: '#AEB8C2' }, levels: { 3: '1% annual chance', 1: '0.2% annual chance', unknown: 'Undetermined' } },
+  fault: { name: 'Earthquake fault', colors: { zone: '#7B2D8B' }, levels: { zone: 'Fault zone' } },
+  liquefaction: { name: 'Liquefaction', colors: { zone: '#B55FB0' }, levels: { zone: 'Liquefaction zone' } },
+  landslide: { name: 'Landslide', colors: { zone: '#8C6D46' }, levels: { zone: 'Landslide zone' } },
+  dam_inundation: { name: 'Dam inundation', colors: { zone: '#1C9C9C' }, levels: { zone: 'Dam failure planning area' } },
+};
+const params = new URLSearchParams(location.search);
+const base = params.get('api') || '';
+const lat = parseFloat(params.get('lat')), lon = parseFloat(params.get('lon'));
+const home = Number.isFinite(lat) && Number.isFinite(lon) ? [lon, lat] : null;
+let current = LAYERS[(params.get('layers') || '').split(',')[0]] ? params.get('layers').split(',')[0] : 'combined';
+const view = { center: home || [-118.255, 34.165], zoom: home ? 15 : 12.6, pitch: 52, bearing: -25 };
+
+const select = document.getElementById('layer');
+select.innerHTML = Object.entries(LAYERS).map(([k, v]) => `<option value="${k}" ${k === current ? 'selected' : ''}>${v.name}</option>`).join('');
+
+if (!maplibregl.supported?.() && !document.createElement('canvas').getContext('webgl2') && !document.createElement('canvas').getContext('webgl')) {
+  document.getElementById('fallback').style.display = 'flex';
+  throw new Error('No WebGL');
+}
+
+const map = new maplibregl.Map({
+  container: 'map', style: 'https://tiles.openfreemap.org/styles/liberty',
+  center: view.center, zoom: view.zoom - 2.5, pitch: 0, bearing: 0, maxPitch: 80, attributionControl: { compact: true },
+});
+map.on('load', () => document.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show'));
+map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
+
+async function combinedGeo() {
+  const c = await fetch(`${base}/map-layers/combined.json`).then(r => r.json());
+  const half = c.grid_m / 2, dLat = half / 110540, dLon = half / (111320 * Math.cos(34.17 * Math.PI / 180));
+  return { type: 'FeatureCollection', features: c.cells.map(([y, x, score]) => ({ type: 'Feature', properties: { t: score / c.max }, geometry: { type: 'Polygon', coordinates: [[[x - dLon, y - dLat], [x + dLon, y - dLat], [x + dLon, y + dLat], [x - dLon, y + dLat], [x - dLon, y - dLat]]] } })) };
+}
+
+async function show(key) {
+  current = key;
+  if (map.getLayer('hazard')) map.removeLayer('hazard');
+  if (map.getLayer('hazard-line')) map.removeLayer('hazard-line');
+  if (map.getSource('hazard')) map.removeSource('hazard');
+  const data = key === 'combined' ? await combinedGeo() : await fetch(`${base}/map-layers/${key}.geojson`).then(r => r.json());
+  if (key !== current) return;
+  map.addSource('hazard', { type: 'geojson', data });
+  const before = map.getLayer('building-3d') ? 'building-3d' : undefined;
+  if (key === 'combined') {
+    map.addLayer({ id: 'hazard', type: 'fill', source: 'hazard', paint: {
+      'fill-color': ['interpolate', ['linear'], ['get', 't'], 0, '#F5CF4A', 0.5, '#E8641E', 1, '#B3261A'],
+      'fill-opacity': ['interpolate', ['linear'], ['get', 't'], 0, 0.12, 1, 0.55] } }, before);
+  } else {
+    const colors = LAYERS[key].colors, match = ['match', ['to-string', ['get', 'level']]];
+    for (const [lvl, c] of Object.entries(colors)) match.push(lvl, c);
+    match.push(Object.values(colors)[0]);
+    map.addLayer({ id: 'hazard', type: 'fill', source: 'hazard', paint: { 'fill-color': match, 'fill-opacity': 0.5 } }, before);
+    map.addLayer({ id: 'hazard-line', type: 'line', source: 'hazard', paint: { 'line-color': match, 'line-width': 1.5 } }, before);
+  }
+  legend();
+  parent?.postMessage?.({ type: 'firepath-map-layers', layers: [key] }, '*');
+}
+
+function legend() {
+  const spec = LAYERS[current];
+  const body = current === 'combined'
+    ? '<b>COMBINED PLANNING INDEX</b><div class="ramp"></div>lower → higher<span class="fine"> · illustrative weights, not an official score</span>'
+    : `<b>${spec.name.toUpperCase()}</b>` + Object.entries(spec.levels).map(([l, t]) => `<div><span style="display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;background:${spec.colors[l]}"></span>${t}</div>`).join('');
+  document.getElementById('legend').innerHTML = body + '<div style="color:#64756E;margin-top:4px;font-size:11px">Planning map, not a live incident or evacuation order.<span class="fine"> Building heights approximate (OpenStreetMap).</span></div>';
+}
+
+map.on('load', async () => {
+  map.addSource('dem', { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], encoding: 'terrarium', tileSize: 256, maxzoom: 14, attribution: 'Terrain: Mapzen / AWS Open Data' });
+  map.setTerrain({ source: 'dem', exaggeration: 1.2 });
+  map.addLayer({ id: 'hills', type: 'hillshade', source: 'dem', paint: { 'hillshade-exaggeration': 0.35 } }, map.getLayer('building') ? 'building' : undefined);
+  if (map.getLayer('building-3d')) map.setPaintProperty('building-3d', 'fill-extrusion-opacity', 0.85);
+  map.setSky?.({ 'sky-color': '#CFE3F0', 'horizon-color': '#FBF3E4', 'sky-horizon-blend': 0.6 });
+  if (home) {
+    const el = document.createElement('div'); el.className = 'home'; el.title = params.get('label') || 'Your home';
+    new maplibregl.Marker({ element: el }).setLngLat(home).setPopup(new maplibregl.Popup({ offset: 14 }).setText(params.get('label') || 'Your home')).addTo(map);
+  }
+  await show(current).catch(() => { document.getElementById('legend').innerHTML = '<b>Hazard layers are not built on this server.</b> Run scripts/build-map-layers.py.'; });
+  map.flyTo({ ...view, duration: 3500, essential: true });
+});
+
+select.onchange = () => show(select.value);
+document.getElementById('reset').onclick = () => map.flyTo({ ...view, duration: 1500 });
+let spinning = false;
+const spinBtn = document.getElementById('spin');
+function orbit() { if (!spinning) return; map.easeTo({ bearing: map.getBearing() + 30, duration: 4000, easing: t => t }); }
+map.on('moveend', orbit);
+spinBtn.onclick = () => { spinning = !spinning; spinBtn.setAttribute('aria-pressed', spinning); spinBtn.textContent = spinning ? 'Stop' : 'Orbit'; orbit(); };
+map.on('mousedown', () => { if (spinning) spinBtn.click(); });
+map.on('touchstart', () => { if (spinning) spinBtn.click(); });
+</script>
+</body>
+</html>

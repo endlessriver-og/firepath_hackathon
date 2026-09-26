@@ -32,7 +32,7 @@ export const TOUR_STEPS = [
   { chapter: 'Personalized', tab: 'Home', title: 'The City\'s own records, per address',
     body: 'Permits, inspections and the parcel number come straight from the City\'s public permit portal. The parcel is the same key the City uses across departments.', tryIt: 'Open "City records" to see recent inspections.' },
   { chapter: 'Personalized', tab: 'Map', title: 'Danger graded across the city',
-    body: 'The Combined view grades every 150-meter square by the mapped hazards that overlap there. Tap any spot to see how its score adds up. Each layer below links to the agency\'s official map.', tryIt: 'Tap anywhere on the map.' },
+    body: 'The Combined view grades every 150-meter square by the mapped hazards that overlap there. Tap any spot to see how its score adds up. Each layer below links to the agency\'s official map. Switch View to 3D to see the zones draped over the real hillsides and buildings.', tryIt: 'Tap anywhere on the map, then try the 3D view.' },
   { chapter: 'Actionable', tab: 'Plan', sub: 'todo', title: 'A short, numbered checklist',
     body: 'Official alerts first, then the steps the mapped hazards call for, then this household\'s needs. Everything links to the official guidance.' },
   { chapter: 'Actionable', tab: 'Alerts', sub: 'drill', title: 'Every alert becomes steps for the people there',
@@ -90,7 +90,7 @@ export const criteria = [
     answer: 'Preparedness keyed to the parcel, and two-way with consent. The City already links its departments by parcel; FirePath puts residents and businesses on that same key.',
     evidence: [
       'Alerts become steps for specific people, not a generic push.',
-      'A combined hazard grid that grades danger across the whole city, with a tap-to-explain breakdown.',
+      'A combined hazard grid that grades danger across the whole city, with a tap-to-explain breakdown, in 2D or draped over 3D terrain and buildings.',
       '"Pre-permitted places": the permit office as a catalog residents and businesses can order from.',
     ] },
   { name: 'Feasibility', weight: 15, question: 'Could this idea realistically be implemented, if funded?',

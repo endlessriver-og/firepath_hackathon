@@ -380,7 +380,8 @@ export function Profile({ me, onChange, onSignOut, sub, setSub }) {
 
 export function MapTab({ me, layers, setLayers, top }) {
   const lat = me.address?.lat, lon = me.address?.lon;
-  const src = `${apiBase()}/map.html?layers=${layers.join(',')}${lat ? `&lat=${lat}&lon=${lon}` : ''}`;
+  const [view3d, setView3d] = useState(false);
+  const src = `${apiBase()}/${view3d ? 'map3d' : 'map'}.html?layers=${layers.join(',')}${lat ? `&lat=${lat}&lon=${lon}` : ''}`;
   const order = me.hazards ? Object.keys(hazardNames).sort((a, b) => {
     const rank = k => { const l = hazardSeverity(k, me.hazards[k]).level; return typeof l === 'number' ? -l : l === 'zone' ? -1.5 : 1; };
     return rank(a) - rank(b);
@@ -396,7 +397,8 @@ export function MapTab({ me, layers, setLayers, top }) {
   return <>
     <Title>Hazard map</Title>
     {mode}
-    <Muted style={{ marginTop: 10 }}>Tap a filter on the map, or a layer below, to shade its zones across Glendale.</Muted>
+    <Select label="View" value={view3d ? '3d' : '2d'} options={[['2d', 'Flat map (fastest)'], ['3d', '3D street view: terrain and buildings']]} onChange={v => setView3d(v === '3d')} />
+    <Muted style={{ marginTop: 4 }}>{view3d ? 'Drag to pan, right-drag or two fingers to tilt and turn. Pick a layer at the top of the map.' : 'Tap a filter on the map, or a layer below, to shade its zones across Glendale.'}</Muted>
     <MapFrame key={src} src={src} style={{ height: 460, borderRadius: 17, marginTop: 12, borderWidth: 1, borderColor: color.line }} />
     {me.hazards ? <>
       <Section>At your address</Section>
