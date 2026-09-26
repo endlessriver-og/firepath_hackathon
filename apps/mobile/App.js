@@ -90,7 +90,7 @@ function App() {
       <View style={{ flex: 1 }} />
       <Pressable accessibilityRole="button" accessibilityLabel="Emergency now" onPress={() => setEmergency(!emergency)} style={styles.sos}><Text style={styles.sosText}>{emergency ? t('head.close') : t('head.emergency')}</Text></Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel="Profile and settings" accessibilityState={{ selected: tab === 'Profile' }} onPress={() => { setEmergency(false); setTab('Profile'); }} style={[styles.avatar, tab === 'Profile' && !emergency && styles.avatarOn]}>
-        <Text style={[styles.avatarText, tab === 'Profile' && !emergency && { color: '#FFF' }]}>{me.user.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}</Text>
+        <Ionicons name={tab === 'Profile' && !emergency ? 'person' : 'person-outline'} size={20} color={tab === 'Profile' && !emergency ? '#FFF' : color.green} />
       </Pressable>
     </View>
     <ScrollView key={emergency ? 'sos' : tab} ref={scroller} contentContainerStyle={[styles.content, tour !== null && { paddingBottom: 280 }]} keyboardShouldPersistTaps="handled">
