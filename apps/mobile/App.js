@@ -16,7 +16,7 @@ export default function App() {
   const [me, setMe] = useState(undefined); // undefined = loading, null = signed out
   const [step, setStep] = useState(0);     // onboarding step 1-3, 0 = done
   const [tab, setTab] = useState('Home');
-  const [layers, setLayers] = useState(['wildfire']);
+  const [layers, setLayers] = useState(['combined']);
   const go = (next, withLayers) => { if (withLayers) setLayers(withLayers); setTab(next); };
   const [error, setError] = useState('');
   const scroller = useRef(null);

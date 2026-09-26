@@ -11,6 +11,9 @@ import json
 import pathlib
 import sys
 
+import numpy as np
+import shapely
+from shapely.affinity import scale
 from shapely.geometry import mapping, shape
 from shapely.ops import unary_union
 
@@ -61,14 +64,55 @@ def rounded(geom):
     return json.loads(json.dumps(mapping(geom)), parse_float=lambda x: round(float(x), 5))
 
 
+# --- Combined planning index ---------------------------------------------------------
+# A FirePath-derived grid, NOT an official risk score. Each ~150 m cell sums the mapped layers at its
+# centre with illustrative weights; wildfire also decays outward from High/Very High zones because
+# embers travel beyond zone lines. Every cell keeps its breakdown so the map can explain the number.
+GRID_M = 150
+WEIGHTS = {'W3': 6, 'W2': 4, 'W1': 2, 'E2': 2, 'E1': 1, 'F3': 4, 'F1': 1, 'fault': 3, 'liquefaction': 2, 'landslide': 2, 'dam_inundation': 2}
+LABELS = {'W3': 'Wildfire Very high', 'W2': 'Wildfire High', 'W1': 'Wildfire Moderate', 'E2': 'Within 400 m of a High/Very high fire zone', 'E1': 'Within 800 m of a High/Very high fire zone', 'F3': 'Special flood hazard area', 'F1': '0.2% annual chance flood area', 'fault': 'Earthquake fault zone', 'liquefaction': 'Liquefaction zone', 'landslide': 'Landslide zone', 'dam_inundation': 'Dam inundation area'}
+
+
+def combined_index(city, by_key):
+    lat0 = city.centroid.y
+    kx, ky = 111_320 * np.cos(np.radians(lat0)), 110_540  # degrees -> metres (local equirectangular)
+    to_m = lambda g: scale(g, xfact=kx, yfact=ky, origin=(0, 0))
+    minx, miny, maxx, maxy = city.bounds
+    xs = np.arange(minx, maxx, GRID_M / kx) + GRID_M / kx / 2
+    ys = np.arange(miny, maxy, GRID_M / ky) + GRID_M / ky / 2
+    gx, gy = [a.ravel() for a in np.meshgrid(xs, ys)]
+    inside = shapely.contains_xy(city, gx, gy)
+    gx, gy = gx[inside], gy[inside]
+    codes = [[] for _ in gx]
+    def mark(geom, code, mask=None):
+        hit = shapely.contains_xy(geom, gx, gy) if mask is None else mask
+        for i in np.nonzero(hit)[0]:
+            codes[i].append(code)
+        return hit
+    fire = {lvl: unary_union([g for l, g in by_key['wildfire'] if l == lvl] or [shapely.Polygon()]) for lvl in (1, 2, 3)}
+    in_fire = mark(fire[3], 'W3') | mark(fire[2], 'W2') | mark(fire[1], 'W1')
+    severe_m = to_m(unary_union([fire[2], fire[3]]))
+    dist = shapely.distance(severe_m, shapely.points(gx * kx, gy * ky))
+    mark(None, 'E2', (~in_fire) & (dist <= 400))
+    mark(None, 'E1', (~in_fire) & (dist > 400) & (dist <= 800))
+    for lvl, code in ((3, 'F3'), (1, 'F1')):
+        mark(unary_union([g for l, g in by_key['flood'] if l == lvl] or [shapely.Polygon()]), code)
+    for key in ('fault', 'liquefaction', 'landslide', 'dam_inundation'):
+        mark(unary_union([g for _, g in by_key[key]] or [shapely.Polygon()]), key)
+    cells = [[round(float(y), 5), round(float(x), 5), sum(WEIGHTS[c] for c in cs), ','.join(cs)] for x, y, cs in zip(gx, gy, codes) if cs]
+    return {'grid_m': GRID_M, 'weights': WEIGHTS, 'labels': LABELS, 'max': max((c[2] for c in cells), default=0), 'cells': cells}
+
+
 def main():
     snap = latest_snapshot()
     OUT.mkdir(parents=True, exist_ok=True)
     city = unary_union([shape(f['geometry']) for f in json.load(open(snap / 'city_boundary.geojson'))['features']])
     json.dump({'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'properties': {}, 'geometry': rounded(city.simplify(SIMPLIFY))}]}, open(OUT / 'city_boundary.geojson', 'w'))
     manifest = {'snapshot': snap.name, 'layers': {}, 'places': {}}
+    by_key = {}
     for key, (file, classify, source) in LAYERS.items():
         features = []
+        raw = by_key.setdefault(key, [])
         for f in json.load(open(snap / f'{file}.geojson')).get('features', []):
             level = classify(f.get('properties') or {})
             if not level:
@@ -76,6 +120,7 @@ def main():
             geom = shape(f['geometry']).buffer(0).intersection(city).simplify(SIMPLIFY, preserve_topology=True)
             if geom.is_empty:
                 continue
+            raw.append((level[0], shape(f['geometry']).buffer(0).intersection(city)))
             features.append({'type': 'Feature', 'properties': {'level': level[0], 'label': level[1]}, 'geometry': rounded(geom)})
         json.dump({'type': 'FeatureCollection', 'features': features}, open(OUT / f'{key}.geojson', 'w'), separators=(',', ':'))
         manifest['layers'][key] = {'source': source, 'features': len(features), 'bytes': (OUT / f'{key}.geojson').stat().st_size}
@@ -83,6 +128,10 @@ def main():
         features = [{'type': 'Feature', 'properties': {'name': (f['properties'] or {}).get(name_field) or kind, 'kind': kind}, 'geometry': rounded(shape(f['geometry']))} for f in json.load(open(snap / f'{key}.geojson'))['features']]
         json.dump({'type': 'FeatureCollection', 'features': features}, open(OUT / f'{key}.geojson', 'w'), separators=(',', ':'))
         manifest['places'][key] = {'kind': kind, 'features': len(features)}
+    combined = combined_index(city, by_key)
+    json.dump(combined, open(OUT / 'combined.json', 'w'), separators=(',', ':'))
+    manifest['combined'] = {'cells': len(combined['cells']), 'grid_m': GRID_M, 'max': combined['max']}
+    print(f"combined index  {len(combined['cells'])} scored cells of {GRID_M} m, max {combined['max']}")
     json.dump(manifest, open(OUT / 'manifest.json', 'w'), indent=1)
     for key, info in manifest['layers'].items():
         print(f"{key:15} {info['features']:4} features {info['bytes'] / 1024:8.0f} KB")

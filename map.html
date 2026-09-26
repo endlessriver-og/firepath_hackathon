@@ -30,6 +30,7 @@
 <div id="map" role="region" aria-label="Glendale hazard map"></div>
 <div id="legend" aria-live="polite"></div>
 <script>
+const COMBINED = { name: 'Combined', color: 'linear-gradient(90deg,#F5CF4A,#E8641E,#B3261A)' };
 const LAYERS = {
   wildfire: { name: 'Wildfire', colors: { 3: '#B3261A', 2: '#E8641E', 1: '#F5CF4A' }, levels: { 3: 'Very high', 2: 'High', 1: 'Moderate' } },
   flood: { name: 'Flood', colors: { 3: '#1F5FAD', 1: '#8DB9E8', unknown: '#AEB8C2' }, levels: { 3: '1% annual chance (special flood hazard area)', 1: '0.2% annual chance', unknown: 'Undetermined (Zone D, not studied)' } },
@@ -41,7 +42,7 @@ const LAYERS = {
 };
 const PLACES = { fire_stations: ['Fire stations', '#C8361D'], hospitals: ['Hospitals', '#1F5FAD'], schools: ['Schools', '#2E7D4F'] };
 const params = new URLSearchParams(location.search);
-const active = new Set((params.get('layers') || 'wildfire').split(',').filter(k => LAYERS[k] || PLACES[k]));
+const active = new Set((params.get('layers') || 'combined').split(',').filter(k => k === 'combined' || LAYERS[k] || PLACES[k]));
 const home = Number.isFinite(parseFloat(params.get('lat'))) ? [parseFloat(params.get('lat')), parseFloat(params.get('lon'))] : null;
 const base = params.get('api') || '';
 let manifest = { layers: {} };
@@ -56,7 +57,32 @@ async function geo(key) {
   return cache[key];
 }
 
+let combined = null;
+async function drawCombined() {
+  combined = combined || await fetch(`${base}/map-layers/combined.json`).then(r => r.json());
+  // Each ~150 m cell is coloured by its own score (no summing across neighbours, which would overstate
+  // danger). Canvas rendering keeps ~3,000 squares fast; soft edges come from the low stroke-free opacity.
+  const stops = [[0, [245, 207, 74]], [0.45, [232, 100, 30]], [0.75, [179, 38, 26]], [1, [110, 16, 12]]];
+  const colorFor = t => { for (let i = 1; i < stops.length; i++) if (t <= stops[i][0]) { const [a, ca] = stops[i - 1], [b, cb] = stops[i]; const f = (t - a) / (b - a); return `rgb(${ca.map((v, j) => Math.round(v + (cb[j] - v) * f)).join(',')})`; } return 'rgb(110,16,12)'; };
+  const renderer = L.canvas({ padding: 0.3 });
+  const half = combined.grid_m / 2, dLat = half / 110540, dLon = half / (111320 * Math.cos(34.17 * Math.PI / 180));
+  drawn.combined = L.layerGroup(combined.cells.map(([lat, lon, score]) => L.rectangle([[lat - dLat, lon - dLon], [lat + dLat, lon + dLon]], { renderer, stroke: false, fillColor: colorFor(score / combined.max), fillOpacity: 0.28 + 0.42 * (score / combined.max), interactive: false }))).addTo(map);
+}
+
+// Tap anywhere: explain the combined score of the nearest grid cell.
+map.on('click', event => {
+  if (!active.has('combined') || !combined) return;
+  const { lat, lng } = event.latlng;
+  let best = null, bestD = Infinity;
+  for (const cell of combined.cells) { const d = (cell[0] - lat) ** 2 + ((cell[1] - lng) * 0.83) ** 2; if (d < bestD) { bestD = d; best = cell; } }
+  const metres = Math.sqrt(bestD) * 111000;
+  const body = !best || metres > combined.grid_m ? '<b>Combined index: 0</b><br>No mapped layer covers this spot. That is not the same as no risk.'
+    : `<b>Combined index: ${best[2]} of ${combined.max}</b><br>` + best[3].split(',').map(c => `${escape(combined.labels[c])} +${combined.weights[c]}`).join('<br>');
+  L.popup().setLatLng(event.latlng).setContent(`${body}<br><span style="color:#64756E">FirePath planning index with illustrative weights, not an official risk score.</span>`).openOn(map);
+});
+
 async function draw(key) {
+  if (key === 'combined') return drawCombined();
   const data = await geo(key);
   if (LAYERS[key]) {
     const spec = LAYERS[key];
@@ -72,7 +98,7 @@ async function draw(key) {
 }
 
 function renderFilters() {
-  const chips = [...Object.entries(LAYERS).map(([k, v]) => [k, v.name, Object.values(v.colors)[0]]), ...Object.entries(PLACES).map(([k, [name, color]]) => [k, name, color])];
+  const chips = [['combined', COMBINED.name, COMBINED.color], ...Object.entries(LAYERS).map(([k, v]) => [k, v.name, Object.values(v.colors)[0]]), ...Object.entries(PLACES).map(([k, [name, color]]) => [k, name, color])];
   document.getElementById('filters').innerHTML = chips.map(([k, name, color]) => {
     const empty = LAYERS[k] && manifest.layers[k] && manifest.layers[k].features === 0;
     return `<button class="chip" data-key="${k}" aria-pressed="${active.has(k)}" ${empty ? 'disabled title="No current assessment covers Glendale"' : ''}><span class="sw" style="background:${color}"></span>${name}${empty ? ' · none' : ''}</button>`;
@@ -80,11 +106,12 @@ function renderFilters() {
 }
 
 function renderLegend() {
+  const combinedRow = active.has('combined') ? `<h2>COMBINED PLANNING INDEX</h2><div class="row"><span class="sw" style="width:120px;background:${COMBINED.color}"></span>lower → higher</div><div class="note">Adds up the mapped layers at each ~150 m square (wildfire counts more, and also fades out from High/Very high zones because embers travel). Tap any spot to see its breakdown. A FirePath index with illustrative weights, not an official risk score.</div>` : '';
   const rows = [...active].filter(k => LAYERS[k]).map(k => {
     const spec = LAYERS[k];
     return `<h2>${spec.name.toUpperCase()}</h2>` + Object.entries(spec.levels).map(([lvl, label]) => `<div class="row"><span class="sw" style="background:${spec.colors[lvl]}"></span>${label}</div>`).join('') + (['fault', 'liquefaction', 'landslide', 'dam_inundation'].includes(k) ? '<div class="note">This map has no severity levels; being inside the zone is the signal.</div>' : '');
   });
-  document.getElementById('legend').innerHTML = (rows.length ? rows.join('') : '<div class="note">Choose a layer above to shade its zones.</div>') +
+  document.getElementById('legend').innerHTML = (combinedRow + rows.join('') || '<div class="note">Choose a layer above to shade its zones.</div>') +
     `<div class="note">Planning maps (snapshot ${escape(manifest.snapshot || '')}), not live incidents or evacuation orders. Outside a shaded zone does not mean no risk. Map tiles load from OpenStreetMap.</div>`;
 }
 
