@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, TextInput, View
 import { Picker } from '@react-native-picker/picker';
 import Svg, { Circle } from 'react-native-svg';
 import { cityData } from './city-data';
+import { LANGS, useI18n } from './i18n';
 
 export const color = { bg: '#F5F6F1', ink: '#17372E', green: '#1D5B4D', muted: '#53655E', line: '#E2E8E1', soft: '#E6EFE9', warm: '#B4502B', warmBg: '#FFF9F5', warmLine: '#E9C2AE', gold: '#8A5A12', goldBg: '#F6E6C8', blue: '#2E5A88', blueBg: '#EAF1F8' };
 
@@ -154,3 +155,12 @@ export const s = StyleSheet.create({
   track: { height: 10, backgroundColor: '#DDE4DC', borderRadius: 5, overflow: 'hidden', marginTop: 10 },
   fill: { height: 10, backgroundColor: color.green },
 });
+
+// Language and text-size pickers (dropdowns). Shown on the landing page, in Profile and in Emergency.
+export function LanguageSettings({ compact }) {
+  const { lang, setLang, scale, setScale, t } = useI18n();
+  return <View style={compact ? { flexDirection: 'row', gap: 8 } : null}>
+    <View style={compact ? { flex: 1.3 } : null}><Select label={t('set.language')} value={lang} options={LANGS} onChange={v => setLang(v || 'en')} /></View>
+    <View style={compact ? { flex: 1 } : null}><Select label={t('set.text')} value={String(scale)} options={[['1', t('set.normal')], ['1.2', t('set.large')], ['1.4', t('set.xl')]]} onChange={v => setScale(Number(v) || 1)} /></View>
+  </View>;
+}

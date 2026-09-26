@@ -239,7 +239,7 @@ export function BusinessDetails({ me, onSaved, onboarding }) {
 
 // Address field with City of Glendale suggestions (debounced). Used by the public check and registration.
 // `settled` is text the parent already looked up (e.g. via its own button); no suggestions for it.
-export function AddressSearch({ value, onChangeText, onPick, onSubmit, suggestPath, hint, label = 'Glendale street address', settled }) {
+export function AddressSearch({ value, onChangeText, onPick, onSubmit, suggestPath, hint, label = 'Glendale street address', settled, placeholder = 'Start typing, e.g., 1613 Glencoe' }) {
   const [suggestions, setSuggestions] = useState([]), [picked, setPicked] = useState('');
   useEffect(() => {
     if (value.trim().length < 4 || value === picked || value === settled) { setSuggestions([]); return; }
@@ -248,7 +248,7 @@ export function AddressSearch({ value, onChangeText, onPick, onSubmit, suggestPa
   }, [value, settled]);
   const pick = item => { setPicked(item.text); onChangeText(item.text); setSuggestions([]); onPick(item.text, item.magicKey); };
   return <>
-    <Field label={label} hint={hint} value={value} onChangeText={onChangeText} placeholder="Start typing, e.g., 1613 Glencoe" autoComplete="off" onSubmitEditing={onSubmit} maxLength={200} />
+     <Field label={label} hint={hint} value={value} onChangeText={onChangeText} placeholder={placeholder} autoComplete="off" onSubmitEditing={onSubmit} maxLength={200} />
     {suggestions.length > 0 && <View accessibilityRole="list" style={{ backgroundColor: '#FFF', borderWidth: 1, borderColor: '#D5DDD5', borderRadius: 12, marginTop: 4, overflow: 'hidden' }}>
       {suggestions.map((item, i) => <Pressable key={item.text} accessibilityRole="button" accessibilityLabel={`Use ${item.text}`} onPress={() => pick(item)} style={{ padding: 13, borderTopWidth: i ? 1 : 0, borderColor: color.line }}><Text style={{ color: color.ink }}>{item.text}</Text></Pressable>)}
       <Caption style={{ marginTop: 0, padding: 8, paddingTop: 4 }}>Suggestions from the City of Glendale address list</Caption>

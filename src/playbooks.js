@@ -143,3 +143,79 @@ export function emergencyGuide(id, ctx = {}) {
   }[id];
   return { id, title: situation.label, steps, links };
 }
+
+// Emergency-now steps in other languages (earthquake, evacuate, power). Drafted by FirePath and not yet
+// reviewed by native speakers; the app labels them. Weather situations stay in English for now.
+const TX = {
+  es: {
+    and: ' y ', dogsNote: p => `Lleve las bolsas de emergencia, medicinas, cargadores${p ? ` y a ${p}` : ''}.`,
+    earthquake: [
+      'Agáchese, cúbrase y agárrese hasta que pare el temblor. Espere réplicas y repita cada vez.',
+      'Revise si hay heridos. Póngase zapatos antes de caminar sobre vidrios o escombros.',
+      'Si huele a gas o escucha un silbido, saque a todos y llame a la compañía de gas desde afuera.',
+      who => `Revise a ${who}, y luego a los vecinos que viven solos.`,
+      'Mande mensajes de texto en vez de llamar, para dejar libres las líneas de emergencia.',
+    ],
+    evacuate: ['Salga ahora. Siga la ruta que den las autoridades; las calles de siempre pueden estar cerradas.',
+      n => `Asegúrese de que ${n} tenga transporte y salga ahora.`, m => `Si se separan, reúnanse en ${m}.`, c => `Mande un mensaje a ${c} diciendo a dónde va.`,
+      'Si tiene tiempo: cierre ventanas y puertas, deje luces encendidas y no cierre con llave los portones que necesiten los bomberos.'],
+    power: ['Use linternas, no velas. Desconecte los aparatos electrónicos delicados.',
+      'Mantenga cerrados el refrigerador y el congelador; la comida se mantiene fría unas 4 horas (un congelador lleno, unas 48).',
+      n => `Revise a ${n}, sobre todo si usa equipo médico eléctrico.`,
+      'Reporte el apagón y revise el tiempo de reparación con Glendale Water & Power.', 'Trate los semáforos apagados como un alto en las cuatro direcciones.'],
+    everyone: 'todos en su hogar',
+  },
+  hy: {
+    and: ' և ', dogsNote: p => `Վերցրեք արտակարգ պայուսակները, դեղերը, լիցքավորիչները${p ? ` և ${p}` : ''}։`,
+    earthquake: [
+      'Իջեք, ծածկվեք և ամուր բռնեք, մինչև ցնցումը դադարի։ Սպասեք կրկնվող ցնցումների և ամեն անգամ նույնն արեք։',
+      'Ստուգեք վիրավորների առկայությունը։ Հագեք կոշիկներ՝ նախքան ապակու կամ բեկորների վրայով քայլելը։',
+      'Եթե գազի հոտ եք զգում կամ սուլոց եք լսում, բոլորին դուրս հանեք և դրսից զանգահարեք գազի ընկերությանը։',
+      who => `Ստուգեք ${who}, հետո՝ միայնակ ապրող հարևաններին։`,
+      'Զանգերի փոխարեն գրեք հաղորդագրություններ, որպեսզի արտակարգ գծերը ազատ մնան։',
+    ],
+    evacuate: ['Հեռացեք հիմա։ Հետևեք պաշտոնյաների տված երթուղուն. սովորական ճանապարհները կարող են փակ լինել։',
+      n => `Համոզվեք, որ ${n}-ն ունի տրանսպորտ և հեռանում է հիմա։`, m => `Եթե բաժանվեք, հանդիպեք ${m}-ում։`, c => `Հաղորդագրություն ուղարկեք ${c}-ին, թե ուր եք գնում։`,
+      'Եթե ժամանակ ունեք՝ փակեք պատուհաններն ու դռները, լույսերը վառ թողեք և մի կողպեք դարպասները, որոնք կարող են պետք լինել հրշեջներին։'],
+    power: ['Օգտագործեք լապտերներ, ոչ թե մոմեր։ Անջատեք զգայուն էլեկտրոնիկան։',
+      'Սառնարանն ու սառցախցիկը փակ պահեք. սնունդը մնում է սառը մոտ 4 ժամ (լիքը սառցախցիկը՝ մոտ 48)։',
+      n => `Ստուգեք ${n}-ին, հատկապես եթե նա օգտագործում է էլեկտրական բժշկական սարքավորում։`,
+      'Հայտնեք հոսանքազրկման մասին և ստուգեք վերականգնման ժամկետը Glendale Water & Power-ում։', 'Չաշխատող լուսացույցերը դիտարկեք որպես քառակողմ կանգառ։'],
+    everyone: 'ձեր տան բոլոր անդամներին',
+  },
+  ko: {
+    and: ', ', dogsNote: p => `비상 가방, 약, 충전기${p ? `, 그리고 ${p}` : ''}를 챙기세요.`,
+    earthquake: [
+      '흔들림이 멈출 때까지 엎드리고, 머리를 감싸고, 꼭 붙잡으세요. 여진이 올 때마다 다시 반복하세요.',
+      '다친 사람이 있는지 확인하세요. 유리나 잔해 위를 걷기 전에 신발을 신으세요.',
+      '가스 냄새가 나거나 새는 소리가 들리면 모두 밖으로 나가서 밖에서 가스 회사에 전화하세요.',
+      who => `${who}의 안부를 확인하고, 그다음 혼자 사는 이웃을 확인하세요.`,
+      '긴급 회선이 막히지 않도록 전화 대신 문자를 보내세요.',
+    ],
+    evacuate: ['지금 떠나세요. 당국이 안내하는 경로를 따르세요. 평소 다니던 길이 막혀 있을 수 있습니다.',
+      n => `${n} 님이 이동 수단이 있고 지금 떠나는지 확인하세요.`, m => `흩어지면 ${m}에서 만나세요.`, c => `${c}에게 어디로 가는지 문자로 알리세요.`,
+      '시간이 있다면: 창문과 문을 닫고, 불을 켜 두고, 소방관이 써야 할 수 있는 대문은 잠그지 마세요.'],
+    power: ['촛불 대신 손전등을 쓰세요. 민감한 전자제품의 플러그를 뽑으세요.',
+      '냉장고와 냉동고 문을 닫아 두세요. 음식은 약 4시간(가득 찬 냉동고는 약 48시간) 차갑게 유지됩니다.',
+      n => `${n} 님을 확인하세요. 특히 전기로 작동하는 의료 기기를 쓴다면 꼭 확인하세요.`,
+      '정전을 신고하고 Glendale Water & Power에서 복구 시간을 확인하세요.', '꺼진 신호등은 사방 정지 표지판처럼 생각하세요.'],
+    everyone: '가족 모두',
+  },
+};
+
+export function emergencyGuideIn(lang, id, ctx = {}) {
+  const base = emergencyGuide(id, ctx);
+  const tx = TX[lang];
+  if (!base || !tx || !tx[id]) return { ...base, translated: lang === 'en' };
+  const h = ctx.household || {}, business = ctx.type === 'business';
+  const helpers = business ? [] : (h.members || []).filter(m => m.needsHelp || m.ageGroup === 'senior').map(m => m.name);
+  const pets = (h.pets || []).map(p => `${p.count > 1 ? `${p.count} ` : ''}${p.kind}`).join(', ');
+  const T = tx[id];
+  const why = base.steps.map(s => s.why);
+  let steps;
+  if (id === 'earthquake') steps = [T[0], T[1], T[2], T[3](helpers.length ? helpers.join(tx.and) : tx.everyone), T[4]];
+  if (id === 'evacuate') steps = [T[0], tx.dogsNote(pets), ...helpers.map(n => T[1](n)), (h.meetNear || h.meetFar) ? T[2](h.meetFar || h.meetNear) : null, h.contact ? T[3](h.contact) : null, T[4]].filter(Boolean);
+  if (id === 'power') steps = [T[0], T[1], ...helpers.map(n => T[2](n)), T[3], T[4]];
+  if (business) return { ...base, translated: false }; // business wording stays English for now
+  return { ...base, translated: true, steps: steps.map((text, i) => ({ text, why: why[i] || '' })) };
+}

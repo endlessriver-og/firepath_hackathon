@@ -6,7 +6,8 @@ import { Auth, AddressSearch } from './onboarding';
 import { Resources } from './tabs';
 import { hazardViewers } from './resources';
 import { Linking } from 'react-native';
-import { Button, Caption, Card, Collapsible, ErrorText, Link, Muted, Section, SeverityBadge, Tag, color } from './ui';
+import { Button, Caption, Card, Collapsible, ErrorText, LanguageSettings, Link, Muted, Section, SeverityBadge, Tag, color } from './ui';
+import { useI18n } from './i18n';
 
 // Public front door: anyone can check a Glendale address without an account. Results end in a
 // call to register for alerts, a household plan and permit help for that address.
@@ -27,6 +28,7 @@ export function CityRecords({ records, initiallyOpen }) {
 }
 
 export function AddressCheck({ onResult, showPreview = true, label }) {
+  const { t } = useI18n();
   const [address, setAddress] = useState('');
   const [result, setResult] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [candidates, setCandidates] = useState([]), [checked, setChecked] = useState('');
   async function check(text = address, magicKey) {
@@ -37,11 +39,11 @@ export function AddressCheck({ onResult, showPreview = true, label }) {
   }
   const mapped = result?.layers.filter(l => l.level === 'zone' || (typeof l.level === 'number' && l.level > 0)) || [];
   return <>
-    <AddressSearch label={label} value={address} onChangeText={setAddress} onPick={check} onSubmit={() => check()} suggestPath="/api/public/suggest" settled={checked} hint="Sent to the City of Glendale's address lookup. FirePath does not store address checks." />
+    <AddressSearch label={label || t('land.addr')} placeholder={t('land.placeholder')} value={address} onChangeText={setAddress} onPick={check} onSubmit={() => check()} suggestPath="/api/public/suggest" settled={checked} hint={t('land.addrHint')} />
     <ErrorText>{error}</ErrorText>
     {candidates.map(c => <Button key={c} kind="outline" style={{ marginTop: 8 }} onPress={() => { setAddress(c); check(c); }}>{c}</Button>)}
-    <Button busy={busy} disabled={address.trim().length < 5} onPress={() => check()}>Check this address</Button>
-    {busy && <Caption>Checking the City's address points and seven hazard maps…</Caption>}
+    <Button busy={busy} disabled={address.trim().length < 5} onPress={() => check()}>{t('land.check')}</Button>
+    {busy && <Caption>{t('land.checking')}</Caption>}
     {result && <>
       <Card style={{ backgroundColor: color.green, borderColor: color.green }}>
         <Text style={{ color: '#CFE3DA', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>{result.address}</Text>
@@ -65,6 +67,7 @@ export function AddressCheck({ onResult, showPreview = true, label }) {
 // Public front door: anyone can check a Glendale address without an account. Results end in a
 // call to register for alerts, a household plan and permit help for that address.
 export function Landing({ onSignedIn, onEmergency, onWalkthrough }) {
+  const { t, lang } = useI18n();
   const [result, setResult] = useState(null);
   const [signup, setSignup] = useState(null); // null | { type, mode }
 
@@ -76,12 +79,13 @@ export function Landing({ onSignedIn, onEmergency, onWalkthrough }) {
 
   return <>
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Text style={{ fontSize: 15, fontWeight: '900', letterSpacing: 2, color: color.green }}>FIREPATH</Text>
-      <Text accessibilityRole="button" onPress={onEmergency} style={{ backgroundColor: '#B3261A', color: '#FFF', fontWeight: '800', fontSize: 12, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, overflow: 'hidden' }}>Emergency</Text></View>
-    <Text style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 14 }}>What's mapped at your Glendale address?</Text>
-    <Muted style={{ marginTop: 8 }}>Check any address against seven state and federal hazard maps. No account needed.</Muted>
+      <Text accessibilityRole="button" onPress={onEmergency} style={{ backgroundColor: '#B3261A', color: '#FFF', fontWeight: '800', fontSize: 12, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, overflow: 'hidden' }}>{t('head.emergency')}</Text></View>
+    <LanguageSettings compact />
+    <Text style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 14 }}>{t('land.title')}</Text>
+    <Muted style={{ marginTop: 8, fontSize: 16 }}>{t('land.sub')}</Muted>
     {onWalkthrough && <Pressable accessibilityRole="button" onPress={onWalkthrough} style={{ marginTop: 14, backgroundColor: '#12302A', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <Text style={{ fontSize: 22 }}>▶</Text>
-      <View style={{ flex: 1 }}><Text style={{ color: '#FFF', fontWeight: '800', fontSize: 15 }}>Take the 4-minute walkthrough</Text><Text style={{ color: '#CFE3DA', fontSize: 12, marginTop: 2 }}>A guided tour with a fictional household. No sign-up.</Text></View>
+      <View style={{ flex: 1 }}><Text style={{ color: '#FFF', fontWeight: '800', fontSize: 15 }}>{t('land.tour')}</Text><Text style={{ color: '#CFE3DA', fontSize: 12, marginTop: 2 }}>{t('land.tourSub')}</Text></View>
     </Pressable>}
     <AddressCheck onResult={setResult} />
     {result && <>
@@ -93,10 +97,11 @@ export function Landing({ onSignedIn, onEmergency, onWalkthrough }) {
         <Button kind="outline" onPress={() => setSignup({ type: 'business', mode: 'signup' })}>I run a business here</Button>
       </Card>
     </>}
-    <Link onPress={() => setSignup({ type: 'resident', mode: 'login' })} style={{ marginTop: 22 }}>Already registered? Sign in</Link>
-    {!result && <Link onPress={() => setSignup({ type: 'resident', mode: 'signup' })}>Create an account</Link>}
-    <Section>Public resources</Section>
+    <Link onPress={() => setSignup({ type: 'resident', mode: 'login' })} style={{ marginTop: 22 }}>{t('land.signin')}</Link>
+    {!result && <Link onPress={() => setSignup({ type: 'resident', mode: 'signup' })}>{t('land.create')}</Link>}
+    <View style={{ backgroundColor: '#E6EFE9', borderRadius: 14, padding: 14, marginTop: 18 }}><Text style={{ color: color.ink, fontSize: 15, fontWeight: '700' }}>☎ {t('land.help')}</Text>{lang !== 'en' && <Caption>{t('set.unreviewed')}</Caption>}</View>
+    <Section>{t('land.resources')}</Section>
     <Resources compact />
-    <Caption style={{ marginTop: 18 }}>FirePath is a Glendale pilot prototype, not a City of Glendale service. For emergencies, follow official instructions and call 911.</Caption>
+    <Caption style={{ marginTop: 18 }}>{t('land.disclaimer')}</Caption>
   </>;
 }

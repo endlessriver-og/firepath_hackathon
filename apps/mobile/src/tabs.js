@@ -11,12 +11,13 @@ import { eventQuestions } from './permit-catalog';
 import { hazardViewers, resourceGroups, RESOURCES_CHECKED } from './resources';
 import { businessPosterPrintout, householdPlanPrintout, standardPrintout, standardPrintouts } from './printouts';
 import { printHtml } from './print';
+import { useI18n } from './i18n';
 import { connect as connectDevice, sendToDevice, subscribe as subscribeDevice } from './device';
 import { AddressCheck, CityRecords } from './landing';
 import { eventTemplates, venues, VENUE_NOTE } from './venues';
 import { AddressPanel, AddressSearch, BusinessDetails, BusinessProfile, HouseholdForm } from './onboarding';
 import { Toggle } from './ui';
-import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, Collapsible, ProgressRing, Section, SubTabs, Segment, Select, SeverityBadge, Tag, Title, color, s } from './ui';
+import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, Collapsible, LanguageSettings, ProgressRing, Section, SubTabs, Segment, Select, SeverityBadge, Tag, Title, color, s } from './ui';
 
 const EVERBRIDGE = 'https://www.glendaleca.gov/Everbridge';
 const KNOW_YOUR_ZONE = 'https://www.glendaleca.gov/government/departments/fire-department/other-links/emergency-preparedness-response/know-your-zone';
@@ -54,6 +55,7 @@ function HomeRecords({ me }) {
 }
 
 export function Home({ me, onChange, go }) {
+  const { t } = useI18n();
   const r = me.readiness;
   const [busy, toggle] = useToggle(me, onChange);
   const place = me.hazards ? summarizePlace(me.hazards) : null;
@@ -65,15 +67,15 @@ export function Home({ me, onChange, go }) {
     <Card style={{ marginTop: 8, backgroundColor: color.green, borderColor: color.green, flexDirection: 'row', alignItems: 'center', gap: 18 }}>
       <ProgressRing percent={r.score} track="#3E7667" fill="#F2C46D" textColor="#FFF" />
       <View style={{ flex: 1 }}>
-        <Text style={{ color: '#CFE3DA', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>YOUR CHECKLIST</Text>
-        <Text style={{ color: '#FFF', fontSize: 20, fontWeight: '800', marginTop: 2 }}>{done} of {total} done</Text>
+        <Text style={{ color: '#CFE3DA', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>{t('home.checklist')}</Text>
+        <Text style={{ color: '#FFF', fontSize: 20, fontWeight: '800', marginTop: 2 }}>{t('home.done', { done, total })}</Text>
         {personalFacts(me).length ? <BuiltFrom me={me} light /> : <Text style={{ color: '#CFE3DA', fontSize: 13, marginTop: 4 }}>{done === total ? 'All done. Review your plan every few months.' : 'Work down the list; the most important steps come first.'}</Text>}
       </View>
     </Card>
 
-    <Section>Next on your list</Section>
+    <Section>{t('home.next')}</Section>
     {next.map(task => <TaskCard key={task.id} compact task={task} number={ordered.indexOf(task) + 1} done={false} busy={busy === task.id} onToggle={toggle} />)}
-    <Link onPress={() => go('Plan')}>See the full checklist ({total}) →</Link>
+    <Link onPress={() => go('Plan')}>{t('home.seeAll', { total })}</Link>
 
     <Section>{me.user.type === 'business' ? 'Your site' : 'Your home'}</Section>
     {!me.address ? <Card><Muted>Register your address to see which hazard maps include it.</Muted><Link onPress={() => go('Profile')}>Add your address →</Link></Card> : <>
@@ -361,7 +363,8 @@ export function Profile({ me, onChange, onSignOut, sub, setSub }) {
   return <>
     <Title>{me.user.name}</Title>
     <Muted>{me.user.demo ? 'Fictional demo household' : me.user.email}</Muted>
-    <SubTabs value={tab} options={[['household', me.user.type === 'business' ? 'Business' : 'Household'], ['address', 'Address'], ['responders', 'Responders']]} onChange={setSub} />
+    <SubTabs value={tab} options={[['household', me.user.type === 'business' ? 'Business' : 'Household'], ['address', 'Address'], ['responders', 'Responders'], ['settings', 'Settings']]} onChange={setSub} />
+    {tab === 'settings' && <><LanguageSettings /><Caption>More of the app will be translated over time. Emergency steps, the home screen and the public page are translated now; translations have not yet been reviewed by native speakers.</Caption></>}
     {tab === 'household' && (me.user.type === 'business' ? <><BusinessProfile me={me} onSaved={onChange} /><BusinessDetails me={me} onSaved={onChange} /></> : <HouseholdForm me={me} onSaved={onChange} />)}
     {tab === 'address' && <View style={{ marginTop: 8 }}><AddressPanel me={me} onChange={onChange} /></View>}
     {tab === 'responders' && <>

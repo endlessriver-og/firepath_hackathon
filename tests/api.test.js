@@ -326,3 +326,15 @@ test('demo household starts signed in with a fictional, verified, personalised p
   assert.equal((await call('POST', '/api/account/login', { email: res.body.user.email, password: 'demo:no-login' })).status, 401, 'demo accounts cannot be logged into');
   assert.equal((await call('GET', '/api/me', null, res.body.token)).body.user.name, 'Dana Rivera');
 });
+
+import { emergencyGuideIn } from '../src/playbooks.js';
+test('translated emergency steps keep household names and fall back to English where untranslated', () => {
+  const ctx = { type: 'resident', household: { members: [{ name: 'Rosa', ageGroup: 'senior' }], pets: [{ kind: 'dogs', count: 2 }], meetFar: 'Montrose library' } };
+  const es = emergencyGuideIn('es', 'evacuate', ctx);
+  assert.equal(es.translated, true);
+  assert.ok(es.steps.some(s => s.text.includes('Rosa')) && es.steps.some(s => s.text.includes('Montrose library')));
+  for (const lang of ['hy', 'ko']) for (const id of ['earthquake', 'evacuate', 'power']) assert.ok(emergencyGuideIn(lang, id, ctx).steps.length >= 3, `${lang} ${id}`);
+  const fire = emergencyGuideIn('es', 'fire', ctx);
+  assert.equal(fire.translated, false, 'weather situations are flagged as English-only');
+  assert.equal(emergencyGuideIn('en', 'earthquake', ctx).translated, true);
+});

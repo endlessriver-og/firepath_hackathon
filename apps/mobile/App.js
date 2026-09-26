@@ -11,14 +11,20 @@ import { Landing } from './src/landing';
 import { EmergencyNow } from './src/emergency';
 import { TourOverlay, WalkthroughHub } from './src/tour';
 import { TOUR_STEPS } from './src/walkthrough';
+import { I18nProvider, useI18n } from './src/i18n';
 import { Button, ErrorText, color } from './src/ui';
 
 const ONBOARDING = 'firepath-onboarding-step';
 // Bottom bar: four icon tabs around a raised Home button. Profile lives in the top bar.
-const TABS = [['Map', 'map'], ['Plan', 'checkbox'], ['Home', 'home'], ['Alerts', 'notifications'], ['Permits', 'document-text']];
+const TABS = [['Map', 'map', 'nav.map'], ['Plan', 'checkbox', 'nav.plan'], ['Home', 'home', 'nav.home'], ['Alerts', 'notifications', 'nav.alerts'], ['Permits', 'document-text', 'nav.permits']];
 Notifications.setNotificationHandler({ handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }) });
 
-export default function App() {
+export default function Root() {
+  return <I18nProvider><App /></I18nProvider>;
+}
+
+function App() {
+  const { t } = useI18n();
   const [me, setMe] = useState(undefined); // undefined = loading, null = signed out
   const [step, setStep] = useState(0);     // onboarding step 1-3, 0 = done
   const [tab, setTab] = useState('Home');
@@ -78,9 +84,9 @@ export default function App() {
 
   return <SafeAreaView style={styles.safe}><StatusBar style="dark" />
     <View style={styles.header}>
-      <Text style={styles.brand}>FIREPATH</Text><Text style={styles.pill}>{business ? 'BUSINESS' : 'PILOT'}</Text>
+      <Text style={styles.brand}>FIREPATH</Text><Text style={styles.pill}>{business ? t('head.business') : t('head.pilot')}</Text>
       <View style={{ flex: 1 }} />
-      <Pressable accessibilityRole="button" accessibilityLabel="Emergency now" onPress={() => setEmergency(!emergency)} style={styles.sos}><Text style={styles.sosText}>{emergency ? 'Close' : 'Emergency'}</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="Emergency now" onPress={() => setEmergency(!emergency)} style={styles.sos}><Text style={styles.sosText}>{emergency ? t('head.close') : t('head.emergency')}</Text></Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel="Profile and settings" accessibilityState={{ selected: tab === 'Profile' }} onPress={() => { setEmergency(false); setTab('Profile'); }} style={[styles.avatar, tab === 'Profile' && !emergency && styles.avatarOn]}>
         <Text style={[styles.avatarText, tab === 'Profile' && !emergency && { color: '#FFF' }]}>{me.user.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}</Text>
       </Pressable>
@@ -97,15 +103,15 @@ export default function App() {
       {!emergency && tab === 'Profile' && <Profile me={me} onChange={setMe} onSignOut={signOut} sub={sub} setSub={setSub} />}
     </ScrollView>
     {tour !== null && <TourOverlay index={tour} onBack={() => goTour(Math.max(tour - 1, 0))} onNext={() => goTour(Math.min(tour + 1, TOUR_STEPS.length - 1))} onExit={() => { setTour(null); setEmergency(false); setTab('Home'); }} />}
-    <View style={styles.nav}>{TABS.map(([item, icon]) => {
+    <View style={styles.nav}>{TABS.map(([item, icon, key]) => {
       const on = tab === item && !emergency;
       const go = () => { setEmergency(false); setTab(item); };
-      if (item === 'Home') return <Pressable key={item} accessibilityRole="tab" accessibilityLabel="Home" accessibilityState={{ selected: on }} onPress={go} style={styles.homeWrap}>
+      if (item === 'Home') return <Pressable key={item} accessibilityRole="tab" accessibilityLabel={t('nav.home')} accessibilityState={{ selected: on }} onPress={go} style={styles.homeWrap}>
         <View style={[styles.home, on && styles.homeOn]}><Ionicons name={on ? 'home' : 'home-outline'} size={26} color="#FFF" /></View>
       </Pressable>;
-      return <Pressable key={item} accessibilityRole="tab" accessibilityLabel={item} accessibilityState={{ selected: on }} onPress={go} style={styles.navItem}>
-        <Ionicons name={on ? icon : `${icon}-outline`} size={23} color={on ? color.green : '#7A8A83'} />
-        <Text style={[styles.navText, on && { color: color.green }]}>{item}</Text>
+      return <Pressable key={item} accessibilityRole="tab" accessibilityLabel={t(key)} accessibilityState={{ selected: on }} onPress={go} style={styles.navItem}>
+        <Ionicons name={on ? icon : `${icon}-outline`} size={24} color={on ? color.green : '#56655F'} />
+        <Text numberOfLines={1} style={[styles.navText, on && { color: color.green }]}>{t(key)}</Text>
       </Pressable>;
     })}</View>
   </SafeAreaView>;
@@ -124,7 +130,7 @@ const styles = StyleSheet.create({
   onboard: { padding: 24, paddingTop: 36, paddingBottom: 48, width: '100%', maxWidth: 560, alignSelf: 'center' },
   nav: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', paddingHorizontal: 8, paddingTop: 4, paddingBottom: 8, backgroundColor: '#FFF', borderTopWidth: 1, borderColor: color.line },
   navItem: { flex: 1, maxWidth: 110, alignItems: 'center', paddingTop: 8, gap: 2 },
-  navText: { color: '#7A8A83', fontWeight: '700', fontSize: 10 },
+  navText: { color: '#56655F', fontWeight: '700', fontSize: 12 },
   homeWrap: { flex: 1, maxWidth: 110, alignItems: 'center' },
   home: { width: 58, height: 58, borderRadius: 29, backgroundColor: '#3F7A6A', alignItems: 'center', justifyContent: 'center', marginTop: -24, borderWidth: 4, borderColor: '#FFF', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
   homeOn: { backgroundColor: color.green },
