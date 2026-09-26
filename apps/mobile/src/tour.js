@@ -16,8 +16,9 @@ export function WalkthroughHub({ onStart, onClose, busy, error, closing }) {
     <Muted style={{ marginTop: 10, fontSize: 16, lineHeight: 24 }}>{closing ? TOUR_STEPS.at(-1).body : walkthroughIntro.lede}</Muted>
     {!closing && <>
       <Muted style={{ marginTop: 8 }}>{walkthroughIntro.subLede}</Muted>
-      <Button busy={busy} onPress={onStart} style={{ marginTop: 22 }}>{walkthroughIntro.cta}</Button>
+      <Button busy={busy} onPress={() => onStart('quick')} style={{ marginTop: 22 }}>{walkthroughIntro.cta}</Button>
       <Caption>{walkthroughIntro.ctaNote}</Caption>
+      <Link onPress={() => onStart('full')} style={{ marginTop: 8 }}>Explore the full walkthrough →</Link>
       {error ? <Text style={{ color: '#A12D1F', marginTop: 8 }}>{error}</Text> : null}
     </>}
 
@@ -46,18 +47,18 @@ export function WalkthroughHub({ onStart, onClose, busy, error, closing }) {
 }
 
 // Floating guide card shown above the tab bar while the tour runs.
-export function TourOverlay({ index, onBack, onNext, onExit }) {
-  const step = TOUR_STEPS[index];
-  const last = index === TOUR_STEPS.length - 1;
-  return <View accessibilityRole="dialog" accessibilityLabel={`Walkthrough step ${index + 1} of ${TOUR_STEPS.length}`} style={{ position: 'absolute', left: 12, right: 12, bottom: 84, backgroundColor: '#12302A', borderRadius: 18, padding: 16, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 8, maxWidth: 560, alignSelf: 'center' }}>
+export function TourOverlay({ steps = TOUR_STEPS, index, onBack, onNext, onExit }) {
+  const step = steps[index];
+  const last = index === steps.length - 1;
+  return <View accessibilityRole="dialog" accessibilityLabel={`Walkthrough step ${index + 1} of ${steps.length}`} style={{ position: 'absolute', left: 12, right: 12, bottom: 84, backgroundColor: '#12302A', borderRadius: 18, padding: 16, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 8, maxWidth: 560, alignSelf: 'center' }}>
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-      <Text style={{ color: '#F2C46D', fontSize: 11, fontWeight: '900', letterSpacing: 1.2 }}>{step.chapter.toUpperCase()} · {index + 1} OF {TOUR_STEPS.length}</Text>
+      <Text style={{ color: '#F2C46D', fontSize: 11, fontWeight: '900', letterSpacing: 1.2 }}>{step.chapter.toUpperCase()} · {index + 1} OF {steps.length}</Text>
       <Pressable accessibilityRole="button" accessibilityLabel="Exit walkthrough" onPress={onExit}><Text style={{ color: '#CFE3DA', fontWeight: '800' }}>Exit</Text></Pressable>
     </View>
     <Text style={{ color: '#FFF', fontSize: 18, fontWeight: '800', marginTop: 6 }}>{step.title}</Text>
     <Text style={{ color: '#DCE9E3', lineHeight: 20, marginTop: 6 }}>{step.overlay || step.body}</Text>
     {step.tryIt ? <Text style={{ color: '#F2C46D', marginTop: 8, fontWeight: '700' }}>Try it: {step.tryIt}</Text> : null}
-    <View style={{ flexDirection: 'row', gap: 4, marginTop: 12 }}>{TOUR_STEPS.map((_, i) => <View key={i} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= index ? '#F2C46D' : '#3E5A52' }} />)}</View>
+    <View style={{ flexDirection: 'row', gap: 4, marginTop: 12 }}>{steps.map((_, i) => <View key={i} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= index ? '#F2C46D' : '#3E5A52' }} />)}</View>
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 }}>
       <Pressable accessibilityRole="button" disabled={index === 0} onPress={onBack} style={{ paddingVertical: 10, paddingHorizontal: 14, opacity: index === 0 ? 0.4 : 1 }}><Text style={{ color: '#CFE3DA', fontWeight: '800' }}>← Back</Text></Pressable>
       <Pressable accessibilityRole="button" onPress={last ? onExit : onNext} style={{ backgroundColor: '#F2C46D', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 18 }}><Text style={{ color: '#12302A', fontWeight: '900' }}>{last ? 'Finish' : 'Next →'}</Text></Pressable>
