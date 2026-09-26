@@ -26,7 +26,7 @@ export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'reside
     <Muted>Register your Glendale home or business to get a readiness plan, a hazard map, live weather alerts and help with permits.</Muted>
     <View style={[s.segment, { marginTop: 22 }]}>{[['signup', 'Create account'], ['login', 'Sign in']].map(([key, label]) =>
       <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: mode === key }} onPress={() => { setMode(key); setError(''); }} style={[s.segmentItem, mode === key && s.segmentOn]}><Text style={[s.segmentText, mode === key && { color: color.ink }]}>{label}</Text></Pressable>)}</View>
-    {mode === 'signup' && <Segment label="I'm setting up" value={form.type} options={[['resident', 'My home'], ['business', 'A business']]} onChange={type => set({ type })} />}
+    {mode === 'signup' && <Select label="I'm setting up" value={form.type} options={[['resident', 'My home'], ['business', 'A business']]} onChange={type => set({ type })} />}
     {mode === 'signup' && form.type === 'business' && <>
       <Field label="Business name" value={form.businessName} onChangeText={businessName => set({ businessName })} placeholder="e.g., Glencoe Bakery" maxLength={100} />
       <Select label="Type of business" value={form.businessKind} options={businessKinds} placeholder="Choose one" onChange={businessKind => set({ businessKind })} />
@@ -63,12 +63,12 @@ export function AboutYou({ me, onSaved }) {
     </View>)}
     <Card>
       <Field style={{ marginTop: 0 }} label="Add someone" value={member.name} onChangeText={name => setMember({ ...member, name })} placeholder="First name" maxLength={40} onSubmitEditing={addMember} />
-      <Segment label="Age group" value={member.ageGroup} options={[['child', 'Child'], ['adult', 'Adult'], ['senior', 'Older adult']]} onChange={ageGroup => setMember({ ...member, ageGroup })} />
+      <Select label="Age group" value={member.ageGroup} options={[['child', 'Child'], ['adult', 'Adult'], ['senior', 'Older adult']]} onChange={ageGroup => setMember({ ...member, ageGroup })} />
       <Toggle label="May need help leaving" value={member.needsHelp} onChange={needsHelp => setMember({ ...member, needsHelp })} />
       <Button kind="outline" disabled={!member.name.trim()} onPress={addMember}>+ Add to household</Button>
     </Card>
-    <Segment label="Housing" value={form.housing} options={[['own', 'I own'], ['rent', 'I rent']]} onChange={housing => setForm({ ...form, housing })} />
-    <Segment label="Home type" value={form.homeType} options={[['house', 'House'], ['apartment', 'Apartment / condo']]} onChange={homeType => setForm({ ...form, homeType })} />
+    <Select label="Housing" value={form.housing} options={[['own', 'I own'], ['rent', 'I rent']]} onChange={housing => setForm({ ...form, housing })} />
+    <Select label="Home type" value={form.homeType} options={[['house', 'House'], ['apartment', 'Apartment / condo']]} onChange={homeType => setForm({ ...form, homeType })} />
     <ErrorText>{error}</ErrorText>
     <Button busy={busy} onPress={save}>Continue</Button>
   </>;
@@ -204,7 +204,7 @@ export function BusinessProfile({ me, onSaved, onboarding }) {
       <Field style={{ flex: 1 }} label="May need help leaving" value={form.needsHelp} onChangeText={digits('needsHelp')} keyboardType="number-pad" placeholder="0" maxLength={4} />
     </View>
     <Field label="Hours" value={form.hours} onChangeText={hours => set({ hours })} placeholder="e.g., 6am-6pm daily" maxLength={80} />
-    <Segment label="Fire sprinklers" value={form.sprinklers} options={[['yes', 'Yes'], ['no', 'No'], ['unknown', 'Not sure']]} onChange={sprinklers => set({ sprinklers })} />
+    <Select label="Fire sprinklers" value={form.sprinklers} options={[['yes', 'Yes'], ['no', 'No'], ['unknown', 'Not sure']]} onChange={sprinklers => set({ sprinklers })} />
     <ErrorText>{error}</ErrorText>
     <Button busy={busy} onPress={save}>{onboarding ? 'Continue' : 'Save profile'}</Button>
   </>;
@@ -262,3 +262,4 @@ export function AddressSearch({ value, onChangeText, onPick, onSubmit, suggestPa
     </View>}
   </>;
 }
+
