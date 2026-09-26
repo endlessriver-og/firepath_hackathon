@@ -1,5 +1,7 @@
 # Three-minute preparedness demo
 
+**Public link for judges:** `npm run public` builds the app, starts the server (keeping the Mac awake) and opens an HTTPS tunnel through localhost.run over SSH. It prints a `https://….lhr.life` URL; `/` opens the app, and the original web workspace is at `/classic`. The URL changes whenever the tunnel restarts, and it only works while this Mac is on and connected. Public endpoints are rate-limited per visitor using the forwarded IP. The Cloudflare quick tunnel was tried first but the venue network blocks its port 7844.
+
 **Fastest demo: the guided walkthrough.** On the signed-out landing page, tap **Take the 4-minute walkthrough**, then **Start the walkthrough**. This creates a fresh, fictional demo household (no sign-up) and guides you through 10 stops in four chapters: Personalized, Actionable, Connected, A new approach. The last stop answers the Jewel City Hacks judging criteria explicitly (technical execution 40%, impact 20%, presentation 15%, creativity 10%, feasibility 15%) and ends with the City partnership asks. The content lives in `apps/mobile/src/walkthrough.js`.
 
 **Resident app with accounts (browser, recommended):**

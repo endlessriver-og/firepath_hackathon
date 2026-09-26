@@ -39,6 +39,7 @@ function combinedIndex(lat, lon) {
   const inCell = best && Math.sqrt(bestD) * 111_000 <= combined.grid_m;
   return { score: inCell ? best[2] : 0, max: combined.max, parts: inCell ? best[3].split(',').map(code => ({ label: combined.labels[code], points: combined.weights[code] })) : [] };
 }
+const hazardHits = new Map();
 const api = createApi({ store: openStore(process.env.FIREPATH_DATA || resolve(root, 'data/firepath-dev.json')), lookupHazards: lookup, fetchAlerts: fetchNwsAlerts, geocoder: createGeocoder(), combinedIndex, cityRecords: createCityRecords(), permitCatalog: JSON.parse(readFileSync(resolve(root, 'src/glendale-permits.json'), 'utf8')), demoMailbox: process.env.FIREPATH_DEMO_MAILBOX !== '0' });
 // The Expo dev server (port 8081) calls this API cross-origin with a bearer token; no cookies are used.
 const devOrigin = /^http:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+):8081$/;
@@ -54,6 +55,8 @@ http.createServer(async (req, res) => {
     }
     if (await api(req, res, url)) return;
     const pathname = decodeURIComponent(url.pathname);
+    // The app is the front door; the original web workspace (responder training demo) lives at /classic.
+    if (pathname === '/' && req.method === 'GET') { res.writeHead(302, { location: '/app/' }); res.end(); return; }
     // Public planning layers built by scripts/build-map-layers.py (not user data).
     if (pathname.startsWith('/map-layers/')) {
       const file = resolve(layerRoot, pathname.slice('/map-layers/'.length));
@@ -71,6 +74,10 @@ http.createServer(async (req, res) => {
       return;
     }
     if (pathname === '/api/hazards' && req.method === 'POST') {
+      // Each lookup starts a Python process: cap it per visitor (IP forwarded by the tunnel when present).
+      const ip = req.headers['cf-connecting-ip'] || String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress, recent = (hazardHits.get(ip) || []).filter(t => t > Date.now() - 600_000);
+      if (recent.length >= 20) throw new Error('Too many lookups. Try again in a few minutes.');
+      hazardHits.set(ip, [...recent, Date.now()]);
       let body = '';
       for await (const chunk of req) { body += chunk; if (body.length > 1024) throw new Error('Request too large'); }
       const data = JSON.parse(body);
@@ -81,8 +88,8 @@ http.createServer(async (req, res) => {
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(result)); return;
     }
     if (req.method !== 'GET') throw new Error('Not found');
-    if (pathname !== '/' && pathname !== '/fire-lab.html' && pathname !== '/map.html' && !pathname.startsWith('/src/') && !pathname.startsWith('/audio/')) throw new Error('Outside public assets');
-    const file = resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname));
+    if (pathname !== '/classic' && pathname !== '/fire-lab.html' && pathname !== '/map.html' && !pathname.startsWith('/src/') && !pathname.startsWith('/audio/')) throw new Error('Outside public assets');
+    const file = resolve(root, '.' + (pathname === '/classic' ? '/index.html' : pathname));
     if (![resolve(root, 'index.html'), resolve(root, 'fire-lab.html'), resolve(root, 'map.html')].includes(file) && !file.startsWith(srcRoot + sep) && !file.startsWith(audioRoot + sep)) throw new Error('Invalid path');
     const info = await stat(file);
     if (!info.isFile()) throw new Error('Not a file');

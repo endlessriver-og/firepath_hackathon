@@ -11,6 +11,7 @@
     "mobile:sync": "node scripts/sync-mobile-demo.mjs",
     "device:check": ".venv/bin/python scripts/device_check.py",
     "device:flash": ".venv/bin/python scripts/device_check.py --flash",
-    "map:build": ".venv/bin/python scripts/build-map-layers.py"
+    "map:build": ".venv/bin/python scripts/build-map-layers.py",
+    "public": "bash scripts/public.sh"
   }
 }

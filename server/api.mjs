@@ -34,7 +34,8 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
   const venueHazards = new Map(); // venue id -> hazard lookup (venues are fixed points, so cache for the process)
   const publicHits = new Map(); // ip -> timestamps; public checks are capped per visitor, in memory only
   function throttle(req, limit) {
-    const ip = req.socket?.remoteAddress || 'local';
+    // Behind a tunnel every request comes from localhost; use the visitor IP it forwards.
+    const ip = req.headers?.['cf-connecting-ip'] || String(req.headers?.['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'local';
     const recent = (publicHits.get(ip) || []).filter(t => t > now() - 10 * 60_000);
     if (recent.length >= limit) fail(429, 'Too many checks from this device. Try again in a few minutes.');
     publicHits.set(ip, [...recent, now()]);
@@ -87,6 +88,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
 
   const routes = {
     'POST /api/account/signup': async (req, body) => {
+      throttle(req, 10);
       const email = text(body.email, 200).toLowerCase();
       const name = text(body.name, 80);
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail(400, 'Enter a valid email address.');
