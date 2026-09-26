@@ -28,7 +28,7 @@ export function CityRecords({ records, initiallyOpen }) {
   </Collapsible>;
 }
 
-export function AddressCheck({ onResult, showPreview = false, label }) {
+export function AddressCheck({ onResult, onRegister, showPreview = false, label }) {
   const { t } = useI18n();
   const [address, setAddress] = useState('');
   const [result, setResult] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [candidates, setCandidates] = useState([]), [checked, setChecked] = useState('');
@@ -53,14 +53,21 @@ export function AddressCheck({ onResult, showPreview = false, label }) {
         {unavailable > 0 && <Text style={{ color: '#CFE3DA', marginTop: 4 }}>{unavailable} map{unavailable === 1 ? '' : 's'} could not be checked.</Text>}
         <Text style={{ color: '#CFE3DA', marginTop: 6 }}>Outside a mapped zone does not mean risk-free.</Text>
       </Card>
+      {onRegister && <Card style={{ borderColor: color.green, borderWidth: 2 }}>
+        <Text style={{ color: color.ink, fontSize: 20, fontWeight: '800' }}>Register this address</Text>
+        <Muted style={{ marginTop: 5 }}>Save a plan, get relevant alerts and find City permits.</Muted>
+        <Button onPress={() => onRegister('resident')}>Register my home</Button>
+        <Button kind="outline" onPress={() => onRegister('business')}>Register my business</Button>
+        <Caption>Free plan · City permit fees may apply</Caption>
+      </Card>}
       <CityRecords records={result.records} />
       <MapFrame src={`${apiBase()}/map.html?layers=combined&label=This%20address&lat=${result.lat}&lon=${result.lon}`} style={{ height: 320, borderRadius: 17, marginTop: 12, borderWidth: 1, borderColor: color.line }} />
       <Section>Seven hazard maps</Section>
       <Caption style={{ marginTop: 0 }}>✓ In mapped zone · ○ Outside mapped zone · ? Map unavailable. These are planning maps, not live alerts.</Caption>
-      {result.layers.map(l => <View key={l.key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderColor: color.line }}>
-        <View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{l.name}</Text>{hazardViewers[l.key] && <Text accessibilityRole="link" style={{ color: '#086B56', fontSize: 12, marginTop: 2 }} onPress={() => Linking.openURL(hazardViewers[l.key].url)}>Official map ↗</Text>}</View><Text style={{ color: l.level === 'zone' || (typeof l.level === 'number' && l.level > 0) ? color.warm : color.green, fontWeight: '800', fontSize: 12 }}>{l.level === 'zone' || (typeof l.level === 'number' && l.level > 0) ? '✓ In zone' : l.level === 'unknown' ? '? Unavailable' : '○ Outside zone'}</Text>
+      {result.layers.map(l => <View key={l.key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 1, borderColor: color.line }}>
+        <Text style={{ flex: 1, color: color.ink, fontWeight: '700' }}>{l.name}</Text><Text style={{ color: l.level === 'zone' || (typeof l.level === 'number' && l.level > 0) ? color.warm : color.green, fontWeight: '800', fontSize: 12 }}>{l.level === 'zone' || (typeof l.level === 'number' && l.level > 0) ? '✓ In zone' : l.level === 'unknown' ? '? Unavailable' : '○ Outside zone'}</Text>
       </View>)}
-      <Caption>Planning maps from CAL FIRE, FEMA, the California Geological Survey, California DWR and USGS, checked {result.checkedAt.slice(0, 10)}. Not live incidents or evacuation orders.</Caption>
+      <Collapsible title="Map sources" summary="Official maps and dates">{result.layers.map(l => hazardViewers[l.key] && <Link key={l.key} onPress={() => Linking.openURL(hazardViewers[l.key].url)}>{l.name}: official map ↗</Link>)}<Caption>Checked {result.checkedAt.slice(0, 10)}. Planning maps, not live incidents or evacuation orders.</Caption></Collapsible>
       {showPreview && result.preview.length > 0 && <><Section>Where to start</Section>
         {result.preview.map(p => <Card key={p.id}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{p.title}</Text><Muted style={{ marginTop: 4 }}>{p.description}</Muted></Card>)}</>}
     </>}
@@ -89,16 +96,7 @@ export function Landing({ onSignedIn, onEmergency, onWalkthrough }) {
     <Text style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 22 }}>{t('land.title')}</Text>
     <Muted style={{ marginTop: 8, fontSize: 16 }}>{t('land.sub')}</Muted>
     <HeroIllustration height={112} />
-    <AddressCheck onResult={setResult} />
-    {result && <>
-      <Card style={{ borderColor: color.green, borderWidth: 2, marginTop: 22 }}>
-        <Tag>Free preparedness plan · City permit fees may apply</Tag>
-        <Text style={{ color: color.ink, fontSize: 20, fontWeight: '800' }}>Register this address</Text>
-        <Muted style={{ marginTop: 6 }}>Save a plan, get relevant alerts and find City permits.</Muted>
-        <Button onPress={() => setSignup({ type: 'resident', mode: 'signup' })}>Register my home</Button>
-        <Button kind="outline" onPress={() => setSignup({ type: 'business', mode: 'signup' })}>Register my business</Button>
-      </Card>
-    </>}
+    <AddressCheck onResult={setResult} onRegister={type => setSignup({ type, mode: 'signup' })} />
     <Link onPress={() => setSignup({ type: 'resident', mode: 'login' })} style={{ marginTop: 22 }}>{t('land.signin')}</Link>
     {!result && <Link onPress={() => setSignup({ type: 'resident', mode: 'signup' })}>{t('land.create')}</Link>}
     <View style={{ backgroundColor: '#E6EFE9', borderRadius: 14, padding: 14, marginTop: 18 }}><Text style={{ color: color.ink, fontSize: 15, fontWeight: '700' }}>☎ {t('land.help')}</Text>{lang !== 'en' && <Caption>{t('set.unreviewed')}</Caption>}</View>
