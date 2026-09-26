@@ -106,6 +106,15 @@ export function ProgressRing({ percent, size = 96, stroke = 10, track = '#DDE4DC
   </View>;
 }
 
+// Sub-tabs at the top of a page: keeps long pages short. options: [[value, label], ...]
+export function SubTabs({ value, options, onChange }) {
+  return <View accessibilityRole="tablist" style={{ flexDirection: 'row', borderBottomWidth: 1, borderColor: '#D5DDD5', marginTop: 6, marginBottom: 4 }}>
+    {options.map(([key, label]) => { const on = value === key; return <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: on }} onPress={() => onChange(key)} style={{ flex: 1, alignItems: 'center', paddingVertical: 11, borderBottomWidth: 3, borderColor: on ? color.green : 'transparent', marginBottom: -1 }}>
+      <Text style={{ fontWeight: '800', fontSize: 14, color: on ? color.green : '#7A8A83' }}>{label}</Text>
+    </Pressable>; })}
+  </View>;
+}
+
 export function ScoreBar({ value }) {
   return <View style={s.track}><View style={[s.fill, { width: `${Math.min(Math.max(value, 0), 100)}%` }]} /></View>;
 }

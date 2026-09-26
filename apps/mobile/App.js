@@ -25,10 +25,12 @@ export default function App() {
   const [layers, setLayers] = useState(['combined']);
   const [pendingAddress, setPendingAddress] = useState(null);
   const [emergency, setEmergency] = useState(false);
+  const [subs, setSubs] = useState({});            // selected sub-tab per page
+  const sub = subs[tab], setSub = v => setSubs(current => ({ ...current, [tab]: v }));
   const [tour, setTour] = useState(null);          // walkthrough step index, null when not touring
   const [hub, setHub] = useState(false);           // signed-out walkthrough hub
   const [demoBusy, setDemoBusy] = useState(false), [demoError, setDemoError] = useState('');
-  const goTour = i => { const stepDef = TOUR_STEPS[i]; setTour(i); setEmergency(Boolean(stepDef.emergency)); setTab(stepDef.tab); };
+  const goTour = i => { const stepDef = TOUR_STEPS[i]; setTour(i); setEmergency(Boolean(stepDef.emergency)); setTab(stepDef.tab); if (stepDef.sub) setSubs(current => ({ ...current, [stepDef.tab]: stepDef.sub })); };
   async function startTour() {
     setDemoError('');
     if (!me) {
@@ -89,10 +91,10 @@ export default function App() {
       {!emergency && tab === 'Systems' && <Systems go={go} />}
       {!emergency && tab === 'Walkthrough' && <WalkthroughHub onStart={startTour} onClose={() => { setTour(null); setTab('Home'); }} closing={tour !== null} />}
       {!emergency && tab === 'Map' && <MapTab me={me} layers={layers} setLayers={setLayers} top={top} />}
-      {!emergency && tab === 'Plan' && <Actions me={me} onChange={setMe} />}
-      {!emergency && tab === 'Alerts' && <Alerts me={me} onChange={setMe} />}
-      {!emergency && tab === 'Permits' && <Permits me={me} top={top} />}
-      {!emergency && tab === 'Profile' && <Profile me={me} onChange={setMe} onSignOut={signOut} />}
+      {!emergency && tab === 'Plan' && <Actions me={me} onChange={setMe} sub={sub} setSub={setSub} />}
+      {!emergency && tab === 'Alerts' && <Alerts me={me} onChange={setMe} sub={sub} setSub={setSub} />}
+      {!emergency && tab === 'Permits' && <Permits me={me} top={top} sub={sub} setSub={setSub} />}
+      {!emergency && tab === 'Profile' && <Profile me={me} onChange={setMe} onSignOut={signOut} sub={sub} setSub={setSub} />}
     </ScrollView>
     {tour !== null && <TourOverlay index={tour} onBack={() => goTour(Math.max(tour - 1, 0))} onNext={() => goTour(Math.min(tour + 1, TOUR_STEPS.length - 1))} onExit={() => { setTour(null); setEmergency(false); setTab('Home'); }} />}
     <View style={styles.nav}>{TABS.map(([item, icon]) => {

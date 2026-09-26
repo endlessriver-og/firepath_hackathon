@@ -16,7 +16,7 @@ import { AddressCheck, CityRecords } from './landing';
 import { eventTemplates, venues, VENUE_NOTE } from './venues';
 import { AddressPanel, AddressSearch, BusinessDetails, BusinessProfile, HouseholdForm } from './onboarding';
 import { Toggle } from './ui';
-import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, Collapsible, ProgressRing, Section, Segment, Select, SeverityBadge, Tag, Title, color, s } from './ui';
+import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, Collapsible, ProgressRing, Section, SubTabs, Segment, Select, SeverityBadge, Tag, Title, color, s } from './ui';
 
 const EVERBRIDGE = 'https://www.glendaleca.gov/Everbridge';
 const KNOW_YOUR_ZONE = 'https://www.glendaleca.gov/government/departments/fire-department/other-links/emergency-preparedness-response/know-your-zone';
@@ -32,16 +32,17 @@ function useToggle(me, onChange) {
 // Checklist order: official alerts first, then mapped-hazard steps, then household, then general.
 export const checklist = me => nextSteps(me.recommendations, {}, me.recommendations.length);
 
-export function TaskCard({ task, number, done, busy, onToggle }) {
-  return <View style={[s.card, { flexDirection: 'row', gap: 14 }, done && { opacity: 0.62 }]}>
+export function TaskCard({ task, number, done, busy, onToggle, compact }) {
+  const [open, setOpen] = useState(!compact);
+  return <View style={[s.card, { flexDirection: 'row', gap: 14 }, compact && { paddingVertical: 12 }, done && { opacity: 0.62 }]}>
     <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: done, busy }} accessibilityLabel={task.title} onPress={() => onToggle(task.id)} style={{ width: 30, height: 30, borderRadius: 9, borderWidth: 2, borderColor: color.green, backgroundColor: done ? color.green : 'transparent', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
       <Text style={{ color: '#FFF', fontWeight: '900' }}>{busy ? '…' : done ? '✓' : ''}</Text>
     </Pressable>
     <View style={{ flex: 1 }}>
       <Tag tone={task.tag.startsWith('Mapped') ? 'warm' : undefined}>{number ? `${number} · ${task.tag}` : task.tag}</Tag>
-      <Text style={{ color: color.ink, fontSize: 16, fontWeight: '700', marginBottom: 3, textDecorationLine: done ? 'line-through' : 'none' }}>{task.title}</Text>
-      {!done && <Muted>{task.description}</Muted>}
-      {!done && task.url && <Link onPress={() => Linking.openURL(task.url)}>{task.link || 'Read guidance'} ↗</Link>}
+      <Text onPress={compact ? () => setOpen(!open) : undefined} style={{ color: color.ink, fontSize: 16, fontWeight: '700', marginBottom: 3, textDecorationLine: done ? 'line-through' : 'none' }}>{task.title}{compact ? <Text style={{ color: color.green }}>{open ? '  −' : '  +'}</Text> : null}</Text>
+      {!done && open && <Muted>{task.description}</Muted>}
+      {!done && open && task.url && <Link onPress={() => Linking.openURL(task.url)}>{task.link || 'Read guidance'} ↗</Link>}
     </View>
   </View>;
 }
@@ -70,27 +71,30 @@ export function Home({ me, onChange, go }) {
       </View>
     </Card>
 
-    <Section>{me.user.type === 'business' ? 'What the maps show at your site' : 'What the maps show at home'}</Section>
+    <Section>Next on your list</Section>
+    {next.map(task => <TaskCard key={task.id} compact task={task} number={ordered.indexOf(task) + 1} done={false} busy={busy === task.id} onToggle={toggle} />)}
+    <Link onPress={() => go('Plan')}>See the full checklist ({total}) →</Link>
+
+    <Section>{me.user.type === 'business' ? 'Your site' : 'Your home'}</Section>
     {!me.address ? <Card><Muted>Register your address to see which hazard maps include it.</Muted><Link onPress={() => go('Profile')}>Add your address →</Link></Card> : <>
-      <Caption style={{ marginTop: 0 }}>{me.address.text} · {me.address.verified === 'mail' ? 'verified' : 'not yet verified'}</Caption>
-      {place.mapped.length ? place.mapped.map(item => <View key={item.key} style={{ flexDirection: 'row', gap: 12, backgroundColor: color.warmBg, borderWidth: 1, borderColor: color.warmLine, borderRadius: 14, padding: 14, marginTop: 8 }}>
-        <Text style={{ color: color.warm }}>●</Text><View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{item.name} · {hazardSeverity(item.key, me.hazards[item.key]).label}</Text><Muted>{item.label}</Muted><Link style={{ marginTop: 6 }} onPress={() => go('Map', [item.key])}>See zones on the map →</Link></View></View>)
-        : <Muted>No mapped hazard zone includes this address. That is not the same as no risk.</Muted>}
-      <Caption>Planning maps, not live incidents. Not mapped here: {place.outside.map(i => i.name.toLowerCase()).join(', ') || 'none'}.</Caption>
+      <Collapsible icon="🗺" title="What the maps show" summary={place.mapped.length ? place.mapped.map(i => `${i.name} · ${hazardSeverity(i.key, me.hazards[i.key]).label}`).join('  ·  ') : 'No mapped hazard zone here'}>
+        <Caption>{me.address.text} · {me.address.verified === 'mail' ? 'verified' : 'not yet verified'}</Caption>
+        {place.mapped.map(item => <View key={item.key} style={{ flexDirection: 'row', gap: 12, backgroundColor: color.warmBg, borderWidth: 1, borderColor: color.warmLine, borderRadius: 14, padding: 14, marginTop: 8 }}>
+          <Text style={{ color: color.warm }}>●</Text><View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{item.name} · {hazardSeverity(item.key, me.hazards[item.key]).label}</Text><Muted>{item.label}</Muted><Link style={{ marginTop: 6 }} onPress={() => go('Map', [item.key])}>See zones on the map →</Link></View></View>)}
+        <Caption>Planning maps, not live incidents. Not mapped here: {place.outside.map(i => i.name.toLowerCase()).join(', ') || 'none'}. That is not the same as no risk.</Caption>
+      </Collapsible>
       <HomeRecords me={me} />
     </>}
-
-    <Section>Next on your list</Section>
-    {next.map(task => <TaskCard key={task.id} task={task} number={ordered.indexOf(task) + 1} done={false} busy={busy === task.id} onToggle={toggle} />)}
-    <Link onPress={() => go('Plan')}>See the full checklist ({total}) →</Link>
-    <Collapsible icon="🔗" title="How FirePath connects" summary="Maps, City records, alerts, your household and your devices"><Muted style={{ marginTop: 10 }}>See every data source and device, and which are live today.</Muted><Link onPress={() => go('Systems')}>Open →</Link></Collapsible>
-    <Link onPress={() => go('Walkthrough')}>▶ Take the guided walkthrough</Link>
-    <Section>Public resources</Section>
-    <Resources compact />
+    <Collapsible icon="🔗" title="How FirePath connects" summary="Maps, City records, alerts, your household and devices"><Muted style={{ marginTop: 10 }}>See every data source and device, and which are live today.</Muted><Link onPress={() => go('Systems')}>Open →</Link></Collapsible>
+    <Collapsible icon="📚" title="Public resources" summary="20 official links: alerts, zones, CERT, outages, 211"><Resources compact /></Collapsible>
+    <Pressable accessibilityRole="button" onPress={() => go('Walkthrough')} style={{ marginTop: 16, backgroundColor: '#12302A', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <Text style={{ fontSize: 20, color: '#F2C46D' }}>▶</Text>
+      <View style={{ flex: 1 }}><Text style={{ color: '#FFF', fontWeight: '800' }}>Take the guided walkthrough</Text><Text style={{ color: '#CFE3DA', fontSize: 12, marginTop: 2 }}>Four minutes, ten stops</Text></View>
+    </Pressable>
   </>;
 }
 
-export function Actions({ me, onChange }) {
+export function Actions({ me, onChange, sub, setSub }) {
   const [q, setQ] = useState(''), [category, setCategory] = useState('all'), [status, setStatus] = useState('open');
   const [busy, toggle] = useToggle(me, onChange);
   const ordered = checklist(me);
@@ -101,16 +105,17 @@ export function Actions({ me, onChange }) {
       <ProgressRing percent={me.readiness.score} size={72} stroke={8} />
       <View style={{ flex: 1 }}><Title style={{ marginBottom: 2 }}>Checklist</Title><Muted>{complete} of {ordered.length} done. Built from your address and profile.</Muted></View>
     </View>
+    <SubTabs value={sub || 'todo'} options={[['todo', 'Checklist'], ['print', 'Print & post']]} onChange={setSub} />
+    {sub === 'print' ? <PrintSheets me={me} /> : <>
     <Field label="Search" value={q} onChangeText={setQ} placeholder="Try “pets”, “roof”, “water”" autoCapitalize="none" />
     <View style={{ flexDirection: 'row', gap: 8 }}>
       <View style={{ flex: 1 }}><Select label="Topic" value={category} options={categories} onChange={v => setCategory(v || 'all')} /></View>
       <View style={{ flex: 1 }}><Select label="Show" value={status} options={[['open', 'To do'], ['done', 'Done'], ['all', 'All']]} onChange={v => setStatus(v || 'open')} /></View>
     </View>
-    {results.length ? results.map(task => <TaskCard key={task.id} task={task} number={ordered.indexOf(task) + 1} done={Boolean(me.done[task.id])} busy={busy === task.id} onToggle={toggle} />)
+    {results.length ? results.map(task => <TaskCard key={task.id} compact task={task} number={ordered.indexOf(task) + 1} done={Boolean(me.done[task.id])} busy={busy === task.id} onToggle={toggle} />)
       : <Card><Muted>No recommendations match. Try another word or filter.</Muted></Card>}
-    <PrintSheets me={me} />
-    <CityDataCallout id="permitHistory" />
-    {me.hazards && describeHazard('wildfire', me.hazards.wildfire).tone === 'mapped' && <CityDataCallout id="brushClearance" />}
+    <Collapsible icon="🧩" title="What City data would add" summary="Skip steps already done; brush-clearance status"><CityDataCallout id="permitHistory" />{me.hazards && describeHazard('wildfire', me.hazards.wildfire).tone === 'mapped' && <CityDataCallout id="brushClearance" />}</Collapsible>
+    </>}
   </>;
 }
 
@@ -137,7 +142,6 @@ function Drill({ me, onChange }) {
   const open = e => { setEvent(e); setPlaybook(null); setError(''); api('GET', `/api/me/playbook?event=${encodeURIComponent(e)}`).then(setPlaybook).catch(err => setError(err.message)); };
   const finish = async () => { setBusy(true); try { if (!me.done.drill) onChange(await api('PUT', '/api/me/tasks', { id: 'drill', done: true })); setEvent(null); setPlaybook(null); } catch (err) { setError(err.message); } finally { setBusy(false); } };
   return <>
-    <Section>Practice drill</Section>
     <Muted>Pick an alert type to see the plan FirePath would build for {me.user.type === 'business' ? 'your business' : 'your household'} if it were real.{me.done.drill ? ' You have completed a drill.' : ' Finishing one checks off the drill step.'}</Muted>
     <Chips value={event} options={drillEvents.map(e => [e, e.replace(' Warning', '').replace(' Alert', '')])} onChange={open} />
     <ErrorText>{error}</ErrorText>
@@ -153,7 +157,7 @@ function Drill({ me, onChange }) {
   </>;
 }
 
-export function Alerts({ me, onChange }) {
+export function Alerts({ me, onChange, sub, setSub }) {
   const [feed, setFeed] = useState(null), [error, setError] = useState('');
   const load = () => { setError(''); setFeed(null); api('GET', '/api/me/alerts').then(setFeed).catch(e => setError(e.message)); };
   useEffect(load, [me.address?.lat]);
@@ -167,30 +171,30 @@ export function Alerts({ me, onChange }) {
   const time = iso => iso ? new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
   return <>
     <Title>Alerts</Title>
-    <Section>Live weather alerts for your address</Section>
-    {!me.address ? <Muted>Register your address to see alerts that include your home.</Muted>
-      : error ? <ErrorText>{error}</ErrorText>
-      : !feed ? <Muted>Checking the National Weather Service…</Muted>
-      : feed.unavailable ? <Card><Muted>The National Weather Service could not be reached. Check official channels directly.</Muted><Link onPress={load}>Try again</Link></Card>
-      : feed.alerts.length === 0 ? <Card><Tag>No active alerts</Tag><Muted>The National Weather Service has no active alerts that include your address as of {time(feed.checkedAt)}.</Muted><Link onPress={load}>Refresh</Link></Card>
-      : feed.alerts.map(a => <Card key={a.id} style={{ borderColor: color.warmLine, backgroundColor: color.warmBg }}>
-          <Tag tone="warm">{a.severity} · {a.sender}</Tag>
-          <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{a.event}</Text>
-          <Muted style={{ marginTop: 4 }}>{a.headline}</Muted>
-          {a.instruction ? <Text style={{ color: color.ink, marginTop: 8, lineHeight: 20 }}>{a.instruction}</Text> : null}
-          <Caption>Until {time(a.expires)}</Caption>
-          {a.playbook && <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: color.warmLine }}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>Your plan for this alert</Text><BuiltFrom me={me} /><Playbook playbook={a.playbook} /></View>}
-        </Card>)}
-    <Caption>Source: National Weather Service (api.weather.gov). Weather alerts only: they are not City evacuation orders.</Caption>
-    <Drill me={me} onChange={onChange} />
-
-    <Section>City emergency alerts</Section>
-    <Card><Tag>Official</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>Sign up with the City of Glendale</Text><Muted>Evacuation orders and City emergency messages come from the City's Everbridge system. FirePath does not receive them yet.</Muted><Link onPress={() => Linking.openURL(EVERBRIDGE)}>Sign up with the City ↗</Link><Link onPress={() => Linking.openURL(KNOW_YOUR_ZONE)}>Know your evacuation zone ↗</Link></Card>
-    <CityDataCallout id="alertFeed" />
-    <CityDataCallout id="evacuationZones" />
-    <DeviceCard />
-    <Card><Tag>Local test only</Tag><Muted>Sends a notification from this device to itself. It is not an emergency alert.</Muted><Button kind="outline" onPress={testNotification}>Send test notification</Button></Card>
-    <Caption>For an emergency, follow official instructions. Call 911 for immediate danger.</Caption>
+    <SubTabs value={sub || 'live'} options={[['live', 'Live'], ['drill', 'Drill'], ['devices', 'Devices']]} onChange={setSub} />
+    {(sub || 'live') === 'live' && <>
+      {!me.address ? <Muted style={{ marginTop: 12 }}>Register your address to see alerts that include your home.</Muted>
+        : error ? <ErrorText>{error}</ErrorText>
+        : !feed ? <Muted style={{ marginTop: 12 }}>Checking the National Weather Service…</Muted>
+        : feed.unavailable ? <Card><Muted>The National Weather Service could not be reached. Check official channels directly.</Muted><Link onPress={load}>Try again</Link></Card>
+        : feed.alerts.length === 0 ? <Card><Tag>All clear from the weather service</Tag><Muted>No active National Weather Service alerts include your address as of {time(feed.checkedAt)}.</Muted><Link onPress={load}>Refresh</Link></Card>
+        : feed.alerts.map(a => <Card key={a.id} style={{ borderColor: color.warmLine, backgroundColor: color.warmBg }}>
+            <Tag tone="warm">{a.severity} · {a.sender}</Tag>
+            <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{a.event}</Text>
+            <Muted style={{ marginTop: 4 }}>{a.headline}</Muted>
+            {a.instruction ? <Text style={{ color: color.ink, marginTop: 8, lineHeight: 20 }}>{a.instruction}</Text> : null}
+            <Caption>Until {time(a.expires)}</Caption>
+            {a.playbook && <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: color.warmLine }}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>Your plan for this alert</Text><BuiltFrom me={me} /><Playbook playbook={a.playbook} /></View>}
+          </Card>)}
+      <Card><Tag>Official</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>City evacuation orders come from the City</Text><Muted>Sign up for Glendale's Citizen Alert and look up your evacuation zone. FirePath does not receive City orders yet.</Muted><Link onPress={() => Linking.openURL(EVERBRIDGE)}>Sign up for City alerts ↗</Link><Link onPress={() => Linking.openURL(KNOW_YOUR_ZONE)}>Know your evacuation zone ↗</Link></Card>
+      <Collapsible icon="🧩" title="What City data would add" summary="Live orders matched to your address"><CityDataCallout id="alertFeed" /><CityDataCallout id="evacuationZones" /></Collapsible>
+      <Caption>Weather alerts: National Weather Service. Not City evacuation orders. In an emergency, call 911.</Caption>
+    </>}
+    {sub === 'drill' && <Drill me={me} onChange={onChange} />}
+    {sub === 'devices' && <>
+      <DeviceCard initiallyOpen />
+      <Card><Tag>Phone notification · local test</Tag><Muted>Sends a notification from this device to itself. It is not an emergency alert.</Muted><Button kind="outline" onPress={testNotification}>Send test notification</Button></Card>
+    </>}
   </>;
 }
 
@@ -311,7 +315,7 @@ function VenuePlanner({ me }) {
   </Card>;
 }
 
-export function Permits({ me, top }) {
+export function Permits({ me, top, sub, setSub }) {
   const [type, setType] = useState(null), [description, setDescription] = useState('');
   const [guide, setGuide] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false);
   async function build() {
@@ -333,11 +337,11 @@ export function Permits({ me, top }) {
   </>;
   return <>
     <Title>Permits</Title>
-    <PermitSearch me={me} />
-    <VenuePlanner me={me} />
-    <EventPlanner me={me} />
-    <Section>Guided projects</Section>
-    <Muted>Pick a project. We'll list what the City usually asks for, flag anything your address's hazard maps change, and prepare a summary to paste into the City's portal.</Muted>
+    <SubTabs value={sub || 'search'} options={[['search', 'Search'], ['events', 'Events'], ['projects', 'Projects']]} onChange={setSub} />
+    {(sub || 'search') === 'search' && <PermitSearch me={me} />}
+    {sub === 'events' && <><VenuePlanner me={me} /><EventPlanner me={me} /></>}
+    {sub === 'projects' && <>
+    <Muted style={{ marginTop: 12 }}>Pick a project. We'll list what the City usually asks for, flag anything your address's hazard maps change, and prepare a summary to paste into the City's portal.</Muted>
     {(me.user.type === 'business' ? businessPermitTypes : permitTypes).map(t => <Pressable key={t.id} accessibilityRole="radio" accessibilityState={{ selected: type === t.id }} onPress={() => setType(t.id)} style={[s.card, type === t.id && { borderColor: color.green, borderWidth: 2 }]}>
       <Text style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{t.title}</Text><Caption style={{ marginTop: 4 }}>{t.permit}</Caption>
     </Pressable>)}
@@ -346,23 +350,27 @@ export function Permits({ me, top }) {
       <ErrorText>{error}</ErrorText>
       <Button busy={busy} onPress={build}>Get my permit checklist</Button>
     </>}
+    </>}
   </>;
 }
 
-export function Profile({ me, onChange, onSignOut }) {
+export function Profile({ me, onChange, onSignOut, sub, setSub }) {
   const [brief, setBrief] = useState(null);
   useEffect(() => { api('GET', '/api/me/responder').then(setBrief).catch(() => setBrief(null)); }, [me]);
+  const tab = sub || 'household';
   return <>
     <Title>{me.user.name}</Title>
-    <Muted>{me.user.email}</Muted>
-    <Section>Address</Section>
-    <AddressPanel me={me} onChange={onChange} />
-    {me.user.type === 'business' ? <><BusinessProfile me={me} onSaved={onChange} /><BusinessDetails me={me} onSaved={onChange} /></> : <HouseholdForm me={me} onSaved={onChange} />}
-    <Section>What a responder would see</Section>
-    <Muted>{brief?.shareWithResponders ? 'You have consented to sharing this once a City connection exists.' : 'Sharing is off. Nothing is shared today either way.'}</Muted>
-    {brief && <Card><Text selectable style={{ color: color.ink, fontFamily: 'Courier', fontSize: 12, lineHeight: 18 }}>{brief.brief}</Text></Card>}
-    <Button kind="outline" onPress={onSignOut}>Sign out</Button>
-    <Caption>Prototype account on this demo server. Hazard results: {me.hazards ? Object.keys(hazardNames).map(k => `${hazardNames[k]} (${me.hazards[k]?._meta?.source || '?'})`).join(', ') : 'none yet'}.</Caption>
+    <Muted>{me.user.demo ? 'Fictional demo household' : me.user.email}</Muted>
+    <SubTabs value={tab} options={[['household', me.user.type === 'business' ? 'Business' : 'Household'], ['address', 'Address'], ['responders', 'Responders']]} onChange={setSub} />
+    {tab === 'household' && (me.user.type === 'business' ? <><BusinessProfile me={me} onSaved={onChange} /><BusinessDetails me={me} onSaved={onChange} /></> : <HouseholdForm me={me} onSaved={onChange} />)}
+    {tab === 'address' && <View style={{ marginTop: 8 }}><AddressPanel me={me} onChange={onChange} /></View>}
+    {tab === 'responders' && <>
+      <Muted style={{ marginTop: 12 }}>{brief?.shareWithResponders ? 'You have consented to sharing this once a City connection exists. Nothing is sent today.' : 'Sharing is off. Nothing is sent today either way.'}</Muted>
+      {brief && <Card><Tag>What a responder would see</Tag><Text selectable style={{ color: color.ink, fontFamily: 'Courier', fontSize: 12, lineHeight: 18 }}>{brief.brief}</Text></Card>}
+      <CityDataCallout id="cad" />
+    </>}
+    <Button kind="outline" onPress={onSignOut} style={{ marginTop: 28 }}>Sign out</Button>
+    <Caption>{me.user.demo ? 'Demo account on this demo server.' : 'Prototype account on this demo server.'}</Caption>
   </>;
 }
 
@@ -430,8 +438,7 @@ export function PrintSheets({ me }) {
     ? businessPosterPrintout({ business: me.business, address: me.address?.text, hazards: me.hazards, name: me.user.name })
     : householdPlanPrintout({ name: me.user.name, address: me.address?.text, hazards: me.hazards, household: me.household });
   return <>
-    <Section>Print and post</Section>
-    <Muted>One-page sheets for the fridge, the front door or the break room. Anything not saved yet prints as a blank line to fill in by hand.</Muted>
+    <Muted style={{ marginTop: 12 }}>One-page sheets for the fridge, the front door or the break room. Anything not saved yet prints as a blank line to fill in by hand.</Muted>
     <Card style={{ borderColor: color.green, borderWidth: 1.5 }}>
       <Tag>Made for you</Tag>
       <Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>{business ? `${me.business?.name || 'Business'}: in an emergency` : 'Our emergency plan'}</Text>
@@ -471,7 +478,7 @@ export function DeviceCard({ initiallyOpen }) {
 // How the pieces connect: data in -> FirePath -> people and devices, each marked Live / Prototype / Needs City.
 const SYSTEMS = [
   ['Data coming in', [
-    ['CAL FIRE, FEMA, CGS, DWR and USGS hazard maps', 'live', 'Dated snapshot, checked for every address'],
+    ['CAL FIRE, FEMA, CGS, DWR and USGS hazard maps', 'live', 'Dated snapshot via HackerFund\'s open Glendale GIS project'],
     ['National Weather Service alerts', 'live', 'Checked live for each registered address'],
     ['City of Glendale address list (geocoder)', 'live', 'Autocomplete and address matching'],
     ['Glendale Permits: catalog, permits, inspections, parcel', 'live', 'Public records per address'],
