@@ -7,6 +7,12 @@ const keys = Object.keys(hazardNames);
 let profile = {}, hazards = null, serial = null;
 let sampleMap = false;
 const workspace = { mode: 'resident', scenario: 'earthquake', source: 'fictional', layout: 'dispatch' };
+const tour = { active: false, step: 0 };
+const tourSteps = [
+  { heading: 'See what is mapped', text: 'This public Glendale map point has seven source-linked planning layers. It is an example location, not a household address.', target: 'hazards' },
+  { heading: 'Turn information into action', text: 'The checklist starts with universal steps and adds relevant tasks for mapped zones and household needs.', target: 'plan' },
+  { heading: 'See the responder side', text: 'This is a separate fictional exercise. Watch how a short, source-labeled brief puts useful facts first without claiming a live dispatch link.', target: 'responder-workspace' },
+];
 try { profile = JSON.parse(localStorage.getItem('firepath-prep-profile') || '{}'); } catch {}
 let done = {};
 try { done = JSON.parse(localStorage.getItem('firepath-prep-done') || '{}'); } catch {}
@@ -95,7 +101,7 @@ $('task-grid').addEventListener('change', event => {
 });
 $('address').addEventListener('input', () => { if ($('address').value.trim()) { $('latitude').value = ''; $('longitude').value = ''; } });
 for (const id of ['latitude', 'longitude']) $(id).addEventListener('input', () => { if ($(id).value.trim()) $('address').value = ''; });
-$('example-point').addEventListener('click', async () => {
+async function loadSampleLocation({ scroll = true } = {}) {
   try {
     const response = await fetch('./src/sample-location.json');
     if (!response.ok) throw new Error('Sample unavailable');
@@ -108,9 +114,37 @@ $('example-point').addEventListener('click', async () => {
     $('form-status').textContent = 'Sample snapshot loaded. Enter your own location to build your plan.';
     renderHazards(); renderTasks();
     renderResponder();
-    $('hazards').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  } catch { $('form-status').textContent = 'Could not load the sample map snapshot.'; }
+    if (scroll) $('hazards').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return true;
+  } catch { $('form-status').textContent = 'Could not load the sample map snapshot.'; return false; }
+}
+$('example-point').addEventListener('click', () => loadSampleLocation());
+
+function showTourStep() {
+  const step = tourSteps[tour.step];
+  $('guide-step').textContent = `STEP ${tour.step + 1} OF ${tourSteps.length}`;
+  $('guide-heading').textContent = step.heading;
+  $('guide-text').textContent = step.text;
+  $('tour-next').textContent = tour.step === tourSteps.length - 1 ? 'Finish tour' : 'Next step ↗';
+  if (step.target === 'responder-workspace') setMode('responder');
+  $(step.target).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function closeTour() { tour.active = false; $('demo-guide').hidden = true; }
+async function startTour() {
+  if (workspace.mode !== 'resident') setMode('resident');
+  if (!await loadSampleLocation({ scroll: false })) return;
+  tour.active = true;
+  tour.step = 0;
+  $('demo-guide').hidden = false;
+  showTourStep();
+}
+$('tour-start').addEventListener('click', startTour);
+$('tour-next').addEventListener('click', () => {
+  if (tour.step === tourSteps.length - 1) { closeTour(); return; }
+  tour.step += 1;
+  showTourStep();
 });
+$('tour-close').addEventListener('click', closeTour);
 $('profile-form').addEventListener('submit', async event => {
   event.preventDefault();
   const address = $('address').value.trim(), latText = $('latitude').value.trim(), lonText = $('longitude').value.trim();
@@ -125,6 +159,7 @@ $('profile-form').addEventListener('submit', async event => {
   $('form-status').textContent = 'Checking Glendale map layers…';
   try {
     const response = await fetch('/api/hazards', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+    if (!response.headers.get('content-type')?.includes('application/json')) throw new Error('Personal address lookup needs the GIS-enabled server. Use the sample tour in this preview.');
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Lookup unavailable');
     hazards = data.hazards;
@@ -225,3 +260,4 @@ $('demo-alert').addEventListener('click', async () => {
 });
 render();
 if (location.hash.startsWith('#responder-')) setMode('responder');
+if (new URLSearchParams(location.search).get('demo') === '1') startTour();

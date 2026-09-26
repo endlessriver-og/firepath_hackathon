@@ -16,6 +16,12 @@ Open <http://localhost:5173>. The general checklist, household preferences, offi
 
 Click **Try sample location** to see seven real map-layer results for a public point near Glendale Civic Center without installing Python GIS dependencies. The sample is a dated snapshot and is explicitly labeled as an example, not your address.
 
+For a quick walkthrough, open <http://localhost:5173/?demo=1> or click **Take the 90-second tour**. It moves through the public sample map point, a preparedness checklist, and a separate fictional responder exercise. The walkthrough needs no GIS package, credentials or hardware.
+
+The walkthrough can also run on a simple static host: serve `index.html` and `src/` from the project root, for example `python3 -m http.server 5173`, then open `/?demo=1`. On a static host the sample works, but personal address lookups require the Node server and separately installed Glendale GIS package. The app explains that limitation if someone attempts one.
+
+For a shareable static preview, run `npm run build:demo` and publish the generated `dist/` directory. The included `vercel.json` sets that build command and output directory for a Vercel project connected to this repository. Only the frontend, the dated public sample snapshot and the separate fire-routing lab enter `dist/`; no local household data or Python backend files are included. This is a demo deployment path, not a live-alert or address-lookup service.
+
 ## Enable real mapped hazard lookup
 
 The seven Glendale map layers come from [HackerFund's Glendale GIS MCP project](https://github.com/HackerFund/GlendaleGisMcp). It is a separate GPL-3.0-or-later package; this repository invokes it as a Python process and does not vendor its source. Install the package and download its map snapshot using its current README instructions, in a Python environment of your choice. For example, with `uv` installed:

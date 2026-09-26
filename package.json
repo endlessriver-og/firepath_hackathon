@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.mjs",
     "test": "node --test",
-    "audio:plan": "node scripts/generate-audio.mjs"
+    "audio:plan": "node scripts/generate-audio.mjs",
+    "build:demo": "node scripts/build-demo.mjs"
   }
 }

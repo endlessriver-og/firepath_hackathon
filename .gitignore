@@ -5,3 +5,4 @@ audio/*.mp3
 .venv/
 __pycache__/
 *.pyc
+dist/
