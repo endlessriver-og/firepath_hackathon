@@ -11,7 +11,7 @@ import { eventQuestions } from './permit-catalog';
 import { hazardViewers, resourceGroups, RESOURCES_CHECKED } from './resources';
 import { businessPosterPrintout, householdPlanPrintout, standardPrintout, standardPrintouts } from './printouts';
 import { printHtml } from './print';
-import { AddressCheck } from './landing';
+import { AddressCheck, CityRecords } from './landing';
 import { eventTemplates, venues, VENUE_NOTE } from './venues';
 import { AddressPanel, AddressSearch, BusinessDetails, BusinessProfile, HouseholdForm } from './onboarding';
 import { Toggle } from './ui';
@@ -42,6 +42,12 @@ export function TaskCard({ task, done, busy, onToggle }) {
   </View>;
 }
 
+function HomeRecords({ me }) {
+  const [records, setRecords] = useState(null);
+  useEffect(() => { api('GET', '/api/me/records').then(r => setRecords(r.records)).catch(() => setRecords(null)); }, [me.address?.text]);
+  return <CityRecords records={records} />;
+}
+
 export function Home({ me, onChange, go }) {
   const r = me.readiness;
   const [busy, toggle] = useToggle(me, onChange);
@@ -67,6 +73,7 @@ export function Home({ me, onChange, go }) {
         <Text style={{ color: color.warm }}>●</Text><View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{item.name} · {hazardSeverity(item.key, me.hazards[item.key]).label}</Text><Muted>{item.label}</Muted><Link style={{ marginTop: 6 }} onPress={() => go('Map', [item.key])}>See zones on the map →</Link></View></View>)
         : <Muted>No mapped hazard zone includes this address. That is not the same as no risk.</Muted>}
       <Caption>Planning maps, not live incidents. Not mapped here: {place.outside.map(i => i.name.toLowerCase()).join(', ') || 'none'}.</Caption>
+      <HomeRecords me={me} />
     </>}
 
     <Section>Your next steps</Section>

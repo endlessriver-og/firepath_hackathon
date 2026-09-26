@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { cityData } from './city-data';
@@ -73,6 +73,22 @@ export function SeverityBadge({ severity }) {
   return <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} accessibilityLabel={`Severity ${severity.label}`}>
     {[1, 2, 3].map(n => <View key={n} style={{ width: 16, height: 8, borderRadius: 4, backgroundColor: n <= severity.level ? ['#F5CF4A', '#E8641E', '#B3261A'][severity.level - 1] : '#E0E5DE' }} />)}
     <Text style={{ marginLeft: 6, color: color.ink, fontWeight: '800', fontSize: 12 }}>{severity.label}</Text>
+  </View>;
+}
+
+// Collapsible container: a tappable header row with a summary; content only when open. Keeps pages short.
+export function Collapsible({ title, summary, icon, initiallyOpen = false, children, tone }) {
+  const [open, setOpen] = useState(initiallyOpen);
+  return <View style={[s.card, { padding: 0, overflow: 'hidden' }, tone === 'blue' && { borderColor: '#C9D8EA' }]}>
+    <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={() => setOpen(!open)} style={{ flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 }}>
+      {icon ? <Text style={{ fontSize: 20 }}>{icon}</Text> : null}
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>{title}</Text>
+        {summary ? <Text style={{ color: color.muted, fontSize: 13, marginTop: 2 }}>{summary}</Text> : null}
+      </View>
+      <Text style={{ color: color.green, fontSize: 18, fontWeight: '900' }}>{open ? '−' : '+'}</Text>
+    </Pressable>
+    {open && <View style={{ paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderColor: color.line }}>{children}</View>}
   </View>;
 }
 

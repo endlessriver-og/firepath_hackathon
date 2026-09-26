@@ -6,12 +6,26 @@ import { Auth, AddressSearch } from './onboarding';
 import { Resources } from './tabs';
 import { hazardViewers } from './resources';
 import { Linking } from 'react-native';
-import { Button, Caption, Card, ErrorText, Link, Muted, Section, SeverityBadge, Tag, color } from './ui';
+import { Button, Caption, Card, Collapsible, ErrorText, Link, Muted, Section, SeverityBadge, Tag, color } from './ui';
 
 // Public front door: anyone can check a Glendale address without an account. Results end in a
 // call to register for alerts, a household plan and permit help for that address.
 // Search + results for any Glendale address (public endpoint; nothing stored). Used on the public
 // page and, when signed in, to check places other than your own address.
+// Public City records for an address (Glendale Permits public search), in a collapsible container.
+export function CityRecords({ records, initiallyOpen }) {
+  if (!records) return null;
+  const t = records.totals;
+  return <Collapsible icon="🗂" initiallyOpen={initiallyOpen} title={`City records · ${t.total}`} summary={`${t.permits} permits · ${t.inspections} inspections${records.parcel ? ` · parcel ${records.parcel}` : ''}`}>
+    {records.recent.length === 0 ? <Muted style={{ marginTop: 10 }}>No permits or inspections found for this exact address.</Muted> : records.recent.slice(0, 5).map(r => <View key={`${r.kind}-${r.number}`} style={{ paddingVertical: 8, borderBottomWidth: 1, borderColor: color.line }}>
+      <Text style={{ color: color.ink, fontWeight: '700' }}>{r.type}</Text>
+      <Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{r.kind} {r.number} · {r.status || 'status unknown'}{r.date ? ` · ${r.date}` : ''}</Text>
+    </View>)}
+    <Link onPress={() => Linking.openURL(records.searchUrl)}>See every record in Glendale Permits ↗</Link>
+    <Caption>Public records from the City of Glendale's permit portal. Code-enforcement cases are not listed here.</Caption>
+  </Collapsible>;
+}
+
 export function AddressCheck({ onResult, showPreview = true, label }) {
   const [address, setAddress] = useState('');
   const [result, setResult] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [candidates, setCandidates] = useState([]), [checked, setChecked] = useState('');
@@ -35,6 +49,7 @@ export function AddressCheck({ onResult, showPreview = true, label }) {
         {result.combined && <Text style={{ color: '#CFE3DA', marginTop: 6 }}>Combined planning index: <Text style={{ color: '#FFF', fontWeight: '800' }}>{result.combined.score} of {result.combined.max}</Text>{result.combined.parts.length ? ` (${result.combined.parts.map(p => `${p.label} +${p.points}`).join(', ')})` : ''}</Text>}
         {!mapped.length && <Text style={{ color: '#CFE3DA', marginTop: 6 }}>Not being in a mapped zone is not the same as no risk. Earthquakes affect all of Glendale.</Text>}
       </Card>
+      <CityRecords records={result.records} />
       <MapFrame src={`${apiBase()}/map.html?layers=combined&label=This%20address&lat=${result.lat}&lon=${result.lon}`} style={{ height: 320, borderRadius: 17, marginTop: 12, borderWidth: 1, borderColor: color.line }} />
       <Section>Layer by layer</Section>
       {result.layers.map(l => <View key={l.key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderColor: color.line }}>

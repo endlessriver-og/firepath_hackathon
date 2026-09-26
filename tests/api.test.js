@@ -299,3 +299,19 @@ test('venue package: night market at Artsakh Paseo vs Brand Park, with alcohol a
   assert.ok(brand.outside.some(o => /park facility/.test(o.name)));
   assert.equal((await call('POST', '/api/me/venues/package', { venueId: 'moon' }, token)).status, 404);
 });
+
+import { summarizeRecords, streetAddress } from '../server/city-records.mjs';
+test('city records summary lists permits and inspections, counts but never lists code cases', () => {
+  const result = { TotalFound: 4, PermitsFound: 1, InspectionsFound: 1, CodeCasesFound: 1, EntityResults: [
+    { ModuleName: 2, CaseNumber: 'BP1 ', CaseType: 'Re-Roof Permit', CaseStatus: 'Final', FinalDate: '2023-06-21T00:00:00', MainParcel: '5615014901' },
+    { ModuleName: 4, CaseNumber: '15', CaseType: '(199) Final Building', CaseStatus: 'Passed', ScheduleDate: '2023-06-14T00:00:00' },
+    { ModuleName: 5, CaseNumber: 'CE9', CaseType: 'Code Enforcement', CaseStatus: 'Open' },
+  ] };
+  const s = summarizeRecords(result, '1613 GLENCOE WAY');
+  assert.equal(s.parcel, '5615014901');
+  assert.deepEqual(s.recent.map(r => r.kind), ['Permit', 'Inspection']);
+  assert.equal(s.totals.codeCases, 1);
+  assert.ok(!JSON.stringify(s.recent).includes('Code Enforcement'));
+  assert.equal(streetAddress('1613 GLENCOE WAY, GLENDALE, CA, 91208'), '1613 GLENCOE WAY');
+  assert.match(s.searchUrl, /st=1613%20GLENCOE%20WAY$/);
+});

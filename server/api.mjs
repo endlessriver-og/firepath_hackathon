@@ -27,7 +27,7 @@ function occupancy(h) {
 
 const playbookFor = (user, event) => buildPlaybook(event, { type: user.type, household: user.household || {}, business: user.business || {}, hazards: user.hazards, done: user.done || {} });
 
-export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, combinedIndex = () => null, permitCatalog = { permitTypes: [], businessLicenseTypes: [] }, demoMailbox = true, now = () => Date.now() }) {
+export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, combinedIndex = () => null, cityRecords = async () => null, permitCatalog = { permitTypes: [], businessLicenseTypes: [] }, demoMailbox = true, now = () => Date.now() }) {
   const { data } = store;
   const failures = new Map(); // email -> [timestamps] of failed logins, in memory only
   const alertCache = new Map();
@@ -250,7 +250,8 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       const result = await locate(address, text(body.magicKey, 200) || undefined);
       const layers = Object.keys(hazardNames).map(key => ({ key, name: hazardNames[key], ...hazardSeverity(key, result.hazards[key]), source: result.hazards[key]?._meta?.source || null }));
       const preview = buildRecommendations({}, {}, result.hazards).filter(r => r.tag.startsWith('Mapped') || r.id === 'alerts').slice(0, 3).map(({ id, title, description }) => ({ id, title, description }));
-      return { body: { address: result.location.matched_address || address, lat: result.location.lat, lon: result.location.lon, layers, combined: combinedIndex(result.location.lat, result.location.lon), preview, checkedAt: new Date(now()).toISOString() } };
+      const records = await cityRecords(result.location.matched_address || address).catch(() => null);
+      return { body: { records, address: result.location.matched_address || address, lat: result.location.lat, lon: result.location.lon, layers, combined: combinedIndex(result.location.lat, result.location.lon), preview, checkedAt: new Date(now()).toISOString() } };
     },
 
     // Plain-language search over the City of Glendale permit catalog (crawled by scripts/crawl-permits.mjs).
@@ -259,6 +260,13 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       const q = text(url.searchParams.get('q'), 120);
       const audience = oneOf(url.searchParams.get('audience'), ['resident', 'business', 'events']) || null;
       return { body: { query: q, permits: searchPermits(permitCatalog, q, { audience }).map(({ score, ...t }) => t), licenses: audience === 'business' ? searchLicenses(permitCatalog, q) : [], source: permitCatalog.source, crawledAt: permitCatalog.crawledAt, portal: permitCatalog.portal } };
+    },
+
+    // Public City records (permits, inspections, parcel) for the registered address.
+    'GET /api/me/records': async req => {
+      const user = session(req);
+      if (!user.address) return { body: { records: null } };
+      try { return { body: { records: await cityRecords(user.address) } }; } catch { return { body: { records: null, unavailable: true } }; }
     },
 
     'GET /api/address/suggest': async (req, body, url) => {
