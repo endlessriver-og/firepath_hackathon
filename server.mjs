@@ -2,13 +2,16 @@ import http from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { resolve, extname, sep } from 'node:path';
+import { createApi, fetchNwsAlerts } from './server/api.mjs';
+import { openStore } from './server/store.mjs';
 
 const root = resolve(import.meta.dirname);
 const srcRoot = resolve(root, 'src');
 const audioRoot = resolve(root, 'audio');
+const appRoot = resolve(root, 'dist/app');
 const port = Number(process.env.PORT || 5173);
 const python = process.env.GLENDALE_GIS_PYTHON || 'python3';
-const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg' };
+const mime = { '.ttf': 'font/ttf', '.png': 'image/png', '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg' };
 
 function lookup(payload) {
   return new Promise((resolveLookup, reject) => {
@@ -23,9 +26,29 @@ function lookup(payload) {
   });
 }
 
+const api = createApi({ store: openStore(process.env.FIREPATH_DATA || resolve(root, 'data/firepath-dev.json')), lookupHazards: lookup, fetchAlerts: fetchNwsAlerts, demoMailbox: process.env.FIREPATH_DEMO_MAILBOX !== '0' });
+// The Expo dev server (port 8081) calls this API cross-origin with a bearer token; no cookies are used.
+const devOrigin = /^http:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+):8081$/;
+
 http.createServer(async (req, res) => {
   try {
-    const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
+    const url = new URL(req.url, 'http://localhost');
+    if (devOrigin.test(req.headers.origin || '')) {
+      res.setHeader('access-control-allow-origin', req.headers.origin);
+      res.setHeader('access-control-allow-headers', 'authorization, content-type');
+      res.setHeader('access-control-allow-methods', 'GET, POST, PUT');
+      if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+    }
+    if (await api(req, res, url)) return;
+    const pathname = decodeURIComponent(url.pathname);
+    if (pathname === '/app' || pathname.startsWith('/app/')) {
+      const rel = pathname.replace(/^\/app\/?/, '');
+      let file = resolve(appRoot, rel || 'index.html');
+      if (!file.startsWith(appRoot + sep) || !(await stat(file).catch(() => null))?.isFile()) file = resolve(appRoot, 'index.html');
+      res.writeHead(200, { 'content-type': mime[extname(file)] || 'application/octet-stream' });
+      res.end(await readFile(file));
+      return;
+    }
     if (pathname === '/api/hazards' && req.method === 'POST') {
       let body = '';
       for await (const chunk of req) { body += chunk; if (body.length > 1024) throw new Error('Request too large'); }

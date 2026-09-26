@@ -61,6 +61,23 @@ Mapped layers: CAL FIRE wildfire severity, FEMA flood zones, fault, liquefaction
 
 The prototype never replaces emergency instructions, certified alarms, or professional advice about insurance or property risk. Call 911 for immediate danger.
 
+### Resident accounts (current main flow)
+
+The resident app (`apps/mobile`, which runs on web, iOS and Android) now has these parts:
+- **Onboarding:** account creation, then household members, a Glendale address and responder details.
+- **Readiness:** a score with levels and badges.
+- **Recommendations:** search and filters.
+- **Alerts:** live National Weather Service alerts for the address.
+- **Permits:** a guide that links to the City's portal.
+
+The API is `server/api.mjs`, mounted in `server.mjs`. Accounts use scrypt password hashes and hashed bearer sessions, stored in a local JSON file (`data/`, gitignored). This is prototype storage, not production identity.
+
+Address verification has two levels:
+- **Matched:** the City geocoder confirms the address.
+- **Verified by mail:** the resident enters a 6-digit code. In production it would be printed on a mailed postcard; locally it appears in a labeled demo mailbox. Set `FIREPATH_DEMO_MAILBOX=0` to hide it.
+
+Neither level proves ownership. Nothing is sent to 911, dispatch or the City. Wherever City data is missing, a "Needs City data" callout (`src/city-data.js`) names the dataset and the capability it would unlock. See `docs/DEMO.md` for the walkthrough.
+
 ### Native resident prototype
 
 `apps/mobile` is an Expo iOS/Android resident prototype. A first-run flow picks one of two **public sample places** and asks four household questions (own/rent, house/apartment, pets, someone who needs help leaving). The app then has four tabs:

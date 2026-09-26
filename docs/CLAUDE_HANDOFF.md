@@ -90,6 +90,14 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
 
 ## Verification, deployment and known limits
 
+**Resident accounts slice (2026-09-26, evening):**
+
+- **Code:** `server/api.mjs`, `server/auth.mjs` and `server/store.mjs` hold the API. `src/readiness.js` covers scoring, recommendations and permits; `src/city-data.js` holds the "Needs City data" callouts. The app is split into `apps/mobile/src/{api,ui,onboarding,tabs}.js`.
+- **Tests:** 23 pass, 8 of them for the API.
+- **Browser check:** the whole flow was clicked through at 390×844 with a real Glendale address lookup, the City geocoder and the live NWS feed.
+- **Still missing:** a production identity provider, encryption at rest, real postcard mailing, and City data of every kind listed in `src/city-data.js`. The sample-place mode was removed from the app; the old samples remain in `src/`.
+
+
 **Session 2026-09-26 (afternoon):**
 
 - **Mobile:** the app gained first-run onboarding (sample place, then household), a Home summary, persistent progress and meeting places (AsyncStorage), and a second real sample.

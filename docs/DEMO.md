@@ -1,13 +1,26 @@
 # Three-minute preparedness demo
 
-**Resident app (phone or browser):** `cd apps/mobile && npx expo start`. Scan the QR code with Expo Go, or press `w` for a browser tab at phone width. Without a dev server, `npm run build:demo` puts the same app at `dist/app/`; any static host serves it. Before each run-through, tap **Start over** at the bottom of Home to clear the previous presenter's progress.
+**Resident app with accounts (browser, recommended):**
 
-1. Pick **Sparr Heights Community Center**. Say plainly that it is a public place, not anyone's home.
-2. Set the household to *I rent* with pets, then tap **Build my plan**.
-3. Home shows two mapped layers: wildfire (*High*) and liquefaction. The steps adapt to them: renters are asked about building protections.
-4. Check off a step, reload, and show that progress stays.
-5. Open **Change place or household** and pick the Civic Center point. Nothing is mapped there, the caveat says that is not the same as no risk, and the plan shrinks to general steps.
-6. On **Alerts**, point to City signup as the real channel. The notification button is a local test only.
+Run these from the repo root:
+```bash
+cd apps/mobile && npm install && cd ../..
+npm run build:demo
+GLENDALE_GIS_PYTHON=.venv/bin/python npm start
+```
+Then open <http://localhost:5173/app/>. For live editing, also run `cd apps/mobile && npx expo start` and open <http://localhost:8081>; it calls the same API on port 5173.
+
+1. **Create account.** Name, email and password. Stored only in `data/firepath-dev.json` on this machine.
+2. **Step 1, household.** Add people with an age group and a "may need help leaving" flag. Choose own or rent, and house or apartment.
+3. **Step 2, address.** Any Glendale street address goes to the City geocoder plus the 7 hazard maps (the GIS package must be installed). Then **Mail me a code** shows the code in a labeled *demo mailbox*; enter it to verify.
+4. **Step 3, responder details.** Pets, access and utility notes, meeting places, and the consent toggle.
+5. **Home.** Readiness score, level, badges and the next steps. Check one off to watch the score move.
+6. **Actions.** Search (for example "pets" or "roof") and filter by hazard or status.
+7. **Alerts.** Live National Weather Service alerts for the address point, which are often empty. City signup links. "Needs City data" callouts.
+8. **Permits.** Pick a project to get the likely permit, notes for this address, the usual requirements, a copyable summary and a link to the Glendale Permits portal.
+9. **Profile.** Edit the address and household, and preview exactly what a responder would see.
+
+The blue **Needs City data** callouts name the dataset we lack, an illustrative example record and the capability it would unlock. Their text lives in `src/city-data.js`.
 
 **Browser workspace and responder exercise:**
 
