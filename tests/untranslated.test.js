@@ -33,7 +33,7 @@ const ALLOWED = new Set([
 ]);
 // Data and content modules that hold English source text by design (translated elsewhere or English on purpose).
 const SKIP = /^(i18n|printouts|playbooks|readiness|preparedness|permit-catalog|venues|resources|city-data|icons|responder|model|walkthrough)\.js$|^sample/;
-const PATTERN = />\s*[←→↗↓]?\s*([A-Z][A-Za-z ,.'’!?-]{5,})\s*[←→↗↓]?\s*<|(?:accessibilityLabel|label|placeholder|title|hint|summary|caption)="([^"]*[A-Za-z]{3,} [A-Za-z]{3,}[^"]*)"|['`]([A-Z][A-Za-z]+(?: [a-z]+){1,}[.!?]?)['`]/g;
+const PATTERN = />\s*[←→↗↓]?\s*([A-Z][A-Za-z ,.'’!?-]{5,})\s*[←→↗↓]?\s*<|(?:accessibilityLabel|label|placeholder|title|hint|summary|caption)="([^"]*[A-Za-z]{3,} [A-Za-z]{3,}[^"]*)"|['`]([A-Z][A-Za-z]+(?: [a-z]+){1,}[.!?]?)['`]|>\s*([A-Z][a-z]{3,}(?: [a-z]+)*) \{|\}[:.,]?\s+([a-z]{3,}(?: [a-z]+)+[.!?]?)\s*[↗→]?\s*</g;
 
 test('screens contain no untranslated English beyond the allowlist', () => {
   const dir = new URL('../apps/mobile/src/', import.meta.url);
@@ -43,7 +43,7 @@ test('screens contain no untranslated English beyond the allowlist', () => {
     readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
       if (line.trim().startsWith('//')) return;
       for (const m of line.matchAll(PATTERN)) {
-        const text = m[1] || m[2] || m[3];
+        const text = m[1] || m[2] || m[3] || m[4] || m[5];
         if (!ALLOWED.has(text.trim())) leaks.push(`${file.pathname.split('/').pop()}:${i + 1} "${text.trim()}"`);
       }
     });

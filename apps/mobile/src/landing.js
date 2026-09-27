@@ -3,11 +3,12 @@ import { Pressable, Text, View } from 'react-native';
 import { api, apiBase } from './api';
 import MapFrame from './MapFrame';
 import { Auth, AddressSearch } from './onboarding';
-import { Resources } from './tabs';
+import { Resources, shortTaskTitles } from './tabs';
 import { hazardViewers } from './resources';
 import { Linking } from 'react-native';
 import { Button, Caption, Card, Collapsible, ErrorText, LanguageBar, Link, Muted, Section, SeverityBadge, Tag, color } from './ui';
-import { useI18n } from './i18n';
+import { taskTitles, useI18n } from './i18n';
+import { formatDate } from './dates';
 import { HeroIllustration } from './illustration';
 
 // Public front door: anyone can check a Glendale address without an account. Results end in a
@@ -79,9 +80,9 @@ export function AddressCheck({ onResult, onRegister, showPreview = false, label 
       {[...result.layers].sort((a, b) => inZone(b) - inZone(a)).map(l => <View key={l.key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 1, borderColor: color.line }}>
         <Text style={{ flex: 1, color: color.ink, fontWeight: '700' }}>{t(`hz.${l.key}`)}</Text><Text style={{ color: inZone(l) ? color.warm : color.muted, fontWeight: '800', fontSize: 12 }}>{inZone(l) ? `⚠ ${typeof l.level === 'number' ? (t(`lvl.${l.label}`) === `lvl.${l.label}` ? l.label : t(`lvl.${l.label}`)) : t('map.inZone')}` : l.level === 'unknown' ? `? ${t('map.unavailable')}` : `○ ${t('map.outside')}`}</Text>
       </View>)}
-      <Collapsible title={t('res.sources')} summary={t('res.sourcesSub')}>{result.layers.map(l => hazardViewers[l.key] && <Link key={l.key} onPress={() => Linking.openURL(hazardViewers[l.key].url)}>{l.name}: official map ↗</Link>)}<Caption>Checked {result.checkedAt.slice(0, 10)}. Planning maps, not live incidents or evacuation orders.</Caption></Collapsible>
+      <Collapsible title={t('res.sources')} summary={t('res.sourcesSub')}>{result.layers.map(l => hazardViewers[l.key] && <Link key={l.key} onPress={() => Linking.openURL(hazardViewers[l.key].url)}>{t(`hz.${l.key}`)}: {t('res.officialMap')} ↗</Link>)}<Caption>{t('res.checkedMaps', { date: formatDate(result.checkedAt, lang, { long: true }) })}</Caption></Collapsible>
       {showPreview && result.preview.length > 0 && <><Section>{t('mx.whereStart')}</Section>
-        {result.preview.map(p => <Card key={p.id}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{p.title}</Text><Muted style={{ marginTop: 4 }}>{p.description}</Muted></Card>)}</>}
+        {result.preview.map(p => <Card key={p.id}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{taskTitles[lang]?.[p.id] || shortTaskTitles[p.id] || p.title}</Text></Card>)}</>}
     </>}
   </>;
 }
@@ -96,7 +97,7 @@ export function Landing({ onSignedIn, onEmergency, onWalkthrough }) {
 
   if (signup) return <>
     <Link style={{ marginTop: 0 }} onPress={() => setSignup(null)}>{t('au.back')}</Link>
-    {result && <Caption>Signing up for {result.address}. We'll set it up as your address in step 2.</Caption>}
+    {result && <Caption>{t('au.signingFor', { address: result.address })}</Caption>}
     <Auth initialMode={signup.mode} initialType={signup.type} onSignedIn={(me, isNew) => onSignedIn(me, isNew, result?.address)} />
   </>;
 

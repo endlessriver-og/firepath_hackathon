@@ -41,7 +41,7 @@ function useToggle(me, onChange) {
 // Checklist order: official alerts first, then mapped-hazard steps, then household, then general.
 export const checklist = me => nextSteps(me.recommendations, {}, me.recommendations.length);
 
-const shortTaskTitles = {
+export const shortTaskTitles = {
   alerts: 'Sign up for City alerts', kit: 'Pack a go bag', plan: 'Make a contact plan',
   quake: 'Secure heavy items', pets: 'Pack for pets', assistance: 'Arrange help and backup power',
   apartment: 'Know your building exits', kids: 'Plan school pickup',
