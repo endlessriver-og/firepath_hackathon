@@ -5,8 +5,11 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 const axeSource = readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8');
 const BASE = process.argv[2] || 'https://firepath-ruddy.vercel.app';
-const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, protocolTimeout: 240000, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const page = await browser.newPage();
+// A just-deployed site is slow for its first requests (cold functions, map tiles): allow time, retry a load once.
+page.setDefaultTimeout(120000);
+const open = async url => { try { await page.goto(url, { waitUntil: 'networkidle2' }); } catch { await page.goto(url, { waitUntil: 'networkidle2' }); } };
 await page.setViewport({ width: 390, height: 844, isMobile: true });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const found = new Map();
@@ -22,7 +25,7 @@ async function audit(label) {
   }
 }
 const click = (text, sel = '[role=button],[role=tab],[aria-label]') => page.evaluate((text, sel) => { const e = [...document.querySelectorAll(sel)].find(e => (e.getAttribute('aria-label') || e.innerText || '').trim() === text); e?.click(); return !!e; }, text, sel);
-await page.goto(`${BASE}/app/`, { waitUntil: 'networkidle2' });
+await open(`${BASE}/app/`);
 await page.evaluate(() => localStorage.clear());
 await page.reload({ waitUntil: 'networkidle2' }); await sleep(1500);
 await audit('landing');
@@ -40,8 +43,12 @@ if (pageLang !== 'hy') found.set('serious · page-lang', { help: `page language 
 await audit('home (hy)');
 // The two map pages, which the app embeds (the 3D one with a parcel card open).
 for (const path of ['map.html?layers=combined,wildfire&lat=34.19912&lon=-118.2311', 'map3d.html?lat=34.19912&lon=-118.2311']) {
-  await page.goto(`${BASE}/${path}`, { waitUntil: 'networkidle2' }); await sleep(3000);
-  if (path.startsWith('map3d')) { await page.evaluate(() => inspect({ lat: 34.19912, lng: -118.2311 })); await sleep(6000); }
+  await open(`${BASE}/${path}`); await sleep(3000);
+  if (path.startsWith('map3d')) {
+    await page.waitForFunction(() => typeof inspect === 'function');
+    await page.evaluate(() => inspect({ lat: 34.19912, lng: -118.2311 }));
+    await page.waitForFunction(() => /APN|Parcel|Could not/.test(document.getElementById('card')?.innerText || '')).catch(() => {});
+  }
   await audit(path.split('?')[0]);
 }
 await browser.close();
