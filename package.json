@@ -18,7 +18,8 @@
     "check:a11y": "node scripts/a11y-check.mjs",
     "check:lang": "node scripts/lang-sweep.mjs",
     "check:layout": "node scripts/layout-check.mjs",
-    "check:tour": "node scripts/tour-check.mjs"
+    "check:tour": "node scripts/tour-check.mjs",
+    "check:business": "node scripts/business-check.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0"

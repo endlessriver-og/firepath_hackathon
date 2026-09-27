@@ -20,6 +20,8 @@ jobs:
       - run: npm ci
       # The judges' path through the guided tour, in the runner's own Chrome.
       - run: CHROME=$(command -v google-chrome) node scripts/tour-check.mjs https://firepath-ruddy.vercel.app
+      # A business signs up in Spanish, onboards to Home, then deletes the account.
+      - run: CHROME=$(command -v google-chrome) node scripts/business-check.mjs https://firepath-ruddy.vercel.app
       # axe-core across the main screens, Armenian Home and both maps.
       - run: CHROME=$(command -v google-chrome) node scripts/a11y-check.mjs https://firepath-ruddy.vercel.app
       # Emergency steps and the saved plan still open with the network cut; the app is installable.
