@@ -1,5 +1,6 @@
 // Walks every main screen in a translated language and lists English phrases still showing (text,
 // placeholders and screen-reader labels). Usage: node scripts/lang-sweep.mjs [base-url] [lang]
+// Use it for hy or ko: it flags Latin-script words, so for Spanish every phrase shows up and the output means nothing.
 // Expected leftovers: permit-search examples (the City catalog is English), venue names, "brace and bolt".
 import puppeteer from 'puppeteer-core';
 const b = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, protocolTimeout: 240000 });
