@@ -37,6 +37,13 @@ for (const width of [320, 390]) for (const lang of ['en', 'es', 'hy', 'ko']) {
     for (let j = 1; j < subs; j++) { await page.evaluate(j => [...document.querySelectorAll('main [role=tablist] [role=tab]')][j]?.click(), j); await sleep(900); await note(`${name} › ${j}`); }
   }
   await page.evaluate(() => document.querySelectorAll('[aria-label]')[1]?.click()); await sleep(1200); await note('Profile');
+  const profileSubs = await page.evaluate(() => document.querySelectorAll('main [role=tablist] [role=tab]').length);
+  for (let j = 1; j < profileSubs; j++) {
+    await page.evaluate(j => [...document.querySelectorAll('main [role=tablist] [role=tab]')][j]?.click(), j); await sleep(900);
+    // Open every collapsed section (privacy note, delete account, city-data cards) before measuring.
+    await page.evaluate(() => [...document.querySelectorAll('main [role=button][aria-expanded=false]')].forEach(e => e.click())); await sleep(700);
+    await note(`Profile › ${j}`);
+  }
   await page.evaluate(() => document.querySelectorAll('[aria-label]')[0]?.click()); await sleep(800); await note('Emergency');
   const unique = [...new Set(found)];
   if (unique.some(x => !x.includes('note:'))) failed = true;
