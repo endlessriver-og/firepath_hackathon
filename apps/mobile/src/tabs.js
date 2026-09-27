@@ -132,7 +132,7 @@ export function Actions({ me, onChange, sub, setSub }) {
     </Collapsible>
     {visible.length ? visible.map(task => <TaskCard key={task.id} compact task={task} number={ordered.indexOf(task) + 1} done={Boolean(me.done[task.id])} busy={busy === task.id} onToggle={toggle} />)
       : <Card><Muted>No steps match. Try another search.</Muted></Card>}
-    {!filtered && results.length > 4 && <Link onPress={() => setShowAll(!showAll)}>{showAll ? 'Show fewer steps' : `See all ${results.length} steps`}</Link>}
+    {!filtered && results.length > 4 && <Link onPress={() => setShowAll(!showAll)}>{showAll ? 'Show fewer steps' : `See all ${results.length} to do`}</Link>}
     <Collapsible title="Future City connections" summary="What additional records could add"><CityDataCallout id="permitHistory" />{me.hazards && describeHazard('wildfire', me.hazards.wildfire).tone === 'mapped' && <CityDataCallout id="brushClearance" />}</Collapsible>
     </>}
   </>;

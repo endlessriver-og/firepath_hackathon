@@ -13,13 +13,13 @@ export function buildRecommendations(profile = {}, household = {}, hazards = nul
   const tasks = buildTasks({ housing: household.housing, homeType: household.homeType, pets: pets.length > 0, assistance: Boolean(household.assistance?.trim()) || members.some(m => m.needsHelp || m.ageGroup === 'senior') }, hazards);
   if (members.some(m => m.ageGroup === 'child')) tasks.push({ id: 'kids', tag: 'Your household', title: 'Plan for your kids during school hours', description: 'Know your school\'s emergency pickup plan, add a backup adult to the release list, and practice the meeting place with each child.', url: 'https://www.ready.gov/kids', link: 'Ready.gov for families' });
   const wildfire = hazards?.wildfire && describeHazard('wildfire', hazards.wildfire).tone === 'mapped';
-  if (wildfire && household.homeType !== 'apartment') tasks.push({ id: 'zone0', tag: 'Mapped wildfire zone', title: 'Clear the first 5 feet around your home', description: 'Move firewood, mulch, dry leaves and anything that burns away from walls, decks and vents. Embers are the main way homes ignite.', url: 'https://www.readyforwildfire.org/prepare-for-wildfire/', link: 'CAL FIRE home hardening' });
+  if (wildfire && household.homeType !== 'apartment') tasks.push({ id: 'zone0', tag: 'Mapped wildfire zone', title: 'Clear the first 5 feet around your home', description: 'Move firewood, mulch and anything that burns away from walls and vents.', url: 'https://www.readyforwildfire.org/prepare-for-wildfire/', link: 'CAL FIRE home hardening' });
   if (pets.length) {
     const pet = tasks.find(task => task.id === 'pets');
     pet.description = `Plan for ${pets.map(p => `${p.count > 1 ? `${p.count} ` : ''}${p.kind}`).join(', ')}: food, water, medications, carriers or leashes, and a current photo of each.`;
   }
-  tasks.push({ id: 'drill', tag: 'Stay informed', title: 'Run a practice alert drill', description: 'Open Alerts, pick a drill and walk through the plan FirePath builds for your household. It takes two minutes.' });
-  if (profile.addressVerified !== 'mail') tasks.push({ id: 'responder-notes', tag: 'Your household', title: 'Verify your address and review your responder notes', description: 'A verified address and a short, consented note (pets, access, who may need help) is what a future City connection would read first.' });
+  tasks.push({ id: 'drill', tag: 'Stay informed', title: 'Run a practice alert drill', description: 'Alerts › Drill. Two minutes, with your household.' });
+  if (profile.addressVerified !== 'mail') tasks.push({ id: 'responder-notes', tag: 'Your household', title: 'Verify your address and review your responder notes', description: 'Confirm your address and the short note responders could see.' });
   return tasks.map(task => ({ ...task, category: CATEGORY[task.id] || 'household', points: POINTS[task.id] || (task.tag.startsWith('Mapped') ? 25 : 15) }));
 }
 
@@ -180,7 +180,7 @@ export function buildBusinessRecommendations(business = {}, hazards = null) {
   if (business.kind === 'care' || Number(business.needsHelp) > 0) steps.push({ id: 'assist', tag: 'Your team', category: 'household', points: 20, title: 'Plan how to move people who need help', description: 'Assign staff to each person who cannot evacuate alone, and keep that plan where the next shift can find it.' });
   if (hazmat.length) steps.push({ id: 'hmbp', tag: 'Hazardous materials', category: 'household', points: 30, title: 'Check whether you must file a Hazardous Materials Business Plan', description: 'Businesses at or above state reporting amounts (generally 55 gallons, 500 pounds or 200 cubic feet) file with Glendale Fire, the local agency, through the state CERS system. Keep an inventory and site map current.', url: HMBP, link: 'Glendale Fire HMBP page' });
   if (wildfire) steps.push({ id: 'zone0', tag: 'Mapped wildfire zone', category: 'wildfire', points: 25, title: 'Clear the first 5 feet around the building', description: 'Move pallets, dumpsters, mulch and anything that burns away from walls and vents.', url: 'https://www.readyforwildfire.org/prepare-for-wildfire/', link: 'CAL FIRE home hardening' });
-  if (ground) steps.push({ id: 'ground', tag: 'Mapped ground hazard', category: 'earthquake', points: 25, title: 'Ask whether the building has had a seismic evaluation', description: 'The address is inside a state seismic hazard zone. Ask the owner or a licensed professional about the building\'s evaluation and retrofit status.', url: 'https://www.conservation.ca.gov/cgs/sh/seismic-hazard-zones', link: 'State seismic hazard zones' });
+  if (ground) steps.push({ id: 'ground', tag: 'Mapped ground hazard', category: 'earthquake', points: 25, title: 'Ask whether the building has had a seismic evaluation', description: 'Inside a state seismic hazard zone. Ask the owner about retrofit status.', url: 'https://www.conservation.ca.gov/cgs/sh/seismic-hazard-zones', link: 'State seismic hazard zones' });
   return steps;
 }
 
