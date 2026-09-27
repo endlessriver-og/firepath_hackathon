@@ -41,7 +41,8 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
     publicHits.set(ip, [...recent, now()]);
   }
   // Geocode (City geocoder when available) + coordinate hazard lookup. Shared by registration and the public check.
-  async function locate(address, magicKey) {
+  // onMatched lets a caller start work that needs the matched address while the hazard lookup runs.
+  async function locate(address, magicKey, onMatched) {
     let matched = null, result;
     if (geocoder) {
       try { matched = await geocoder.resolve(address, magicKey); }
@@ -51,6 +52,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
         fail(503, 'The City address service did not respond. Try again in a moment.');
       }
       if (!matched) fail(422, 'No Glendale address matched. Check the house number and street, e.g. "613 E Broadway".');
+      onMatched?.(matched.address);
     }
     try { result = await lookupHazards(matched ? { lat: matched.lat, lon: matched.lon } : { address }); } catch { fail(422, 'That address could not be matched in Glendale. Check the street number and name.'); }
     if (!result?.location?.in_city) fail(422, 'That address is outside the Glendale pilot area.');
@@ -272,10 +274,11 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       throttle(req, 20);
       const address = text(body.address, 200);
       if (address.length < 5) fail(400, 'Enter a Glendale street address.');
-      const result = await locate(address, text(body.magicKey, 200) || undefined);
+      let pendingRecords = null;
+      const result = await locate(address, text(body.magicKey, 200) || undefined, matched => { pendingRecords = cityRecords(matched).catch(() => null); });
       const layers = Object.keys(hazardNames).map(key => ({ key, name: hazardNames[key], ...hazardSeverity(key, result.hazards[key]), source: result.hazards[key]?._meta?.source || null }));
       const preview = buildRecommendations({}, {}, result.hazards).filter(r => r.tag.startsWith('Mapped') || r.id === 'alerts').slice(0, 3).map(({ id, title, description }) => ({ id, title, description }));
-      const records = await cityRecords(result.location.matched_address || address).catch(() => null);
+      const records = await (pendingRecords || cityRecords(result.location.matched_address || address).catch(() => null));
       return { body: { records, address: result.location.matched_address || address, lat: result.location.lat, lon: result.location.lon, layers, combined: combinedIndex(result.location.lat, result.location.lon), preview, checkedAt: new Date(now()).toISOString() } };
     },
 
