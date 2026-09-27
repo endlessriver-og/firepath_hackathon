@@ -22,3 +22,6 @@ jobs:
       - run: CHROME=$(command -v google-chrome) node scripts/tour-check.mjs https://firepath-ruddy.vercel.app
       # axe-core across the main screens, Armenian Home and both maps.
       - run: CHROME=$(command -v google-chrome) node scripts/a11y-check.mjs https://firepath-ruddy.vercel.app
+      # Emergency steps and the saved plan still open with the network cut; the app is installable.
+      - run: CHROME=$(command -v google-chrome) node scripts/offline-check.mjs https://firepath-ruddy.vercel.app
+      - run: CHROME=$(command -v google-chrome) node scripts/installable-check.mjs https://firepath-ruddy.vercel.app
