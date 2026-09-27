@@ -197,11 +197,12 @@ export function Alerts({ me, onChange, sub, setSub }) {
         : feed.unavailable ? <Card><Muted>{t('mx.nwsDown')}</Muted><Link onPress={load}>{t('mx.retry')}</Link></Card>
         : feed.alerts.length === 0 ? <Card><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>{t('al.none')}</Text><Caption>{t('al.checked', { time: time(feed.checkedAt) })}</Caption><Link onPress={load}>{t('al.refresh')}</Link></Card>
         : feed.alerts.map(a => <Card key={a.id} style={{ borderColor: color.warmLine, backgroundColor: color.warmBg }}>
-            <Tag tone="warm">{a.severity} · {a.sender}</Tag>
+            <Tag tone="warm">{t(`sev.${a.severity}`) === `sev.${a.severity}` ? a.severity : t(`sev.${a.severity}`)} · {a.sender}</Tag>
             <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{t(`ev.${a.event}`) === `ev.${a.event}` ? a.event : t(`ev.${a.event}`)}</Text>
+            {lang !== 'en' && <Caption>{t('al.nwsEnglish')}</Caption>}
             <Muted style={{ marginTop: 4 }}>{a.headline}</Muted>
             {a.instruction ? <Text style={{ color: color.ink, marginTop: 8, lineHeight: 20 }}>{a.instruction}</Text> : null}
-            <Caption>Until {time(a.expires)}</Caption>
+            <Caption>{t('al.until', { time: time(a.expires) })}</Caption>
             {a.playbook && <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: color.warmLine }}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>{t('mx.alertPlan')}</Text><Playbook playbook={a.playbook} /></View>}
           </Card>)}
       <Card><Tag>{t('al.official')}</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>{t('al.cityOrders')}</Text><Muted>{t('al.cityOrdersSub')}</Muted><Link onPress={() => Linking.openURL(EVERBRIDGE)}>{t('al.signup')}</Link><Link onPress={() => Linking.openURL(KNOW_YOUR_ZONE)}>{t('al.zone')}</Link></Card>
