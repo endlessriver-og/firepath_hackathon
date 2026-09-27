@@ -17,6 +17,8 @@ import { Button, ErrorText, color } from './src/ui';
 // Onboarding progress is remembered per account, so one account's unfinished setup never leaks into another's.
 const ONBOARDING = 'firepath-onboarding-step';
 const stepKey = user => `${ONBOARDING}:${user?.email || user?.id || 'anon'}`;
+// The last account view that loaded, kept on this device so plans and emergency steps still open offline.
+const ME_CACHE = 'firepath-me-cache';
 // Bottom bar: four icon tabs around a raised Home button. Profile lives in the top bar.
 const TABS = [['Map', 'map', 'nav.map'], ['Plan', 'checkbox', 'nav.plan'], ['Home', 'home', 'nav.home'], ['Alerts', 'notifications', 'nav.alerts'], ['Permits', 'document-text', 'nav.permits']];
 Notifications.setNotificationHandler({ handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }) });
@@ -53,6 +55,7 @@ function App() {
   } // checked on the public page before sign-up
   const go = (next, withLayers, sub) => { if (withLayers) setLayers(withLayers); if (sub) setSubs(current => ({ ...current, [next]: sub })); setTab(next); };
   const [error, setError] = useState('');
+  const [offline, setOffline] = useState(false);
   const scroller = useRef(null);
   const top = () => scroller.current?.scrollTo({ y: 0, animated: false });
 
@@ -62,10 +65,14 @@ function App() {
     if (!token) return setMe(null);
     try {
       const current = await api('GET', '/api/me');
-      setMe(current);
+      setMe(current); setOffline(false);
+      AsyncStorage.setItem(ME_CACHE, JSON.stringify(current)).catch(() => {});
       setStep(current.user.demo ? 0 : Number(await AsyncStorage.getItem(stepKey(current.user)).catch(() => 0)) || 0);
     } catch (e) {
-      if (e.status === 401) { await saveSession(null); setMe(null); } else setError(e.message);
+      if (e.status === 401) { await saveSession(null); await AsyncStorage.removeItem(ME_CACHE).catch(() => {}); setMe(null); return; }
+      // No network: fall back to the saved plan rather than a dead end.
+      const cached = e.status === 0 ? await AsyncStorage.getItem(ME_CACHE).catch(() => null) : null;
+      if (cached) { setMe(JSON.parse(cached)); setOffline(true); } else setError(e.message);
     }
   }
   useEffect(() => { load(); }, []);
@@ -73,7 +80,7 @@ function App() {
   const finish = async () => { setStep(0); setTab('Home'); await AsyncStorage.removeItem(stepKey(me?.user)).catch(() => {}); };
   async function signOut() {
     await api('POST', '/api/account/logout').catch(() => {});
-    await saveSession(null); await AsyncStorage.removeItem(stepKey(me?.user)).catch(() => {});
+    await saveSession(null); await AsyncStorage.removeItem(stepKey(me?.user)).catch(() => {}); await AsyncStorage.removeItem(ME_CACHE).catch(() => {});
     setMe(null); setTab('Home');
   }
 
@@ -96,6 +103,7 @@ function App() {
         <Ionicons name={tab === 'Profile' && !emergency ? 'person' : 'person-outline'} size={20} color={tab === 'Profile' && !emergency ? '#FFF' : color.green} />
       </Pressable>
     </View>
+    {offline && <Pressable accessibilityRole="button" onPress={load} style={{ backgroundColor: '#F6E6C8', paddingVertical: 8, paddingHorizontal: 16 }}><Text style={{ color: '#6B4A0E', fontWeight: '700', fontSize: 13 }}>{t('off.banner')}</Text></Pressable>}
     <ScrollView key={emergency ? 'sos' : tab} ref={scroller} contentContainerStyle={[styles.content, tour !== null && { paddingBottom: 280 }]} keyboardShouldPersistTaps="handled">
       {emergency && <EmergencyNow me={me} onClose={() => setEmergency(false)} />}
       {!emergency && tab === 'Home' && <Home me={me} onChange={setMe} go={go} />}
