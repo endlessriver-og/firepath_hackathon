@@ -496,16 +496,17 @@ export function Resources({ compact }) {
   const { t } = useI18n();
   const [all, setAll] = useState(!compact);
   const groups = all ? resourceGroups : resourceGroups.slice(0, 1);
+  const tx = s => { const v = t(`res.${s}`); return v === `res.${s}` ? s : v; };
   return <>
     {groups.map(g => <View key={g.title} style={{ marginTop: 14 }}>
-      <Tag>{g.title}</Tag>
+      <Tag>{tx(g.title)}</Tag>
       {g.items.map(r => <Pressable key={r.url} accessibilityRole="link" onPress={() => Linking.openURL(r.url)} style={{ paddingVertical: 9, borderTopWidth: 1, borderColor: color.line }}>
         <Text style={{ color: '#086B56', fontWeight: '700' }}>{r.name} ↗</Text>
-        <Text style={{ color: color.muted, fontSize: 13, marginTop: 2 }}>{r.what}</Text>
+        <Text style={{ color: color.muted, fontSize: 13, marginTop: 2 }}>{tx(r.what)}</Text>
       </Pressable>)}
     </View>)}
     {compact && <Link onPress={() => setAll(!all)}>{all ? t('mx.showFewer') : t('mx.seeAllRes', { n: resourceGroups.reduce((n, g) => n + g.items.length, 0) })}</Link>}
-    <Caption>Links checked {RESOURCES_CHECKED}. FirePath is not affiliated with these agencies.</Caption>
+    <Caption>{t('res.checked', { date: RESOURCES_CHECKED })}</Caption>
   </>;
 }
 

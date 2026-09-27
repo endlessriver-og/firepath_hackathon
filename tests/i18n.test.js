@@ -73,3 +73,12 @@ test('every row of the "How FirePath connects" page has a sys. key in all four l
   const missing = phrases.filter(s => i18n.split(`'sys.${s}':`).length - 1 !== 4);
   assert.deepEqual(missing, []);
 });
+
+test('every official-links heading and description has a res. key in all four languages', async () => {
+  const { resourceGroups } = await import('../apps/mobile/src/resources.js');
+  const i18n = readFileSync(new URL('../apps/mobile/src/i18n.js', import.meta.url), 'utf8');
+  const esc = s => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const phrases = resourceGroups.flatMap(g => [g.title, ...g.items.map(i => i.what)]);
+  const missing = phrases.filter(s => i18n.split(`'res.${esc(s)}':`).length - 1 !== 4);
+  assert.deepEqual(missing, []);
+});
