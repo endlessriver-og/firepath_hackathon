@@ -207,7 +207,7 @@ export function Alerts({ me, onChange, sub, setSub }) {
         : error ? <ErrorText>{error}</ErrorText>
         : !feed ? <Muted style={{ marginTop: 12 }}>Checking the National Weather Service…</Muted>
         : feed.unavailable ? <Card><Muted>The National Weather Service could not be reached. Check official channels directly.</Muted><Link onPress={load}>Try again</Link></Card>
-        : feed.alerts.length === 0 ? <Card><Tag>No active NWS alert found at this check</Tag><Muted>No active National Weather Service alerts include your address as of {time(feed.checkedAt)}. This does not cover City evacuation orders. Check official channels.</Muted><Link onPress={load}>Refresh</Link></Card>
+        : feed.alerts.length === 0 ? <Card><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>No weather alerts right now</Text><Caption>National Weather Service · checked {time(feed.checkedAt)}</Caption><Link onPress={load}>Refresh</Link></Card>
         : feed.alerts.map(a => <Card key={a.id} style={{ borderColor: color.warmLine, backgroundColor: color.warmBg }}>
             <Tag tone="warm">{a.severity} · {a.sender}</Tag>
             <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{a.event}</Text>
@@ -216,9 +216,9 @@ export function Alerts({ me, onChange, sub, setSub }) {
             <Caption>Until {time(a.expires)}</Caption>
             {a.playbook && <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: color.warmLine }}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>Your plan for this alert</Text><Playbook playbook={a.playbook} /></View>}
           </Card>)}
-      <Card><Tag>Official</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>City evacuation orders come from the City</Text><Muted>Sign up for Glendale's Citizen Alert and look up your evacuation zone. FirePath does not receive City orders yet.</Muted><Link onPress={() => Linking.openURL(EVERBRIDGE)}>Sign up for City alerts ↗</Link><Link onPress={() => Linking.openURL(KNOW_YOUR_ZONE)}>Know your evacuation zone ↗</Link></Card>
+      <Card><Tag>Official</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>Get City evacuation orders</Text><Muted>FirePath doesn't receive these yet. Sign up with the City.</Muted><Link onPress={() => Linking.openURL(EVERBRIDGE)}>Sign up for City alerts ↗</Link><Link onPress={() => Linking.openURL(KNOW_YOUR_ZONE)}>Know your evacuation zone ↗</Link></Card>
       <Collapsible icon="🧩" title="What City data would add" summary="Live orders matched to your address"><CityDataCallout id="alertFeed" /><CityDataCallout id="evacuationZones" /></Collapsible>
-      <Caption>Weather alerts: National Weather Service. Not City evacuation orders. In an emergency, call 911.</Caption>
+      <Caption>In an emergency, call 911.</Caption>
     </>}
     {sub === 'drill' && <Drill me={me} onChange={onChange} />}
     {sub === 'devices' && <>
@@ -238,11 +238,10 @@ function PermitPrice({ otherAgency = false }) {
   </Text>;
 }
 function FeeGuide() {
-  return <View style={{ backgroundColor: color.goldBg, borderRadius: 12, padding: 14, marginTop: 12 }}>
-    <Text style={{ color: color.ink, fontWeight: '800' }}>What will permits cost?</Text>
-    <Text style={{ color: color.muted, lineHeight: 19, marginTop: 5 }}>The public catalog lists permit types, not a final fee for your scope. Plan for a City quote and possible plan review, inspection, venue or other-agency charges. FirePath does not calculate or collect fees.</Text>
-    <Link onPress={() => Linking.openURL(CITY_FEE_SCHEDULE)}>View Glendale's current Citywide Fee Schedule ↗</Link>
-  </View>;
+  return <Collapsible icon="💲" title="What will it cost?" summary="The City quotes each project">
+    <Muted style={{ marginTop: 8 }}>Fees depend on your project's scope. Expect a City quote, and possibly plan review, inspection or other-agency charges. FirePath does not calculate or collect fees.</Muted>
+    <Link onPress={() => Linking.openURL(CITY_FEE_SCHEDULE)}>Glendale fee schedule ↗</Link>
+  </Collapsible>;
 }
 
 // Plain-language search across the City of Glendale's full permit catalog (crawled from Glendale Permits).
@@ -281,7 +280,7 @@ function EventPlanner({ me }) {
   }
   if (!open) return <Card style={{ borderColor: color.green, borderWidth: 1.5 }}>
     <Tag>New</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '800' }}>Plan an event</Text>
-    <Muted style={{ marginTop: 4 }}>{me.user.type === 'business' ? 'Hosting a sidewalk sale, tasting, festival or filming?' : 'Block party, fair or big gathering?'} Answer six questions to get the City permits you likely need.</Muted>
+    <Muted style={{ marginTop: 4 }}>{me.user.type === 'business' ? 'Hosting a sidewalk sale, tasting, festival or filming?' : 'Block party, fair or big gathering?'} Six questions, then the permits you likely need.</Muted>
     <Button kind="outline" onPress={() => setOpen(true)}>Start</Button>
   </Card>;
   return <Card style={{ borderColor: color.green, borderWidth: 1.5 }}>
@@ -326,7 +325,7 @@ function VenuePlanner({ me }) {
   return <Card style={{ borderColor: '#2E5A88', borderWidth: 1.5 }}>
     <Tag>City event venues · example</Tag>
     <Text style={{ color: color.ink, fontSize: 17, fontWeight: '800' }}>Host at a City venue</Text>
-    <Muted style={{ marginTop: 4 }}>Pick a venue and an event type. The package lists the City permits, other agencies and a timeline.</Muted>
+    <Muted style={{ marginTop: 4 }}>Pick a venue and event type for a ready permit package.</Muted>
     <Select label="Venue" value={venueId} placeholder="Choose a venue" options={venues.map(v => [v.id, v.name])} onChange={id => { setVenueId(id); setPkg(null); }} />
     {venue && <Caption>{venue.where}. {venue.about}</Caption>}
     {venue && <>
@@ -386,12 +385,11 @@ export function Permits({ me, top, sub, setSub }) {
   </>;
   return <>
     <Title>Permits</Title>
-    <FeeGuide />
     <SubTabs value={sub || 'search'} options={[['search', 'Search'], ['events', 'Events'], ['projects', 'Projects']]} onChange={setSub} />
     {(sub || 'search') === 'search' && <PermitSearch me={me} />}
     {sub === 'events' && <><VenuePlanner me={me} /><EventPlanner me={me} /></>}
     {sub === 'projects' && <>
-    <Muted style={{ marginTop: 12 }}>Pick a project. We'll list what the City usually asks for, flag anything your address's hazard maps change, and prepare a summary to paste into the City's portal.</Muted>
+    <Muted style={{ marginTop: 12 }}>Pick a project to see what the City asks for.</Muted>
     <Select label="Your project" value={type} placeholder="Choose a project" options={(me.user.type === 'business' ? businessPermitTypes : permitTypes).map(t => [t.id, t.title])} onChange={v => { setType(v); setGuide(null); }} />
     {type && <>
       <Card><Text style={{ color: color.ink, fontWeight: '700' }}>{(me.user.type === 'business' ? businessPermitTypes : permitTypes).find(t => t.id === type)?.permit}</Text><PermitPrice /></Card>
@@ -400,6 +398,7 @@ export function Permits({ me, top, sub, setSub }) {
       <Button busy={busy} onPress={build}>Get my permit checklist</Button>
     </>}
     </>}
+    <FeeGuide />
   </>;
 }
 
