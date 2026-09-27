@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from './src/icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { api, loadSession, saveSession } from './src/api';
@@ -100,7 +100,7 @@ function App() {
       <View style={{ flex: 1 }} />
       <Pressable accessibilityRole="button" accessibilityLabel={t('a11y.emergency')} onPress={() => setEmergency(!emergency)} style={styles.sos}><Text style={styles.sosText}>{emergency ? t('head.close') : t('head.emergency')}</Text></Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={t('a11y.profile')} accessibilityState={{ selected: tab === 'Profile' }} onPress={() => { setEmergency(false); setTab('Profile'); }} style={[styles.avatar, tab === 'Profile' && !emergency && styles.avatarOn]}>
-        <Ionicons name={tab === 'Profile' && !emergency ? 'person' : 'person-outline'} size={20} color={tab === 'Profile' && !emergency ? '#FFF' : color.green} />
+        <Icon name={tab === 'Profile' && !emergency ? 'person' : 'person-outline'} size={20} color={tab === 'Profile' && !emergency ? '#FFF' : color.green} />
       </Pressable>
     </View>
     {offline && <Pressable accessibilityRole="button" onPress={load} style={{ backgroundColor: '#F6E6C8', paddingVertical: 8, paddingHorizontal: 16 }}><Text style={{ color: '#6B4A0E', fontWeight: '700', fontSize: 13 }}>{t('off.banner')}</Text></Pressable>}
@@ -120,10 +120,10 @@ function App() {
       const on = tab === item && !emergency;
       const go = () => { setEmergency(false); setTab(item); };
       if (item === 'Home') return <Pressable key={item} accessibilityRole="tab" accessibilityLabel={t('nav.home')} accessibilityState={{ selected: on }} onPress={go} style={styles.homeWrap}>
-        <View style={[styles.home, on && styles.homeOn]}><Ionicons name={on ? 'home' : 'home-outline'} size={26} color="#FFF" /></View>
+        <View style={[styles.home, on && styles.homeOn]}><Icon name={on ? 'home' : 'home-outline'} size={26} color="#FFF" /></View>
       </Pressable>;
       return <Pressable key={item} accessibilityRole="tab" accessibilityLabel={t(key)} accessibilityState={{ selected: on }} onPress={go} style={styles.navItem}>
-        <Ionicons name={on ? icon : `${icon}-outline`} size={24} color={on ? color.green : '#56655F'} />
+        <Icon name={on ? icon : `${icon}-outline`} size={24} color={on ? color.green : '#56655F'} />
         <Text numberOfLines={1} style={[styles.navText, on && { color: color.green }]}>{t(key)}</Text>
       </Pressable>;
     })}</View></View>
