@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import Svg, { Circle } from 'react-native-svg';
 import { cityData } from './city-data';
@@ -118,11 +118,14 @@ export function ProgressRing({ percent, size = 96, stroke = 10, track = '#DDE4DC
 
 // Sub-tabs at the top of a page: keeps long pages short. options: [[value, label], ...]
 export function SubTabs({ value, options, onChange }) {
-  return <View accessibilityRole="tablist" style={{ flexDirection: 'row', borderBottomWidth: 1, borderColor: '#D5DDD5', marginTop: 6, marginBottom: 4 }}>
-    {options.map(([key, label]) => { const on = value === key; return <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: on }} onPress={() => onChange(key)} style={{ flex: 1, alignItems: 'center', paddingVertical: 11, borderBottomWidth: 3, borderColor: on ? color.green : 'transparent', marginBottom: -1 }}>
-      <Text style={{ fontWeight: '800', fontSize: 14, color: on ? color.green : color.muted }}>{label}</Text>
+  // Tabs size to their labels (long single words, e.g. in Armenian, cannot wrap); long rows step down a size.
+  const chars = options.reduce((n, [, label]) => n + label.length, 0), size = chars > 30 ? 12 : chars > 24 ? 13 : 14;
+  // If they still do not fit (four tabs on a 320px phone), the row scrolls sideways instead of overlapping.
+  return <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginTop: 6, marginBottom: 4 }} contentContainerStyle={{ flexGrow: 1 }}><View accessibilityRole="tablist" style={{ flexDirection: 'row', flexGrow: 1, borderBottomWidth: 1, borderColor: '#D5DDD5' }}>
+    {options.map(([key, label]) => { const on = value === key; return <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: on }} onPress={() => onChange(key)} style={{ flexGrow: 1, flexShrink: 0, alignItems: 'center', paddingVertical: 11, paddingHorizontal: 4, borderBottomWidth: 3, borderColor: on ? color.green : 'transparent', marginBottom: -1 }}>
+      <Text style={{ fontWeight: '800', fontSize: size, textAlign: 'center', color: on ? color.green : color.muted }}>{label}</Text>
     </Pressable>; })}
-  </View>;
+  </View></ScrollView>;
 }
 
 export function ScoreBar({ value }) {
