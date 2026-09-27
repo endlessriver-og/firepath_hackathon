@@ -32,6 +32,12 @@ await page.reload({ waitUntil: 'networkidle2' }); await sleep(2000);
 await audit('home');
 for (const tab of ['Plan', 'Alerts', 'Map', 'Permits']) { await click(tab); await sleep(1500); await audit(tab.toLowerCase()); }
 await click('Emergency'); await sleep(800); await audit('emergency');
+// Same screens in a translated language: the page language must follow, and nothing new may break.
+await page.evaluate(() => localStorage.setItem('firepath-lang', 'hy'));
+await page.reload({ waitUntil: 'networkidle2' }); await sleep(2000);
+const pageLang = await page.evaluate(() => document.documentElement.lang);
+if (pageLang !== 'hy') found.set('serious · page-lang', { help: `page language is "${pageLang}" after switching to Armenian`, screens: new Set(['home (hy)']), examples: [] });
+await audit('home (hy)');
 await browser.close();
 const order = ['critical', 'serious', 'moderate', 'minor'];
 const rows = [...found.entries()].sort((a, b) => order.indexOf(a[0].split(' · ')[0]) - order.indexOf(b[0].split(' · ')[0]));
