@@ -71,7 +71,7 @@ export function CityDataCallout({ id }) {
   return <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={() => setOpen(!open)} style={s.callout}>
     <Text style={s.calloutTag}>{t('cd.tag')} {open ? '−' : '+'}</Text>
     <Text style={[s.calloutText, { fontWeight: '800' }]}>{title}</Text>
-    {open && <Text style={[s.calloutText, { marginTop: 4 }]}>With the City's {item.dataset} (for example, <Text style={{ fontStyle: 'italic' }}>{item.example}</Text>), FirePath could {item.unlocks}.</Text>}
+    {open && (t(`cdx.${id}`) !== `cdx.${id}` ? <Text style={[s.calloutText, { marginTop: 4 }]}>{t(`cdx.${id}`)}</Text> : <Text style={[s.calloutText, { marginTop: 4 }]}>With the City's {item.dataset} (for example, <Text style={{ fontStyle: 'italic' }}>{item.example}</Text>), FirePath could {item.unlocks}.</Text>)}
   </Pressable>;
 }
 

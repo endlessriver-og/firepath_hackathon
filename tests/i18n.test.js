@@ -18,9 +18,9 @@ test('every English phrase exists in Spanish, Armenian and Korean with the same 
       if (value === undefined) problems.push(`${lang} missing ${key}`);
       else if (vars(value) !== vars(en)) problems.push(`${lang} ${key}: placeholders {${vars(value)}} vs {${vars(en)}}`);
     }
-    // City-data card titles keep their English in city-data.js, so they only need a matching card.
-    for (const key of Object.keys(dict[lang])) if (!(key in dict.en) && !(key.startsWith('cd.') && key.slice(3) in cityData)) problems.push(`${lang} has ${key}, English does not`);
-    for (const id of Object.keys(cityData)) if (!(`cd.${id}` in dict[lang])) problems.push(`${lang} missing card title cd.${id}`);
+    // City-data card titles (cd.) and explanations (cdx.) keep their English in city-data.js, so they only need a matching card.
+    for (const key of Object.keys(dict[lang])) if (!(key in dict.en) && !(/^cdx?\./.test(key) && key.split('.')[1] in cityData)) problems.push(`${lang} has ${key}, English does not`);
+    for (const id of Object.keys(cityData)) for (const k of [`cd.${id}`, `cdx.${id}`]) if (!(k in dict[lang])) problems.push(`${lang} missing card text ${k}`);
   }
   assert.deepEqual(problems, []);
 });
