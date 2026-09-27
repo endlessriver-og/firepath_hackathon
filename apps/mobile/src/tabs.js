@@ -401,25 +401,26 @@ function briefRows(text) {
 }
 
 export function Profile({ me, onChange, onSignOut, sub, setSub }) {
+  const { t } = useI18n();
   const [brief, setBrief] = useState(null);
   useEffect(() => { api('GET', '/api/me/responder').then(setBrief).catch(() => setBrief(null)); }, [me]);
   const tab = sub || 'household';
   return <>
     <Title>{me.user.name}</Title>
-    <Muted>{me.user.demo ? 'Fictional demo household' : me.user.email}</Muted>
-    <SubTabs value={tab} options={[['household', me.user.type === 'business' ? 'Business' : 'Household'], ['address', 'Address'], ['responders', 'Responders'], ['settings', 'Settings']]} onChange={setSub} />
-    {tab === 'settings' && <><LanguageSettings /><Caption>More of the app will be translated over time. Emergency steps, the home screen and the public page are translated now; translations have not yet been reviewed by native speakers.</Caption></>}
+    <Muted>{me.user.demo ? t('pr.demo') : me.user.email}</Muted>
+    <SubTabs value={tab} options={[['household', t(me.user.type === 'business' ? 'pr.business' : 'pr.household')], ['address', t('pr.address')], ['responders', t('pr.responders')], ['settings', t('pr.settings')]]} onChange={setSub} />
+    {tab === 'settings' && <><LanguageSettings /><Caption>{t('pr.langNote')}</Caption></>}
     {tab === 'household' && (me.user.type === 'business' ? <><BusinessProfile me={me} onSaved={onChange} /><BusinessDetails me={me} onSaved={onChange} /></> : <HouseholdForm me={me} onSaved={onChange} />)}
     {tab === 'address' && <View style={{ marginTop: 8 }}><AddressPanel me={me} onChange={onChange} /></View>}
     {tab === 'responders' && <>
-      <Muted style={{ marginTop: 12 }}>{brief?.shareWithResponders ? 'Sharing is on for when the City connects. Nothing is sent today.' : 'Sharing is off. Nothing is sent today.'}</Muted>
-      {brief && <Card><Tag>What a responder would see</Tag><Caption style={{ marginTop: 0 }}>Draft · resident reported · not connected to dispatch</Caption>{briefRows(brief.brief).map(([label, value], i) => <View key={i} style={{ flexDirection: 'row', gap: 10, paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: color.line }}>
+      <Muted style={{ marginTop: 12 }}>{t(brief?.shareWithResponders ? 'pr.shareOn' : 'pr.shareOff')}</Muted>
+      {brief && <Card><Tag>{t('pr.preview')}</Tag><Caption style={{ marginTop: 0 }}>Draft · resident reported · not connected to dispatch</Caption>{briefRows(brief.brief).map(([label, value], i) => <View key={i} style={{ flexDirection: 'row', gap: 10, paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: color.line }}>
         <Text style={{ width: 104, color: color.muted, fontSize: 13, fontWeight: '700' }}>{label}</Text><Text selectable style={{ flex: 1, color: color.ink, fontSize: 14, lineHeight: 20 }}>{value}</Text>
       </View>)}</Card>}
       <CityDataCallout id="cad" />
     </>}
-    <Button kind="outline" onPress={onSignOut} style={{ marginTop: 28 }}>Sign out</Button>
-    <Caption>{me.user.demo ? 'Demo account on this demo server.' : 'Prototype account on this demo server.'}</Caption>
+    <Button kind="outline" onPress={onSignOut} style={{ marginTop: 28 }}>{t('pr.signout')}</Button>
+    <Caption>{t(me.user.demo ? 'pr.demoAcct' : 'pr.protoAcct')}</Caption>
   </>;
 }
 
