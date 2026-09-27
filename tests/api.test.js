@@ -544,3 +544,17 @@ test('rate limits count per route: typing addresses never uses up the sign-up al
   for (let i = 0; i < 60; i++) await call('POST', '/api/account/login', { email: `nobody${i}@example.test`, password: 'guess-guess' });
   assert.equal((await call('POST', '/api/account/login', { email: 'after-typing@example.test', password: 'correct-horse' })).status, 429, 'spraying many emails from one IP is capped');
 });
+
+test('on Vercel a made-up cf-connecting-ip header cannot dodge the rate limit', async () => {
+  const store = { data: { users: {}, sessions: {} }, save() {} };
+  const handle = createApi({ store, lookupHazards: async () => sparr, fetchAlerts: async () => [], ipHeaders: ['x-vercel-forwarded-for', 'x-real-ip'] });
+  const call = async (i) => {
+    const req = { method: 'POST', headers: { 'x-real-ip': '198.51.100.7', 'cf-connecting-ip': `203.0.113.${i}` }, async *[Symbol.asyncIterator]() { yield JSON.stringify({ address: '1613 Glencoe Way' }); } };
+    const res = { writeHead(status) { this.status = status; }, end(text) { this.body = JSON.parse(text); } };
+    await handle(req, res, new URL('/api/public/check', 'http://localhost'));
+    return res.status;
+  };
+  const statuses = []; for (let i = 0; i < 22; i++) statuses.push(await call(i));
+  assert.equal(statuses.filter(s => s === 200).length, 20);
+  assert.equal(statuses.at(-1), 429);
+});

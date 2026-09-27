@@ -30,7 +30,7 @@ function occupancy(h) {
 const playbookFor = (user, event, lang = 'en') => buildPlaybook(event, { type: user.type, household: user.household || {}, business: user.business || {}, hazards: user.hazards, done: user.done || {}, lang });
 const playbookLang = url => oneOf(url.searchParams.get('lang'), ['en', 'es', 'hy', 'ko']) || 'en';
 
-export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, combinedIndex = () => null, cityRecords = async () => null, parcelAt = async () => null, neighborhoodAt = async () => null, version = 'local', permitCatalog = { permitTypes: [], businessLicenseTypes: [] }, demoMailbox = true, now = () => Date.now() }) {
+export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, combinedIndex = () => null, cityRecords = async () => null, parcelAt = async () => null, neighborhoodAt = async () => null, version = 'local', permitCatalog = { permitTypes: [], businessLicenseTypes: [] }, demoMailbox = true, now = () => Date.now(), ipHeaders = process.env.VERCEL ? ['x-vercel-forwarded-for', 'x-real-ip'] : ['cf-connecting-ip', 'x-forwarded-for'] }) {
   const { data } = store;
   const failures = new Map(); // email -> [timestamps] of failed logins, in memory only
   const alertCache = new Map();
@@ -39,8 +39,10 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
   // Per IP and per route over 10 minutes. Each route counts only its own traffic, so typing an address
   // (many suggestions) never uses up the sign-up allowance.
   function throttle(req, limit, route) {
-    // Behind a tunnel every request comes from localhost; use the visitor IP it forwards.
-    const ip = req.headers?.['cf-connecting-ip'] || String(req.headers?.['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'local';
+    // Trust only headers the host itself sets: on Vercel its own client-IP headers (a visitor can send a
+    // cf-connecting-ip of their choosing, which would dodge every limit); behind the local tunnel, Cloudflare's.
+    const header = ipHeaders.map(h => req.headers?.[h]).find(Boolean);
+    const ip = String(header || '').split(',')[0].trim() || req.socket?.remoteAddress || 'local';
     const key = `${route}:${ip}`;
     const recent = (publicHits.get(key) || []).filter(t => t > now() - 10 * 60_000);
     if (recent.length >= limit) fail(429, 'Too many checks from this device. Try again in a few minutes.');
