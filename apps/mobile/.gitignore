@@ -40,6 +40,5 @@ yarn-error.*
 /ios
 /android
 
-# Generated starter assets and install lock
+# Generated starter assets (package-lock.json is committed so builds install the same versions)
 assets/
-package-lock.json
