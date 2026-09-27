@@ -156,7 +156,7 @@ map.on('load', async () => {
     new maplibregl.Marker({ element: el }).setLngLat(home).setPopup(new maplibregl.Popup({ offset: 14 }).setText(params.get('label') || tr('Your home'))).addTo(map);
   }
   await show(current).catch(() => { document.getElementById('legend').innerHTML = '<b>Hazard layers are not built on this server.</b> Run scripts/build-map-layers.py.'; });
-  map.flyTo({ ...view, duration: 3500, essential: true });
+  map.flyTo({ ...view, duration: 3500 }); // not essential, so it jumps straight there for reduced motion
 });
 
 
