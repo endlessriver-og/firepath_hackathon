@@ -117,7 +117,7 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
   - Pitch deck: a claude.ai Slides artifact (owner's gallery).
 - **Known gaps:**
   - The address check takes 3–4 s warm, mostly the City geocoder.
-  - Concurrent Blob writes can overwrite each other.
+  - Concurrent Blob writes: fixed in `server/blob-store.mjs` (ETag-conditional write, per-record merge on conflict; tested against the real store) but NOT yet deployed. Deploy after judging. Reads return weak ETags (`W/"…"`); conditional writes need the strong form.
   - No physical phone or ESP32 run.
 
 **Resident accounts slice (2026-09-26, evening):**
