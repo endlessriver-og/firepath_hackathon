@@ -1,13 +1,13 @@
 # FirePath — project handoff for the next builder
 
-**State:** September 26, 2026, Glendale hackathon. **Repo:** `endlessriver-og/firepath_hackathon` (private). **Owner's direction:** continue building an intuitive emergency-preparedness experience for residents and first responders. Prefer an iOS/Android resident app so phone alerts are possible. Keep the hardware optional. This document records product intent, observed code, unresolved decisions, and a practical path forward; it is not a fixed specification or evidence of City endorsement.
+**State:** September 26, 2026, Glendale hackathon. **Repo:** `endlessriver-og/firepath_hackathon` (public since the evening of 2026-09-26). **Live:** <https://firepath-ruddy.vercel.app>. **Owner's direction:** continue building an intuitive emergency-preparedness experience for residents and first responders. Prefer an iOS/Android resident app so phone alerts are possible. Keep the hardware optional. This document records product intent, observed code, unresolved decisions, and a practical path forward; it is not a fixed specification or evidence of City endorsement.
 
 ## Start here in five minutes
 
 1. Read this file, `README.md`, `docs/DEMO.md`, `docs/MOBILE_AND_SAFETY.md`, `docs/CITY_INTEGRATION.md`, and `docs/HARDWARE.md`. The older `docs/FIRE_LAB.md` is a separate experiment.
 2. Run `npm test` at repo root, then `npm start` and open `http://localhost:5173/?demo=1`. Click through resident hazards/tasks and the separate fictional responder exercise. The public sample runs without Python or credentials.
 3. Run `npm run mobile:sync`; from `apps/mobile`, run `npm install` and `npx expo start`. The native app is a prototype with a **fixed sample point**, a map pin, tasks, and a **local test notification**. Try it on a phone before assuming native behavior. `npx expo export --platform android` successfully bundled in the previous session; no on-device run was completed.
-4. For a static browser demo, `npm run build:demo` produces `dist/`. `vercel.json` is configured for a connected project, but no hosted preview/deployment was established in the previous session. Check GitHub and hosting state rather than assuming the app is live.
+4. The app is live on Vercel (project `firepath`, Endless River team). It is **not** git-linked: pushing to `main` does not deploy. Deploy with a plain export of the pushed commit (no `.git`, because the commit author email is not a team member): `rm -rf /tmp/d && mkdir /tmp/d && git archive origin/main | tar -x -C /tmp/d && cp -r .vercel /tmp/d/ && cd /tmp/d && vercel deploy --prod --yes --scope endless-river`. Then check the live bundle for a string you changed.
 5. Before implementing any feature, check whether it is demo-only, public planning data, household-sensitive data, an official live alert, or responder-restricted data. These classes have different trust and authorization requirements.
 
 ## Why this exists and how the idea changed
@@ -89,6 +89,36 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
 - Who will maintain GIS snapshots, verify guidance, handle data incidents and operate alerts after the hackathon?
 
 ## Verification, deployment and known limits
+
+**Latest state (2026-09-26, after submission):**
+
+- **Hosting:**
+  - Vercel serves the static app and maps.
+  - `api/index.mjs` is the Node API; its store is a private Blob document (`server/blob-store.mjs`, store `firepath-store`).
+  - `api/gis.py` runs HackerFund's GlendaleGisMcp; it downloads its snapshot to `/tmp` on a cold start (about 5 s).
+  - Deployment Protection (`ssoProtection`) is off for this project only, so judges can open it.
+- **New since the accounts slice:**
+  - `map3d.html`: MapLibre, 3D terrain and buildings, tap any lot.
+  - `server/parcels.mjs`: LA County parcels, without assessed values.
+  - `server/neighborhood.mjs`: City zoning (live), fire districts, school zones and historic status.
+  - Civic map layers are built by `scripts/build-map-layers.py`.
+  - `GET /api/public/point` backs the tap card.
+  - City records are keyed by the parcel number (APN) without dashes.
+- **Playtest-driven simplification:** see `docs/PLAYTEST-2026-09-26.md`.
+  - Checklist items are only the name.
+  - In-zone layers are marked ⚠ with their level.
+  - No pill selectors remain.
+  - "Needs City data" callouts collapse to one line.
+  - The tour has five stops.
+- **Tests:** 44 pass.
+- **Submission:** Devpost "Jewel City Hacks 5.0", project FirePath.
+  - The owner pressed Submit themselves.
+  - The video (<https://youtu.be/7uOw3mHqUbE>) is a crossfaded slideshow of real screens; a live screencast glitched.
+  - Pitch deck: a claude.ai Slides artifact (owner's gallery).
+- **Known gaps:**
+  - The address check takes 3–4 s warm, mostly the City geocoder.
+  - Concurrent Blob writes can overwrite each other.
+  - No physical phone or ESP32 run.
 
 **Resident accounts slice (2026-09-26, evening):**
 
