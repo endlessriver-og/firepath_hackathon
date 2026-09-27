@@ -1,5 +1,6 @@
 // The household path end to end: sign up as a resident (English), walk the three onboarding steps
-// (who lives here, address, emergency details) to Home, then delete the account through Settings.
+// (who lives here, address, emergency details) to Home, verify the address with the demo-mailbox code,
+// sign out and back in, then delete the account through Settings.
 // Creates and deletes one example.test account. Usage: node scripts/household-check.mjs [base-url]
 import puppeteer from 'puppeteer-core';
 import { randomBytes } from 'node:crypto';
@@ -36,6 +37,18 @@ try {
   step(/responders/i.test(await heading()), `step 3: "${await heading()}"`);
   await click('Finish'); await sleep(3000);
   step(/Hi Sam/.test(await text()) && /of \d+ done/.test(await text()), 'Home greets Sam and shows the checklist');
+  // Verify the address with the mailed code (the demo mailbox shows it), then sign out and back in.
+  await page.evaluate(() => document.querySelectorAll('[aria-label]')[1]?.click()); await sleep(1000);
+  await click('Address'); await sleep(1200);
+  step(await click('Mail me a code'), 'mail a verification code'); await sleep(2500);
+  const code = await page.evaluate(() => (document.body.innerText.match(/DEMO MAILBOX[\s\S]{0,200}?(\d{6})/) || [])[1]);
+  step(Boolean(code), `demo mailbox shows a code${code ? '' : ' (none found)'}`);
+  if (code) { await fill('Code from your postcard', code); await sleep(300); await click('Verify address'); await sleep(3000); }
+  step(/VERIFIED BY MAIL/.test(await text()), 'address verified');
+  step(await click('Sign out'), 'sign out'); await sleep(2500);
+  await click('Already registered? Sign in'); await sleep(1200);
+  await fill('Email', email); await fill('Password', password); await click('Sign in'); await sleep(3000);
+  step(/Hi Sam/.test(await text()), 'sign back in with the same email and password');
 } finally {
   if (created) {
     await page.evaluate(() => document.querySelectorAll('[aria-label]')[1]?.click()); await sleep(1000);
