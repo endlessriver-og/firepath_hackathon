@@ -19,7 +19,112 @@ export function alertKind(event = '') {
 
 const list = items => items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`;
 
-export function buildPlaybook(event, { type = 'resident', household = {}, business = {}, hazards = null, done = {} } = {}) {
+// Household playbook phrases. English is the source; es, hy and ko are drafts not yet reviewed by
+// native speakers. Business playbooks are English only for now.
+const RESIDENT = {
+  en: {
+    and: ' and ', level: {},
+    groups: { 'Do now': 'Do now', 'Before you leave': 'Before you leave', 'Check on': 'Check on' },
+    fireZone: z => `Your home is in a CAL FIRE ${z} zone. Park facing out and keep the car fuelled so you can leave at the first order.`,
+    bagReady: 'Put your go bag by the door and charge phones and battery packs.',
+    bagPack: 'Pack a go bag now: water, medications, documents, chargers, a flashlight.',
+    petsReady: p => `Get carriers, leashes and food ready for the ${p}.`,
+    clear: 'Move doormats, cushions, firewood and anything that burns away from the house.',
+    windPower: 'Expect possible power outages: charge devices and have flashlights ready.',
+    floodValuables: 'Move valuables and documents off the floor and know how to shut off power.',
+    debris: 'You are near a post-fire debris-flow area: be ready to leave before heavy rain.',
+    water: 'Never walk or drive through moving water. Turn around.',
+    petsInside: p => `Bring the ${p} inside.`,
+    heat: 'Plan the hottest hours: cool room, water, and the nearest place with air conditioning.',
+    heatPets: p => `Keep the ${p} inside with water; pavement burns paws.`,
+    smoke: 'Keep windows closed, run a HEPA filter or AC on recirculate, and limit time outside.',
+    helpersLeave: h => `${h} may need help leaving. Arrange the ride now and plan to go early.`,
+    helpersCheck: h => `${h} may need help in this weather. Check on them today.`,
+    kidsPickup: k => `Confirm the school pickup plan for ${k}.`,
+    kidsIndoors: k => `Keep ${k} indoors during the worst hours.`,
+    meet: (near, far) => `If you are separated: meet at ${[near, far].filter(Boolean).join(', or farther away at ')}.`,
+    meetAgree: 'Agree now where your household meets if you are separated.',
+    contact: c => `Tell ${c} your plan; out-of-area lines often work when local ones are busy.`,
+    official: 'If officials order you to leave, go right away and follow their routes. FirePath does not choose evacuation routes.',
+  },
+  es: {
+    and: ' y ', level: { 'Very High': 'Muy alto', High: 'Alto', Moderate: 'Moderado' },
+    groups: { 'Do now': 'Haga ahora', 'Before you leave': 'Antes de salir', 'Check on': 'Revise a' },
+    fireZone: z => `Su hogar está en una zona de CAL FIRE de riesgo ${z}. Estacione de frente a la salida y mantenga el tanque lleno para salir con la primera orden.`,
+    bagReady: 'Ponga su mochila de emergencia junto a la puerta y cargue teléfonos y baterías.',
+    bagPack: 'Prepare ya una mochila de emergencia: agua, medicinas, documentos, cargadores y una linterna.',
+    petsReady: p => `Tenga listos transportadoras, correas y comida para: ${p}.`,
+    clear: 'Aleje de la casa tapetes, cojines, leña y todo lo que pueda arder.',
+    windPower: 'Espere posibles apagones: cargue sus aparatos y tenga linternas a mano.',
+    floodValuables: 'Suba del piso objetos de valor y documentos, y sepa cómo cortar la electricidad.',
+    debris: 'Está cerca de una zona de flujo de escombros tras un incendio: esté listo para salir antes de lluvias fuertes.',
+    water: 'Nunca camine ni maneje por agua en movimiento. Dé la vuelta.',
+    petsInside: p => `Meta a ${p} dentro de la casa.`,
+    heat: 'Planee las horas de más calor: un cuarto fresco, agua y el lugar con aire acondicionado más cercano.',
+    heatPets: p => `Mantenga a ${p} dentro con agua; el pavimento quema las patas.`,
+    smoke: 'Mantenga las ventanas cerradas, use un filtro HEPA o el aire en recirculación y salga lo menos posible.',
+    helpersLeave: h => `${h} puede necesitar ayuda para salir. Organice ya el transporte y planee salir temprano.`,
+    helpersCheck: h => `${h} puede necesitar ayuda con este clima. Visítelos hoy.`,
+    kidsPickup: k => `Confirme el plan para recoger de la escuela a ${k}.`,
+    kidsIndoors: k => `Mantenga a ${k} adentro durante las peores horas.`,
+    meet: (near, far) => `Si se separan: reúnanse en ${[near, far].filter(Boolean).join(', o más lejos en ')}.`,
+    meetAgree: 'Acuerden ya dónde se reunirá su hogar si se separan.',
+    contact: c => `Avise su plan a ${c}; las líneas fuera del área suelen funcionar cuando las locales están saturadas.`,
+    official: 'Si las autoridades ordenan salir, váyase de inmediato y siga sus rutas. FirePath no elige rutas de evacuación.',
+  },
+  hy: {
+    and: ' և ', level: { 'Very High': 'Շատ բարձր', High: 'Բարձր', Moderate: 'Միջին' },
+    groups: { 'Do now': 'Արեք հիմա', 'Before you leave': 'Մինչ հեռանալը', 'Check on': 'Ստուգեք' },
+    fireZone: z => `Ձեր տունը գտնվում է CAL FIRE-ի «${z}» վտանգի գոտում։ Կայանեք մեքենան դեպի ելքը և պահեք բաքը լիքը, որպեսզի հեռանաք առաջին հրամանով։`,
+    bagReady: 'Դրեք արտակարգ պայուսակը դռան մոտ և լիցքավորեք հեռախոսներն ու մարտկոցները։',
+    bagPack: 'Հիմա պատրաստեք արտակարգ պայուսակ՝ ջուր, դեղեր, փաստաթղթեր, լիցքավորիչներ, լապտեր։',
+    petsReady: p => `Պատրաստ պահեք փոխադրման տուփեր, կապեր և կեր՝ ${p}։`,
+    clear: 'Տնից հեռացրեք գորգերը, բարձերը, վառելափայտը և այն ամենը, ինչ կարող է այրվել։',
+    windPower: 'Հնարավոր են հոսանքազրկումներ. լիցքավորեք սարքերը և լապտերներ պատրաստ պահեք։',
+    floodValuables: 'Թանկարժեք իրերն ու փաստաթղթերը բարձրացրեք հատակից և իմացեք, ինչպես անջատել հոսանքը։',
+    debris: 'Դուք հրդեհից հետո սելավային գոտու մոտ եք. պատրաստ եղեք հեռանալ մինչ ուժեղ անձրևը։',
+    water: 'Երբեք մի քայլեք և մի վարեք հոսող ջրի միջով։ Հետ դարձեք։',
+    petsInside: p => `Տուն բերեք՝ ${p}։`,
+    heat: 'Պլանավորեք ամենաշոգ ժամերը՝ զով սենյակ, ջուր և օդորակիչով մոտակա վայր։',
+    heatPets: p => `Պահեք ներսում ջրով՝ ${p}. մայթը այրում է թաթերը։`,
+    smoke: 'Փակ պահեք պատուհանները, միացրեք HEPA ֆիլտր կամ օդորակիչը վերաշրջանառության ռեժիմով և քիչ դուրս եկեք։',
+    helpersLeave: h => `${h}-ին կարող է օգնություն պետք լինել դուրս գալու համար։ Հիմա կազմակերպեք փոխադրումը և պլանավորեք շուտ գնալ։`,
+    helpersCheck: h => `${h}-ին այս եղանակին կարող է օգնություն պետք լինել։ Այսօր ստուգեք նրանց։`,
+    kidsPickup: k => `Հաստատեք դպրոցից վերցնելու ծրագիրը՝ ${k}։`,
+    kidsIndoors: k => `Ամենավատ ժամերին ներսում պահեք՝ ${k}։`,
+    meet: (near, far) => `Եթե բաժանվեք՝ հանդիպեք ${[near, far].filter(Boolean).join(' կամ ավելի հեռու՝ ')}։`,
+    meetAgree: 'Հիմա պայմանավորվեք, թե որտեղ կհանդիպի ձեր ընտանիքը, եթե բաժանվեք։',
+    contact: c => `Ձեր ծրագիրը հայտնեք ${c}-ին. տարածքից դուրս գծերը հաճախ աշխատում են, երբ տեղականները զբաղված են։`,
+    official: 'Եթե իշխանությունները հրամայեն հեռանալ, անմիջապես գնացեք և հետևեք նրանց երթուղիներին։ FirePath-ը չի ընտրում տարհանման երթուղիներ։',
+  },
+  ko: {
+    and: ', ', level: { 'Very High': '매우 높음', High: '높음', Moderate: '보통' },
+    groups: { 'Do now': '지금 할 일', 'Before you leave': '떠나기 전에', 'Check on': '확인할 사람' },
+    fireZone: z => `우리 집은 CAL FIRE 위험도 '${z}' 구역에 있습니다. 차를 출구 방향으로 세우고 연료를 채워 첫 명령에 바로 떠날 수 있게 하세요.`,
+    bagReady: '비상 가방을 문 옆에 두고 휴대폰과 보조 배터리를 충전하세요.',
+    bagPack: '지금 비상 가방을 싸세요: 물, 약, 서류, 충전기, 손전등.',
+    petsReady: p => `${p}을(를) 위한 이동장, 목줄, 사료를 준비하세요.`,
+    clear: '현관 매트, 쿠션, 장작 등 탈 수 있는 것을 집에서 멀리 치우세요.',
+    windPower: '정전이 있을 수 있습니다. 기기를 충전하고 손전등을 준비하세요.',
+    floodValuables: '귀중품과 서류를 바닥에서 올리고 전기 차단 방법을 알아두세요.',
+    debris: '산불 후 토석류 위험 지역 근처입니다. 큰비가 오기 전에 떠날 준비를 하세요.',
+    water: '흐르는 물을 절대 걷거나 차로 건너지 마세요. 돌아가세요.',
+    petsInside: p => `${p}을(를) 실내로 데려오세요.`,
+    heat: '가장 더운 시간을 대비하세요: 시원한 방, 물, 가장 가까운 에어컨 있는 장소.',
+    heatPets: p => `${p}을(를) 물과 함께 실내에 두세요. 포장도로는 발바닥을 데게 합니다.`,
+    smoke: '창문을 닫고 HEPA 필터나 에어컨을 내부 순환으로 켜고 외출을 줄이세요.',
+    helpersLeave: h => `${h}은(는) 대피할 때 도움이 필요할 수 있습니다. 지금 이동 수단을 마련하고 일찍 떠나세요.`,
+    helpersCheck: h => `${h}은(는) 이런 날씨에 도움이 필요할 수 있습니다. 오늘 안부를 확인하세요.`,
+    kidsPickup: k => `${k}의 하교 픽업 계획을 확인하세요.`,
+    kidsIndoors: k => `가장 심한 시간에는 ${k}을(를) 실내에 있게 하세요.`,
+    meet: (near, far) => `흩어지면: ${[near, far].filter(Boolean).join(', 더 멀리는 ')}에서 만나세요.`,
+    meetAgree: '흩어질 경우 가족이 만날 장소를 지금 정하세요.',
+    contact: c => `${c}에게 계획을 알리세요. 지역 회선이 붐빌 때도 외부 지역 회선은 연결되는 경우가 많습니다.`,
+    official: '당국이 대피를 명령하면 즉시 떠나고 안내 경로를 따르세요. FirePath는 대피 경로를 정하지 않습니다.',
+  },
+};
+
+export function buildPlaybook(event, { type = 'resident', household = {}, business = {}, hazards = null, done = {}, lang = 'en' } = {}) {
   const { kind, title } = alertKind(event);
   const inZone = key => hazards?.[key] && describeHazard(key, hazards[key]).tone === 'mapped';
   const fireZone = inZone('wildfire') ? hazards.wildfire.matches?.[0]?.attributes?.FHSZ_Description : null;
@@ -45,40 +150,43 @@ export function buildPlaybook(event, { type = 'resident', household = {}, busine
     if (b.needsHelp) add(checkOn, `Assign a staff member to each of the ${b.needsHelp} people who may need help leaving.`, 'From your business profile');
     add(leave, `Keep the key contact${b.contactName ? ` (${b.contactName})` : ''} reachable and confirm how you will reach every employee.`, done.contacts ? 'Your staff contact tree' : 'Open step: build a staff contact tree');
   } else {
-    const h = household;
+    const h = household, P = RESIDENT[lang] || RESIDENT.en;
+    const join = items => items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')}${P.and}${items.at(-1)}`;
     const pets = (h.pets || []).map(p => `${p.count > 1 ? `${p.count} ` : ''}${p.kind}`);
     const helpers = (h.members || []).filter(m => m.needsHelp || m.ageGroup === 'senior').map(m => m.name);
     const kids = (h.members || []).filter(m => m.ageGroup === 'child').map(m => m.name);
     if (['fire', 'wind'].includes(kind)) {
-      if (fireZone) add(now, `Your home is in a CAL FIRE ${fireZone} zone. Park facing out and keep the car fuelled so you can leave at the first order.`, 'Mapped wildfire zone at your address');
-      add(now, done.kit ? 'Put your go bag by the door and charge phones and battery packs.' : 'Pack a go bag now: water, medications, documents, chargers, a flashlight.', done.kit ? 'You packed a go bag' : 'Open step: go bag');
-      if (pets.length) add(now, `Get carriers, leashes and food ready for the ${list(pets)}.`, 'Pets you saved');
-      if (fireZone && !done.zone0) add(now, 'Move doormats, cushions, firewood and anything that burns away from the house.', 'Open step: clear the first 5 feet');
-      if (kind === 'wind') add(now, 'Expect possible power outages: charge devices and have flashlights ready.', 'High winds can bring down lines');
+      if (fireZone) add(now, P.fireZone(P.level[fireZone] || fireZone), 'Mapped wildfire zone at your address');
+      add(now, done.kit ? P.bagReady : P.bagPack, done.kit ? 'You packed a go bag' : 'Open step: go bag');
+      if (pets.length) add(now, P.petsReady(join(pets)), 'Pets you saved');
+      if (fireZone && !done.zone0) add(now, P.clear, 'Open step: clear the first 5 feet');
+      if (kind === 'wind') add(now, P.windPower, 'High winds can bring down lines');
     }
     if (kind === 'flood') {
-      if (floodZone) add(now, 'Move valuables and documents off the floor and know how to shut off power.', 'Mapped flood or dam inundation area');
-      if (inZone('debris_flow')) add(now, 'You are near a post-fire debris-flow area: be ready to leave before heavy rain.', 'Mapped debris-flow assessment');
-      add(now, 'Never walk or drive through moving water. Turn around.', 'Most flood deaths happen in vehicles');
-      if (pets.length) add(now, `Bring the ${list(pets)} inside.`, 'Pets you saved');
+      if (floodZone) add(now, P.floodValuables, 'Mapped flood or dam inundation area');
+      if (inZone('debris_flow')) add(now, P.debris, 'Mapped debris-flow assessment');
+      add(now, P.water, 'Most flood deaths happen in vehicles');
+      if (pets.length) add(now, P.petsInside(join(pets)), 'Pets you saved');
     }
     if (kind === 'heat') {
-      add(now, 'Plan the hottest hours: cool room, water, and the nearest place with air conditioning.', 'Heat illness risk');
-      if (pets.length) add(now, `Keep the ${list(pets)} inside with water; pavement burns paws.`, 'Pets you saved');
+      add(now, P.heat, 'Heat illness risk');
+      if (pets.length) add(now, P.heatPets(join(pets)), 'Pets you saved');
     }
-    if (kind === 'smoke') add(now, 'Keep windows closed, run a HEPA filter or AC on recirculate, and limit time outside.', 'Smoke exposure');
-    if (helpers.length) add(checkOn, `${list(helpers)} may need help${['fire', 'wind', 'flood'].includes(kind) ? ' leaving. Arrange the ride now and plan to go early' : ' in this weather. Check on them today'}.`, 'People you said may need help');
-    if (kids.length && ['fire', 'wind', 'flood'].includes(kind)) add(checkOn, `Confirm the school pickup plan for ${list(kids)}.`, 'Children in your household');
-    if (kids.length && ['heat', 'smoke'].includes(kind)) add(checkOn, `Keep ${list(kids)} indoors during the worst hours.`, 'Children are more sensitive');
-    if (h.meetNear || h.meetFar) add(leave, `If you are separated: meet at ${[h.meetNear, h.meetFar].filter(Boolean).join(', or farther away at ')}.`, 'Your saved meeting places');
-    else add(leave, 'Agree now where your household meets if you are separated.', 'No meeting places saved yet');
-    if (h.contact) add(leave, `Tell ${h.contact} your plan; out-of-area lines often work when local ones are busy.`, 'Your out-of-area contact');
+    if (kind === 'smoke') add(now, P.smoke, 'Smoke exposure');
+    if (helpers.length) add(checkOn, ['fire', 'wind', 'flood'].includes(kind) ? P.helpersLeave(join(helpers)) : P.helpersCheck(join(helpers)), 'People you said may need help');
+    if (kids.length && ['fire', 'wind', 'flood'].includes(kind)) add(checkOn, P.kidsPickup(join(kids)), 'Children in your household');
+    if (kids.length && ['heat', 'smoke'].includes(kind)) add(checkOn, P.kidsIndoors(join(kids)), 'Children are more sensitive');
+    if (h.meetNear || h.meetFar) add(leave, P.meet(h.meetNear, h.meetFar), 'Your saved meeting places');
+    else add(leave, P.meetAgree, 'No meeting places saved yet');
+    if (h.contact) add(leave, P.contact(h.contact), 'Your out-of-area contact');
   }
-  add(leave, 'If officials order you to leave, go right away and follow their routes. FirePath does not choose evacuation routes.', 'Official instructions come first');
+  const P = (type === 'business' ? null : RESIDENT[lang]) || RESIDENT.en;
+  add(leave, P.official, 'Official instructions come first');
   return {
     event, kind, title,
     mappedHere: Object.keys(hazardNames).filter(inZone).map(k => hazardNames[k]),
-    groups: [['Do now', now], ['Before you leave', leave], ['Check on', checkOn]].filter(([, steps]) => steps.length).map(([label, steps]) => ({ label, steps })),
+    // `label` stays English (the app keys on it); `title` is the display text in the account's language.
+    groups: [['Do now', now], ['Before you leave', leave], ['Check on', checkOn]].filter(([, steps]) => steps.length).map(([label, steps]) => ({ label, title: P.groups[label], steps })),
   };
 }
 
@@ -204,7 +312,10 @@ const TX = {
 };
 
 export function emergencyGuideIn(lang, id, ctx = {}) {
-  const base = emergencyGuide(id, ctx);
+  // Weather situations reuse the alert playbooks, which are translated for households.
+  const fromPlaybook = emergencySituations.find(s => s.id === id)?.event && ctx.type !== 'business' && RESIDENT[lang];
+  const base = emergencyGuide(id, fromPlaybook ? { ...ctx, lang } : ctx);
+  if (fromPlaybook) return { ...base, translated: true };
   const tx = TX[lang];
   if (!base || !tx || !tx[id]) return { ...base, translated: lang === 'en' };
   const h = ctx.household || {}, business = ctx.type === 'business';

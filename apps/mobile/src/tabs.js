@@ -122,27 +122,28 @@ export function Actions({ me, onChange, sub, setSub }) {
 
 // A playbook: grouped steps, each with the reason FirePath included it. Checks are local to this view.
 function Playbook({ playbook, drill }) {
+  const { t } = useI18n();
   const [checked, setChecked] = useState({});
   return <View>
-    {playbook.mappedHere.length > 0 && <Caption style={{ marginTop: 0 }}>Mapped at your address: {playbook.mappedHere.join(', ')}</Caption>}
+    {playbook.mappedHere.length > 0 && <Caption style={{ marginTop: 0 }}>{t('pb.mapped', { list: playbook.mappedHere.map(name => { const key = Object.keys(hazardNames).find(k => hazardNames[k] === name); return key ? t(`hz.${key}`) : name; }).join(', ') })}</Caption>}
     {playbook.groups.map(group => <View key={group.label} style={{ marginTop: 12 }}>
-      <Tag tone={group.label === 'Do now' ? 'warm' : undefined}>{group.label}</Tag>
+      <Tag tone={group.label === 'Do now' ? 'warm' : undefined}>{group.title || group.label}</Tag>
       {group.steps.map(step => { const key = `${group.label}:${step.text}`; const on = Boolean(checked[key]); return (
         <Pressable key={key} accessibilityRole="checkbox" accessibilityState={{ checked: on }} onPress={() => setChecked(current => ({ ...current, [key]: !current[key] }))} style={{ flexDirection: 'row', gap: 10, paddingVertical: 8, borderTopWidth: 1, borderColor: color.line }}>
           <Text style={{ width: 22, color: color.green, fontWeight: '900', fontSize: 16 }}>{on ? '☑' : '☐'}</Text>
           <View style={{ flex: 1 }}><Text style={{ color: color.ink, lineHeight: 20, textDecorationLine: on ? 'line-through' : 'none' }}>{step.text}</Text></View>
         </Pressable>); })}
     </View>)}
-    {drill && <Caption>{Object.keys(checked).filter(k => checked[k]).length} of {playbook.groups.reduce((n, g) => n + g.steps.length, 0)} steps walked through</Caption>}
+    {drill && <Caption>{t('pb.walked', { done: Object.keys(checked).filter(k => checked[k]).length, total: playbook.groups.reduce((n, g) => n + g.steps.length, 0) })}</Caption>}
   </View>;
 }
 
 function Drill({ me, onChange }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const device = useDevice();
   const [event, setEvent] = useState(null), [playbook, setPlaybook] = useState(null), [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const [practiced, setPracticed] = useState({});
-  const open = e => { setEvent(e); setPlaybook(null); setPracticed({}); setError(''); if (e) api('GET', `/api/me/playbook?event=${encodeURIComponent(e)}`).then(setPlaybook).catch(err => setError(err.message)); };
+  const open = e => { setEvent(e); setPlaybook(null); setPracticed({}); setError(''); if (e) api('GET', `/api/me/playbook?event=${encodeURIComponent(e)}&lang=${lang}`).then(setPlaybook).catch(err => setError(err.message)); };
   const practiceSteps = playbook ? [
     ...(playbook.groups.find(g => g.label === 'Do now')?.steps.slice(0, 2) || []),
     ...(playbook.groups.find(g => g.label === 'Check on')?.steps.slice(0, 1) || []),
@@ -173,8 +174,9 @@ function Drill({ me, onChange }) {
 export function Alerts({ me, onChange, sub, setSub }) {
   const { t } = useI18n();
   const [feed, setFeed] = useState(null), [error, setError] = useState('');
-  const load = () => { setError(''); setFeed(null); api('GET', '/api/me/alerts').then(setFeed).catch(e => setError(e.message)); };
-  useEffect(load, [me.address?.lat]);
+  const { lang } = useI18n();
+  const load = () => { setError(''); setFeed(null); api('GET', `/api/me/alerts?lang=${lang}`).then(setFeed).catch(e => setError(e.message)); };
+  useEffect(load, [me.address?.lat, lang]);
   async function testNotification() {
     try {
       const permission = await Notifications.requestPermissionsAsync();

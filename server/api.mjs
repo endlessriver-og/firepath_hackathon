@@ -25,7 +25,8 @@ function occupancy(h) {
   return `${h.people} ${h.people === 1 ? 'person' : 'people'}: ${parts.join(', ')}${help ? `; ${help} may need help leaving` : ''}`;
 }
 
-const playbookFor = (user, event) => buildPlaybook(event, { type: user.type, household: user.household || {}, business: user.business || {}, hazards: user.hazards, done: user.done || {} });
+const playbookFor = (user, event, lang = 'en') => buildPlaybook(event, { type: user.type, household: user.household || {}, business: user.business || {}, hazards: user.hazards, done: user.done || {}, lang });
+const playbookLang = url => oneOf(url.searchParams.get('lang'), ['en', 'es', 'hy', 'ko']) || 'en';
 
 export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, combinedIndex = () => null, cityRecords = async () => null, parcelAt = async () => null, neighborhoodAt = async () => null, permitCatalog = { permitTypes: [], businessLicenseTypes: [] }, demoMailbox = true, now = () => Date.now() }) {
   const { data } = store;
@@ -226,7 +227,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
         hazardsCheckedAt: new Date(now()).toISOString(),
         verification: null,
       });
-      alertCache.delete(user.id);
+      for (const key of alertCache.keys()) if (key.startsWith(`${user.id}:`)) alertCache.delete(key);
       store.save();
       return { body: view(user) };
     },
@@ -337,15 +338,15 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       return { body: { results, total: all.length } };
     },
 
-    'GET /api/me/alerts': async req => {
-      const user = session(req);
+    'GET /api/me/alerts': async (req, body, url) => {
+      const user = session(req), lang = playbookLang(url), cacheKey = `${user.id}:${lang}`;
       if (!Number.isFinite(user.lat)) return { body: { source: null, alerts: [], note: 'Register an address to see alerts for your location.' } };
-      const cached = alertCache.get(user.id);
+      const cached = alertCache.get(cacheKey);
       if (cached && cached.at > now() - 120_000) return { body: cached.value };
       let value;
-      try { value = { source: 'National Weather Service', checkedAt: new Date(now()).toISOString(), alerts: (await fetchAlerts(user.lat, user.lon)).map(a => ({ ...a, playbook: playbookFor(user, a.event) })) }; }
+      try { value = { source: 'National Weather Service', checkedAt: new Date(now()).toISOString(), alerts: (await fetchAlerts(user.lat, user.lon)).map(a => ({ ...a, playbook: playbookFor(user, a.event, lang) })) }; }
       catch { value = { source: 'National Weather Service', checkedAt: new Date(now()).toISOString(), alerts: [], unavailable: true }; }
-      alertCache.set(user.id, { at: now(), value });
+      alertCache.set(cacheKey, { at: now(), value });
       return { body: value };
     },
 
@@ -354,7 +355,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       const user = session(req);
       const event = url.searchParams.get('event');
       if (!drillEvents.includes(event)) fail(400, 'Pick one of the drill types.');
-      return { body: { drill: true, ...playbookFor(user, event) } };
+      return { body: { drill: true, ...playbookFor(user, event, playbookLang(url)) } };
     },
 
     'GET /api/permits': async (req, body, url) => ({ body: { types: (url.searchParams.get('type') === 'business' ? businessPermitTypes : permitTypes).map(({ id, title, permit }) => ({ id, title, permit })) } }),

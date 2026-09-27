@@ -207,7 +207,7 @@ test('alert playbooks personalise steps and live alerts carry them; drills are l
   assert.ok((await call('PUT', '/api/me/tasks', { id: 'drill', done: true }, token)).body.readiness.badges.find(b => b.id === 'drill').earned);
 });
 
-import { buildPlaybook } from '../src/playbooks.js';
+import { buildPlaybook, drillEvents } from '../src/playbooks.js';
 test('business playbook uses assembly point, hazmat and staff count', () => {
   const pb = buildPlaybook('Red Flag Warning', { type: 'business', business: { employees: 12, assembly: 'NE lot', hazmat: ['propane'], hazmatNote: 'rear cage', contactName: 'Sam' }, hazards: sparr.hazards });
   const text = JSON.stringify(pb);
@@ -335,7 +335,9 @@ test('translated emergency steps keep household names and fall back to English w
   assert.ok(es.steps.some(s => s.text.includes('Rosa')) && es.steps.some(s => s.text.includes('Montrose library')));
   for (const lang of ['hy', 'ko']) for (const id of ['earthquake', 'evacuate', 'power']) assert.ok(emergencyGuideIn(lang, id, ctx).steps.length >= 3, `${lang} ${id}`);
   const fire = emergencyGuideIn('es', 'fire', ctx);
-  assert.equal(fire.translated, false, 'weather situations are flagged as English-only');
+  assert.equal(fire.translated, true, 'household weather situations use the translated playbooks');
+  assert.ok(fire.steps.some(s => s.text.includes('Rosa') && s.text.includes('ayuda')));
+  assert.equal(emergencyGuideIn('es', 'fire', { type: 'business', business: {} }).translated, false, 'business playbooks are English-only');
   assert.equal(emergencyGuideIn('en', 'earthquake', ctx).translated, true);
 });
 
@@ -393,4 +395,20 @@ test('address check answers without waiting on City records, which load from the
   const records = await call('GET', '/api/public/records?address=1613%20GLENCOE%20WAY');
   assert.equal(records.body.records.totals.total, 65);
   assert.equal((await call('GET', '/api/public/records?address=x')).status, 400);
+});
+
+test('household playbooks translate every step but keep what the household typed', () => {
+  const household = { members: [{ name: 'Mia', ageGroup: 'child' }, { name: 'Rosa', ageGroup: 'senior', needsHelp: true }], pets: [{ kind: 'dogs', count: 2 }], meetNear: 'Corner mailbox', contact: 'Aunt Lucia' };
+  for (const event of drillEvents) {
+    const en = buildPlaybook(event, { household, hazards: sparr.hazards });
+    for (const lang of ['es', 'hy', 'ko']) {
+      const tr = buildPlaybook(event, { household, hazards: sparr.hazards, lang });
+      assert.deepEqual(tr.groups.map(g => g.label), en.groups.map(g => g.label), `${lang} ${event}: same groups, English keys`);
+      assert.deepEqual(tr.groups.map(g => g.steps.length), en.groups.map(g => g.steps.length), `${lang} ${event}: same number of steps`);
+      const english = new Set(en.groups.flatMap(g => g.steps.map(s => s.text)));
+      for (const step of tr.groups.flatMap(g => g.steps)) assert.ok(!english.has(step.text), `${lang} ${event}: untranslated "${step.text}"`);
+      assert.ok(tr.groups.flatMap(g => g.steps).some(s => s.text.includes('Rosa')), `${lang} ${event}: keeps names`);
+    }
+  }
+  assert.equal(buildPlaybook('Red Flag Warning', { household, lang: 'xx' }).groups[0].title, 'Do now', 'unknown languages fall back to English');
 });
