@@ -42,3 +42,7 @@ test('both map pages translate every fixed phrase they pass through tr() or trv(
     }
   }
 });
+
+test('the Emergency call button says 911 in every language', () => {
+  for (const lang of ['en', 'es', 'hy', 'ko']) assert.match(dict[lang]['em.call'], /911/, lang);
+});

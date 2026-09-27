@@ -21,7 +21,7 @@ export function EmergencyNow({ me, onClose }) {
     setSpeaking(true);
     Speech.speak(words, { language: guide.translated ? SPEECH_LANG[lang] : 'en-US', rate: 0.9, onDone: () => setSpeaking(false), onStopped: () => setSpeaking(false), onError: () => setSpeaking(false) });
   };
-  const call911 = <Pressable accessibilityRole="button" accessibilityLabel="Call 911" onPress={() => Linking.openURL('tel:911')} style={{ backgroundColor: '#B3261A', borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 14 }}>
+  const call911 = <Pressable accessibilityRole="button" accessibilityLabel={`${t('em.call')}. ${t('em.callSub')}`} onPress={() => Linking.openURL('tel:911')} style={{ backgroundColor: '#B3261A', borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 14 }}>
     <Text style={{ color: '#FFF', fontSize: 22, fontWeight: '900' }}>{t('em.call')}</Text>
     <Text style={{ color: '#FFE3DE', fontSize: 14, marginTop: 2 }}>{t('em.callSub')}</Text>
   </Pressable>;
