@@ -312,6 +312,8 @@ export function emergencyGuide(id, ctx = {}) {
 // reviewed by native speakers; the app labels them. Weather situations stay in English for now.
 const TX = {
   es: {
+    quakeBiz: point => `Lleve a todos al punto de reunión${point ? `: ${point}` : ''} y cuente a las personas.`,
+    evacBiz: point => `Lleve al personal y a los visitantes a ${point || 'su punto de reunión'}, cuente a las personas y salgan según las indicaciones.`,
     and: ' y ', dogsNote: p => `Lleve las bolsas de emergencia, medicinas, cargadores${p ? ` y a ${p}` : ''}.`,
     earthquake: [
       'Agáchese, cúbrase y agárrese hasta que pare el temblor. Espere réplicas y repita cada vez.',
@@ -330,6 +332,8 @@ const TX = {
     everyone: 'todos en su hogar',
   },
   hy: {
+    quakeBiz: point => `Բոլորին տարեք հավաքման վայր${point ? `՝ ${point}` : ''} և հաշվեք մարդկանց։`,
+    evacBiz: point => `Աշխատակիցներին և այցելուներին տարեք ${point || 'հավաքման վայր'}, հաշվեք մարդկանց, ապա հեռացեք ըստ ցուցումների։`,
     and: ' և ', dogsNote: p => `Վերցրեք արտակարգ պայուսակները, դեղերը, լիցքավորիչները${p ? ` և ${p}` : ''}։`,
     earthquake: [
       'Իջեք, ծածկվեք և ամուր բռնեք, մինչև ցնցումը դադարի։ Սպասեք կրկնվող ցնցումների և ամեն անգամ նույնն արեք։',
@@ -348,6 +352,8 @@ const TX = {
     everyone: 'ձեր տան բոլոր անդամներին',
   },
   ko: {
+    quakeBiz: point => `모두 집결 장소${point ? `(${point})` : ''}로 모이게 하고 인원을 확인하세요.`,
+    evacBiz: point => `직원과 방문객을 ${point || '집결 장소'}로 모으고 인원을 확인한 뒤 안내에 따라 떠나세요.`,
     and: ', ', dogsNote: p => `비상 가방, 약, 충전기${p ? `, 그리고 ${p}` : ''}를 챙기세요.`,
     earthquake: [
       '흔들림이 멈출 때까지 엎드리고, 머리를 감싸고, 꼭 붙잡으세요. 여진이 올 때마다 다시 반복하세요.',
@@ -380,9 +386,9 @@ export function emergencyGuideIn(lang, id, ctx = {}) {
   const T = tx[id];
   const why = base.steps.map(s => s.why);
   let steps;
-  if (id === 'earthquake') steps = [T[0], T[1], T[2], T[3](helpers.length ? helpers.join(tx.and) : tx.everyone), T[4]];
-  if (id === 'evacuate') steps = [T[0], tx.dogsNote(pets), ...helpers.map(n => T[1](n)), (h.meetNear || h.meetFar) ? T[2](h.meetFar || h.meetNear) : null, h.contact ? T[3](h.contact) : null, T[4]].filter(Boolean);
+  const point = (ctx.business || {}).assembly;
+  if (id === 'earthquake') steps = [T[0], T[1], T[2], business ? tx.quakeBiz(point) : T[3](helpers.length ? helpers.join(tx.and) : tx.everyone), T[4]];
+  if (id === 'evacuate') steps = business ? [T[0], tx.evacBiz(point), T[4]] : [T[0], tx.dogsNote(pets), ...helpers.map(n => T[1](n)), (h.meetNear || h.meetFar) ? T[2](h.meetFar || h.meetNear) : null, h.contact ? T[3](h.contact) : null, T[4]].filter(Boolean);
   if (id === 'power') steps = [T[0], T[1], ...helpers.map(n => T[2](n)), T[3], T[4]];
-  if (business) return { ...base, translated: false }; // business wording stays English for now
   return { ...base, translated: true, steps: steps.map((text, i) => ({ text, why: why[i] || '' })) };
 }

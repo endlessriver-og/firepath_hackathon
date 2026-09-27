@@ -339,6 +339,13 @@ test('translated emergency steps keep household names and fall back to English w
   assert.ok(fire.steps.some(s => s.text.includes('Rosa') && s.text.includes('ayuda')));
   assert.equal(emergencyGuideIn('es', 'fire', { type: 'business', business: { employees: 4 } }).translated, true, 'business playbooks are translated too');
   assert.equal(emergencyGuideIn('en', 'earthquake', ctx).translated, true);
+  const biz = { type: 'business', business: { assembly: 'NE lot' } };
+  for (const lang of ['es', 'hy', 'ko']) for (const id of ['earthquake', 'evacuate', 'power']) {
+    const g = emergencyGuideIn(lang, id, biz);
+    assert.equal(g.translated, true, `business ${lang} ${id}`);
+    assert.equal(g.steps.length, emergencyGuideIn('en', id, biz).steps.length, `business ${lang} ${id}: same steps as English`);
+  }
+  assert.ok(emergencyGuideIn('es', 'evacuate', biz).steps.some(s => s.text.includes('NE lot')));
 });
 
 test('tap-to-inspect: bounds check, records keyed by parcel number, and graceful partial failures', async () => {
