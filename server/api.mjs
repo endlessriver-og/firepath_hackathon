@@ -161,6 +161,18 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       return { body: { ok: true } };
     },
 
+    // Delete the account for good: the user record (household, business, address) and every session.
+    // Real accounts confirm with their password; the fictional demo household does not have one.
+    'POST /api/account/delete': async (req, body) => {
+      throttle(req, 10);
+      const user = session(req);
+      if (!user.demo && (typeof body.password !== 'string' || !checkPassword(body.password, user.passwordHash))) fail(403, 'That password is not right.');
+      for (const [key, row] of Object.entries(data.sessions)) if (row.userId === user.id) delete data.sessions[key];
+      delete data.users[user.id];
+      store.save();
+      return { body: { ok: true } };
+    },
+
     'GET /api/me': async req => ({ body: view(session(req)) }),
 
     'PUT /api/me/profile': async (req, body) => {

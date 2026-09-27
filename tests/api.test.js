@@ -480,3 +480,22 @@ test('malformed or hostile input gets a clean 4xx or a sanitised save, never a 5
   assert.ok(household.members.every(m => typeof m.name === 'string'));
   assert.equal(typeof household.contact, 'string');
 });
+
+test('an account can be deleted for good: password required, every session ends, the email is free again', async () => {
+  const { store, call } = setup();
+  const token = await signup(call, 'leaving@example.test');
+  const second = (await call('POST', '/api/account/login', { email: 'leaving@example.test', password: 'correct-horse' })).body.token;
+  await call('PUT', '/api/me/household', { members: [{ name: 'Rosa', needsHelp: true }] }, token);
+  assert.equal((await call('POST', '/api/account/delete', { password: 'wrong-password' }, token)).status, 403);
+  assert.equal((await call('POST', '/api/account/delete', {}, token)).status, 403);
+  assert.equal((await call('GET', '/api/me', null, token)).status, 200, 'a wrong password deletes nothing');
+  assert.equal((await call('POST', '/api/account/delete', { password: 'correct-horse' }, token)).status, 200);
+  assert.equal((await call('GET', '/api/me', null, token)).status, 401);
+  assert.equal((await call('GET', '/api/me', null, second)).status, 401, 'other devices are signed out too');
+  assert.ok(!Object.values(store.data.users).some(u => u.email === 'leaving@example.test'));
+  assert.equal(Object.keys(store.data.sessions).length, 0);
+  assert.equal((await call('POST', '/api/account/signup', { email: 'leaving@example.test', password: 'correct-horse', name: 'Back Again' })).status, 201);
+  const demo = (await call('POST', '/api/demo/start')).body.token;
+  assert.equal((await call('POST', '/api/account/delete', {}, demo)).status, 200, 'the demo household needs no password');
+  assert.equal((await call('POST', '/api/account/delete', {})).status, 401);
+});

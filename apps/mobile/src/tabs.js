@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, Text, View, useWindowDimensions } from 'react-native';
+import { Alert, Linking, Platform, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Notifications from 'expo-notifications';
 import { api, apiBase } from './api';
@@ -407,6 +407,24 @@ function briefRows(text) {
   });
 }
 
+// Delete the account for good. Real accounts confirm with their password; a confirm dialog comes first.
+function DeleteAccount({ me, onDeleted }) {
+  const { t } = useI18n();
+  const [password, setPassword] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const confirm = () => new Promise(resolve => Platform.OS === 'web' ? resolve(window.confirm(t('del.confirm'))) : Alert.alert(t('del.title'), t('del.confirm'), [{ text: t('pz.close'), style: 'cancel', onPress: () => resolve(false) }, { text: t('del.btn'), style: 'destructive', onPress: () => resolve(true) }]));
+  async function remove() {
+    setError('');
+    if (!(await confirm())) return;
+    setBusy(true);
+    try { await api('POST', '/api/account/delete', me.user.demo ? {} : { password }); await onDeleted(); } catch (e) { setError(e.message); setBusy(false); }
+  }
+  return <Collapsible icon="🗑" title={t('del.title')} summary={t('del.sub')}>
+    {!me.user.demo && <Field label={t('del.password')} value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password" />}
+    <ErrorText>{error}</ErrorText>
+    <Button style={{ backgroundColor: "#B3261A" }} busy={busy} disabled={!me.user.demo && password.length < 8} onPress={remove}>{t('del.btn')}</Button>
+  </Collapsible>;
+}
+
 export function Profile({ me, onChange, onSignOut, sub, setSub }) {
   const { t } = useI18n();
   const [brief, setBrief] = useState(null);
@@ -416,7 +434,7 @@ export function Profile({ me, onChange, onSignOut, sub, setSub }) {
     <Title>{me.user.name}</Title>
     <Muted>{me.user.demo ? t('pr.demo') : me.user.email}</Muted>
     <SubTabs value={tab} options={[['household', t(me.user.type === 'business' ? 'pr.business' : 'pr.household')], ['address', t('pr.address')], ['responders', t('pr.responders')], ['settings', t('pr.settings')]]} onChange={setSub} />
-    {tab === 'settings' && <><LanguageSettings /><Caption>{t('pr.langNote')}</Caption></>}
+    {tab === 'settings' && <><LanguageSettings /><Caption>{t('pr.langNote')}</Caption><DeleteAccount me={me} onDeleted={onSignOut} /></>}
     {tab === 'household' && (me.user.type === 'business' ? <><BusinessProfile me={me} onSaved={onChange} /><BusinessDetails me={me} onSaved={onChange} /></> : <HouseholdForm me={me} onSaved={onChange} />)}
     {tab === 'address' && <View style={{ marginTop: 8 }}><AddressPanel me={me} onChange={onChange} /></View>}
     {tab === 'responders' && <>
