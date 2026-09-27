@@ -1,4 +1,4 @@
-// Accessibility audit with axe-core in Chrome across the main screens (signed out and as the demo
+// Accessibility audit with axe-core in Chrome across the main screens and every Profile tab (signed out and as the demo
 // household) and both map pages. Usage: node scripts/a11y-check.mjs [base-url]. Exits 1 on serious or critical issues.
 import puppeteer from 'puppeteer-core';
 import { readFileSync } from 'node:fs';
@@ -34,6 +34,16 @@ await page.evaluate(t => localStorage.setItem('firepath-session', t), token);
 await page.reload({ waitUntil: 'networkidle2' }); await sleep(2000);
 await audit('home');
 for (const tab of ['Plan', 'Alerts', 'Map', 'Permits']) { await click(tab); await sleep(1500); await audit(tab.toLowerCase()); }
+// Profile and each of its tabs, with collapsed sections (password change, account deletion) opened.
+await click('Profile and settings'); await sleep(1500);
+const profileTabs = await page.evaluate(() => [...document.querySelectorAll('main [role=tab]')].map(e => e.innerText.trim()));
+if (profileTabs.length < 3) found.set('serious · check-coverage', { help: `only ${profileTabs.length} profile tabs found; the Profile audit did not run`, screens: new Set(['profile']), examples: [] });
+console.log(`info  audited profile tabs: ${profileTabs.join(', ')}`);
+for (const [i, name] of profileTabs.entries()) {
+  await page.evaluate(i => document.querySelectorAll('main [role=tab]')[i].click(), i); await sleep(1200);
+  await page.evaluate(() => document.querySelectorAll('[aria-expanded=false]').forEach(e => e.click())); await sleep(500);
+  await audit(`profile: ${name.toLowerCase()}`);
+}
 await click('Emergency'); await sleep(800); await audit('emergency');
 // Same screens in a translated language: the page language must follow, and nothing new may break.
 await page.evaluate(() => localStorage.setItem('firepath-lang', 'hy'));
