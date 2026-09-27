@@ -13,7 +13,8 @@ Review in this order. The first two are safety text; a mistake there could chang
    - leaving at once when officials order it, and the note that FirePath does not choose evacuation routes.
 2. **Printable sheets.** Plan tab → Print. Open each sheet (earthquake, wildfire "Ready, Set, Go!", go-bag, utility shutoffs, and the household plan). These end up on refrigerators, so check them as carefully as the emergency steps. The wildfire sheet uses CAL FIRE's three-step names; if your community knows official translations, use those.
 3. **Drills and alert plans.** Alerts tab → Drill → pick an alert. These are longer and less urgent.
-4. **Everything else.** Sign-up, the checklist, maps, permits and settings.
+4. **Permit guidance.** Permits tab: a project's "what you'll usually need" list and notes, the event planner's explanations, and a City-venue package's timeline. Official permit and agency names stay English on purpose.
+5. **Everything else.** Sign-up, the checklist, maps and settings.
 
 ## Words the builder was unsure about
 
@@ -27,10 +28,6 @@ These are known weak spots. Please check them first.
 | Spanish | Alerts | "Alerta de Bandera Roja" | The National Weather Service's Spanish name for a Red Flag Warning may differ. |
 | Korean | Wildfire sheet title | "준비, 대비, 대피!" | Is there an established translation of "Ready, Set, Go!"? |
 | All | Hazard names | "Liquefaction", "Debris flow", "Dam inundation" | Are these the terms residents would recognize? |
-
-## Not translated yet
-
-On the Permits tab, the event planner's explanations (why each permit applies) and the City-venue timelines are still English. The project guide (what you'll usually need, notes for your address) is translated and worth reviewing. The screens around it are translated. If you review, you can skip these for now.
 
 ## What stays in English on purpose
 
