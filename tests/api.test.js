@@ -558,3 +558,15 @@ test('on Vercel a made-up cf-connecting-ip header cannot dodge the rate limit', 
   assert.equal(statuses.filter(s => s === 200).length, 20);
   assert.equal(statuses.at(-1), 429);
 });
+
+test('permit guide notes and needs come back in the requested language; permit names stay official English', async () => {
+  const { call } = setup();
+  const token = (await call('POST', '/api/demo/start')).body.token;
+  const en = (await call('POST', '/api/me/permits/guide', { type: 'reroof' }, token)).body;
+  const es = (await call('POST', '/api/me/permits/guide', { type: 'reroof', lang: 'es' }, token)).body;
+  assert.equal(es.permit, en.permit, 'the official permit name is not translated');
+  assert.equal(es.summary, en.summary, 'the summary for City staff stays English');
+  assert.deepEqual(es.needs, ['Material del techo y su ficha de producto', 'Superficie del techo', 'Licencia del contratista']);
+  assert.ok(es.notes.every(n => !/Your address|The City/.test(n)), 'no English notes');
+  assert.deepEqual((await call('POST', '/api/me/permits/guide', { type: 'reroof', lang: 'xx' }, token)).body.notes, en.notes, 'unknown language falls back to English');
+});

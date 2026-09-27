@@ -396,7 +396,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
 
     'POST /api/me/permits/guide': async (req, body) => {
       const user = session(req);
-      const guide = permitGuide(text(body.type, 20), { profile: user, household: user.type === 'business' ? user.business : user.household, hazards: user.hazards, description: text(body.description, 500) });
+      const guide = permitGuide(text(body.type, 20), { profile: user, household: user.type === 'business' ? user.business : user.household, hazards: user.hazards, description: text(body.description, 500), lang: text(body.lang, 5) || 'en' });
       if (!guide) fail(404, 'Unknown project type.');
       return { body: guide };
     },

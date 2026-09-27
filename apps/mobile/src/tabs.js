@@ -356,13 +356,13 @@ function VenuePlanner({ me }) {
 }
 
 export function Permits({ me, top, sub, setSub }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [type, setType] = useState(null), [description, setDescription] = useState('');
   const projectTitle = (id, fallback) => { const k = `${me.user.type === 'business' ? 'ptb' : 'ptr'}.${id}`; return t(k) === k ? fallback : t(k); };
   const [guide, setGuide] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false);
   async function build() {
     setBusy(true); setError(''); setCopied(false);
-    try { setGuide(await api('POST', '/api/me/permits/guide', { type, description })); top?.(); } catch (e) { setError(e.message); } finally { setBusy(false); }
+    try { setGuide(await api('POST', '/api/me/permits/guide', { type, description, lang })); top?.(); } catch (e) { setError(e.message); } finally { setBusy(false); }
   }
   if (guide) return <>
     <Link style={{ marginTop: 0 }} onPress={() => { setGuide(null); top?.(); }}>{t('pz.allProjects')}</Link>
