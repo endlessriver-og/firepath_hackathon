@@ -102,7 +102,7 @@ export function Landing({ onSignedIn, onEmergency, onWalkthrough }) {
 
   return <>
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: color.green, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#FFF', fontSize: 22, fontWeight: '900' }}>↗</Text></View><Text style={{ flex: 1, fontSize: 19, fontWeight: '900', letterSpacing: 1, color: color.green }}>FirePath</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Language and text size" onPress={() => setLanguageOpen(!languageOpen)}><Text style={{ color: color.green, fontSize: 20, padding: 5 }}>🌐</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('mx.langSize')} onPress={() => setLanguageOpen(!languageOpen)}><Text style={{ color: color.green, fontSize: 20, padding: 5 }}>🌐</Text></Pressable>
       <Text accessibilityRole="button" onPress={onEmergency} style={{ backgroundColor: '#B3261A', color: '#FFF', fontWeight: '800', fontSize: 12, borderRadius: 10, paddingHorizontal: 11, paddingVertical: 8, overflow: 'hidden' }}>{t('head.emergency')}</Text></View>
     {languageOpen && <LanguageBar />}
     <Text role="heading" aria-level={1} style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 22 }}>{t('land.title')}</Text>

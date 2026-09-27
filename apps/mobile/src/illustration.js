@@ -1,12 +1,14 @@
 import React from 'react';
 import { View } from 'react-native';
+import { useI18n } from './i18n';
 import Svg, { Circle, Defs, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 // Hero art: the Verdugo foothills behind a Glendale street, one home pinned with a mapped-zone ring.
 // Pure SVG in the app palette, so it renders the same on web, iOS and Android with no image files.
 export function HeroIllustration({ height = 170, dark }) {
+  const { t } = useI18n();
   const sky = dark ? ['#17372E', '#24584A'] : ['#FBF3E4', '#E6EFE9'];
-  return <View accessibilityRole="image" accessibilityLabel="Illustration: homes below the Verdugo foothills, with one home pinned on a map" style={{ height, borderRadius: 20, overflow: 'hidden', marginTop: 16 }}>
+  return <View accessibilityRole="image" accessibilityLabel={t('mx.heroAlt')} style={{ height, borderRadius: 20, overflow: 'hidden', marginTop: 16 }}>
     <Svg width="100%" height="100%" viewBox="0 0 360 170" preserveAspectRatio="xMidYMid slice">
       <Defs>
         <LinearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><Stop offset="0" stopColor={sky[0]} /><Stop offset="1" stopColor={sky[1]} /></LinearGradient>

@@ -153,12 +153,12 @@ function Drill({ me, onChange }) {
   const finish = async () => { setBusy(true); try { if (!me.done.drill) onChange(await api('PUT', '/api/me/tasks', { id: 'drill', done: true })); setEvent(null); setPlaybook(null); setPracticed({}); } catch (err) { setError(err.message); } finally { setBusy(false); } };
   return <>
     <Muted>{t('dr.intro')}</Muted>
-    <Select label={t('dr.pick')} placeholder={t('dr.choose')} value={event} options={drillEvents.map(e => [e, e.replace(' Warning', '').replace(' Alert', '')])} onChange={open} />
+    <Select label={t('dr.pick')} placeholder={t('dr.choose')} value={event} options={drillEvents.map(e => [e, t(`evs.${e}`)])} onChange={open} />
     <ErrorText>{error}</ErrorText>
     {event && !playbook && !error && <Muted style={{ marginTop: 10 }}>{t('dr.preparing')}</Muted>}
     {playbook && <Card style={{ borderColor: '#E3C98E', backgroundColor: '#FFFCF3' }}>
       <Text style={{ alignSelf: 'flex-start', backgroundColor: color.goldBg, color: color.gold, fontWeight: '900', fontSize: 11, letterSpacing: 1, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>{t('dr.badge')}</Text>
-      <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{t('dr.imagine', { event })}</Text>
+      <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{t('dr.imagine', { event: t(`ev.${event}`) === `ev.${event}` ? event : t(`ev.${event}`) })}</Text>
       <Muted style={{ marginTop: 6 }}>{t('dr.practice', { n: practiceSteps.length })}</Muted>
       {practiceSteps.map((step, i) => <Pressable key={`${i}-${step.text}`} accessibilityRole="checkbox" aria-checked={Boolean(Boolean(practiced[i]))} accessibilityState={{ checked: Boolean(practiced[i]) }} onPress={() => setPracticed(current => ({ ...current, [i]: !current[i] }))} style={{ flexDirection: 'row', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderColor: color.line }}>
         <Text style={{ width: 26, fontSize: 18, color: color.green, fontWeight: '900' }}>{practiced[i] ? '☑' : '☐'}</Text><Text style={{ flex: 1, color: color.ink, lineHeight: 21 }}>{step.text}</Text>
@@ -196,14 +196,14 @@ export function Alerts({ me, onChange, sub, setSub }) {
         : feed.alerts.length === 0 ? <Card><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>{t('al.none')}</Text><Caption>{t('al.checked', { time: time(feed.checkedAt) })}</Caption><Link onPress={load}>{t('al.refresh')}</Link></Card>
         : feed.alerts.map(a => <Card key={a.id} style={{ borderColor: color.warmLine, backgroundColor: color.warmBg }}>
             <Tag tone="warm">{a.severity} · {a.sender}</Tag>
-            <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{a.event}</Text>
+            <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{t(`ev.${a.event}`) === `ev.${a.event}` ? a.event : t(`ev.${a.event}`)}</Text>
             <Muted style={{ marginTop: 4 }}>{a.headline}</Muted>
             {a.instruction ? <Text style={{ color: color.ink, marginTop: 8, lineHeight: 20 }}>{a.instruction}</Text> : null}
             <Caption>Until {time(a.expires)}</Caption>
             {a.playbook && <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: color.warmLine }}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>{t('mx.alertPlan')}</Text><Playbook playbook={a.playbook} /></View>}
           </Card>)}
       <Card><Tag>{t('al.official')}</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>{t('al.cityOrders')}</Text><Muted>{t('al.cityOrdersSub')}</Muted><Link onPress={() => Linking.openURL(EVERBRIDGE)}>{t('al.signup')}</Link><Link onPress={() => Linking.openURL(KNOW_YOUR_ZONE)}>{t('al.zone')}</Link></Card>
-      <Collapsible icon="🧩" title="What City data would add" summary="Live orders matched to your address"><CityDataCallout id="alertFeed" /><CityDataCallout id="evacuationZones" /></Collapsible>
+      <Collapsible icon="🧩" title={t('mx.cityAdds')} summary={t('mx.liveOrders')}><CityDataCallout id="alertFeed" /><CityDataCallout id="evacuationZones" /></Collapsible>
       <Caption>{t('al.call911')}</Caption>
     </>}
     {sub === 'drill' && <Drill me={me} onChange={onChange} />}
