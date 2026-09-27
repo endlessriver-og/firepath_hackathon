@@ -15,7 +15,8 @@ FirePath is an independent Glendale pilot prototype, not a City of Glendale serv
 3. Tap **Explore the app → Begin** for a five-stop tour with a fictional household: Dana, her daughter, her mother Rosa who uses a walker, and two dogs. No sign-up.
 4. On the **Map** tab, switch the view to **3D terrain** and tap any building or lot for its parcel, zoning, fire station district, nearby schools and permit history.
 5. Tap **Emergency** (top right, on every screen) and pick a situation.
-6. Add it to your phone's home screen (Share → Add to Home Screen, or Chrome's Install). It opens full-screen, and once opened it keeps working offline: your saved plan and the Emergency steps still load with no signal.
+6. Tap 🌐 (or Profile → Settings) to switch to Español, Հայերեն or 한국어. The app, both maps and the printable sheets follow; City permit names stay in English. The translations are drafts that native speakers have not yet reviewed.
+7. Add it to your phone's home screen (Share → Add to Home Screen, or Chrome's Install). It opens full-screen, and once opened it keeps working offline: your saved plan and the Emergency steps still load with no signal.
 
 ## What is real, and what is not
 
@@ -34,6 +35,7 @@ A point outside a mapped zone is labelled "Outside", never "safe". Weather alert
 - **Hazard lookups:** [HackerFund's GlendaleGisMcp](https://github.com/HackerFund/GlendaleGisMcp) (GPL-3.0-or-later, installed as a dependency, not vendored). Locally it runs as a Python process (`scripts/lookup-hazards.py`); on Vercel as a Python function (`api/gis.py`) that downloads and verifies the published snapshot on a cold start.
 - **Maps:** `map.html` (Leaflet, a graded ~150 m "combined planning index" with a tap-to-explain breakdown and illustrative weights, not an official risk score) and `map3d.html` (MapLibre with OpenFreeMap buildings and AWS terrain tiles). Layers are built by `scripts/build-map-layers.py` into `data/map-layers/`, which is committed.
 - **Permits:** `scripts/crawl-permits.mjs` read the City's public permit catalog (75 permit types, 195 work classes, 1,652 business license types) into `src/glendale-permits.json` for plain-language search. FirePath never submits to the City portal and never invents a fee.
+- **Languages:** English, Spanish, Armenian and Korean (`apps/mobile/src/i18n.js`, plus phrase tables in `src/playbooks.js`, `src/printouts.js`, the two map pages and the parcel notes). `tests/i18n.test.js` fails if any phrase is missing a language; `npm run check:lang` walks the live screens for leftover English. City permit names, the copyable project summary and the responder brief stay English on purpose.
 - **Parcels and neighborhood:** `server/parcels.mjs` (LA County Assessor; assessed values are deliberately not requested) and `server/neighborhood.mjs` (City zoning, historic districts, fire districts, school zones).
 
 ## Run it locally
