@@ -39,15 +39,17 @@ test('an unknown language falls back to English', () => {
   assert.equal(standardPrintout('earthquake', { lang: 'xx' }), standardPrintout('earthquake'));
 });
 
-test('Drop, Cover, Hold On uses the same words in the app and on the printed sheet', async () => {
+test('Drop, Cover, Hold On uses the same words in the app, the printed sheet and the business poster', async () => {
   const { emergencyGuideIn } = await import('../src/playbooks.js');
-  const words = { en: [/drop/i, /cover/i, /hold on/i], es: [/agáchese/i, /cúbrase/i, /sujétese/i], hy: [/կռաց/i, /ծածկվ/i, /բռնվ/i], ko: [/엎드리/, /붙잡/] };
+  const words = { en: [/drop/i, /cover/i, /hold on/i], es: [/agáchese/i, /cúbrase/i, /sujétese/i], hy: [/կռաց/i, /ծածկվ/i, /բռնվ/i], ko: [/엎드리/, /감싸/, /붙잡/] };
   for (const [lang, patterns] of Object.entries(words)) {
     const app = emergencyGuideIn(lang, 'earthquake', { type: 'resident' }).steps[0].text;
     const sheet = standardPrintout('earthquake', { lang });
+    const poster = businessPosterPrintout({ business: { name: 'Test' } }, { lang });
     for (const p of patterns) {
       assert.match(app, p, `${lang} app step lacks ${p}`);
       assert.match(sheet, p, `${lang} printed sheet lacks ${p}`);
+      assert.match(poster, p, `${lang} business poster lacks ${p}`);
     }
   }
 });
