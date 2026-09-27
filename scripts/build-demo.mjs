@@ -1,4 +1,5 @@
-import { cp, mkdir, rm } from 'node:fs/promises';
+import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
@@ -8,6 +9,11 @@ await rm(output, { recursive: true, force: true });
 await mkdir(resolve(output, 'src'), { recursive: true });
 for (const file of ['index.html', 'fire-lab.html', 'map.html', 'map3d.html']) await cp(resolve(root, file), resolve(output, file));
 for (const file of ['app.js', 'prep.css', 'preparedness.js', 'responder.js', 'workspace.js', 'sample-location.json', 'fire-lab.js', 'model.js', 'style.css']) await cp(resolve(root, 'src', file), resolve(output, 'src', file));
+// Every page's tab icon (browsers ask for /favicon.ico), and the fire lab's optional voice-clip index
+// (clips come from scripts/generate-audio.mjs; without them the lab falls back to the browser's voice).
+await cp(resolve(root, 'assets/pwa/favicon.ico'), resolve(output, 'favicon.ico'));
+await mkdir(resolve(output, 'audio'), { recursive: true });
+await writeFile(resolve(output, 'audio/manifest.json'), existsSync(resolve(root, 'audio/manifest.json')) ? await readFile(resolve(root, 'audio/manifest.json')) : '{}');
 // Public planning layers for the maps (built by scripts/build-map-layers.py; committed).
 await cp(resolve(root, 'data/map-layers'), resolve(output, 'map-layers'), { recursive: true });
 // The resident phone app as a static web export at /app/. Requires `npm install` in apps/mobile first.
