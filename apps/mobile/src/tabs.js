@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Notifications from 'expo-notifications';
 import { api, apiBase } from './api';
@@ -65,7 +65,8 @@ function HomeRecords({ me }) {
 }
 
 export function Home({ me, onChange, go }) {
-  const { t } = useI18n();
+  const { t, scale } = useI18n();
+  const narrow = useWindowDimensions().width / scale < 275; // stack the progress card on small phones with large text
   const r = me.readiness;
   const [busy, toggle] = useToggle(me, onChange);
   const place = me.hazards ? summarizePlace(me.hazards) : null;
@@ -74,7 +75,7 @@ export function Home({ me, onChange, go }) {
   const done = ordered.length - ordered.filter(t => !me.done[t.id]).length, total = ordered.length;
   return <>
     <Text role="heading" aria-level={1} style={s.muted}>{me.user.type === 'business' ? me.business?.name || 'Your business' : t('home.hi', { name: me.user.name.split(' ')[0] })}</Text>
-    <Card style={{ marginTop: 8, backgroundColor: color.green, borderColor: color.green, flexDirection: 'row', alignItems: 'center', gap: 18 }}>
+    <Card style={{ marginTop: 8, backgroundColor: color.green, borderColor: color.green, flexDirection: narrow ? 'column' : 'row', alignItems: narrow ? 'flex-start' : 'center', gap: narrow ? 12 : 18 }}>
       <ProgressRing percent={r.score} track="#3E7667" fill="#F2C46D" textColor="#FFF" />
       <View style={{ flex: 1 }}>
         <Text style={{ color: '#CFE3DA', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>{t('home.checklist')}</Text>

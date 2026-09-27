@@ -1,15 +1,15 @@
 // Small-phone layout check: every main screen in every language at 320 and 390 px wide. Reports a page
 // that scrolls sideways, sub-tab labels that overlap or outgrow their tab, and tab rows that have to
-// scroll. Usage: node scripts/layout-check.mjs [base-url]. Exits 1 on overflow or overlap.
+// scroll. Usage: node scripts/layout-check.mjs [base-url] [text-scale: 1, 1.2 or 1.4]. Exits 1 on overflow or overlap.
 // Expected: the Armenian Profile tab row scrolls at 320 px (its labels need ~290 px at 11 px).
 import puppeteer from 'puppeteer-core';
-const BASE = process.argv[2] || 'https://firepath-ruddy.vercel.app';
+const BASE = process.argv[2] || 'https://firepath-ruddy.vercel.app', SCALE = process.argv[3] || '1';
 const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, protocolTimeout: 240000 });
 const page = await browser.newPage(); page.setDefaultTimeout(180000);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const inspect = () => page.evaluate(() => {
   const out = [];
-  if (document.documentElement.scrollWidth > innerWidth + 1) out.push(`page scrolls sideways (${document.documentElement.scrollWidth}px)`);
+  if (document.documentElement.scrollWidth > document.documentElement.clientWidth + 1 || document.body.scrollWidth > document.body.clientWidth + 1) out.push(`page scrolls sideways (${document.documentElement.scrollWidth}px)`);
   for (const list of document.querySelectorAll('main [role=tablist]')) {
     const tabs = [...list.querySelectorAll('[role=tab]')];
     const boxes = tabs.map(t => { const r = document.createRange(); r.selectNodeContents(t); return r.getBoundingClientRect(); });
@@ -25,7 +25,7 @@ const token = await page.evaluate(async () => (await (await fetch('/api/demo/sta
 let failed = false;
 for (const width of [320, 390]) for (const lang of ['en', 'es', 'hy', 'ko']) {
   await page.setViewport({ width, height: 700 });
-  await page.evaluate((t, l) => { localStorage.clear(); localStorage.setItem('firepath-session', t); localStorage.setItem('firepath-lang', l); }, token, lang);
+  await page.evaluate((t, l, s) => { localStorage.clear(); localStorage.setItem('firepath-session', t); localStorage.setItem('firepath-lang', l); localStorage.setItem('firepath-scale', s); }, token, lang, SCALE);
   await page.reload({ waitUntil: 'networkidle2' }); await sleep(1500);
   const found = [];
   const note = async where => found.push(...(await inspect()).map(x => `${where}: ${x}`));
@@ -40,7 +40,7 @@ for (const width of [320, 390]) for (const lang of ['en', 'es', 'hy', 'ko']) {
   await page.evaluate(() => document.querySelectorAll('[aria-label]')[0]?.click()); await sleep(800); await note('Emergency');
   const unique = [...new Set(found)];
   if (unique.some(x => !x.includes('note:'))) failed = true;
-  console.log(`${width} ${lang}  ${unique.length ? '\n    ' + unique.join('\n    ') : 'ok'}`);
+  console.log(`${width} ${lang} ×${SCALE}  ${unique.length ? '\n    ' + unique.join('\n    ') : 'ok'}`);
 }
 await browser.close();
 process.exitCode = failed ? 1 : 0;

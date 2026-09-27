@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Icon } from './src/icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -28,7 +28,9 @@ export default function Root() {
 }
 
 function App() {
-  const { t } = useI18n();
+  const { t, scale } = useI18n();
+  // Large text on a small phone leaves under ~275 px: drop the wordmark so Emergency and Profile stay on screen.
+  const narrow = useWindowDimensions().width / scale < 275;
   const [me, setMe] = useState(undefined); // undefined = loading, null = signed out
   const [step, setStep] = useState(0);     // onboarding step 1-3, 0 = done
   const [tab, setTab] = useState('Home');
@@ -96,7 +98,7 @@ function App() {
 
   return <SafeAreaView style={styles.safe}><StatusBar style="dark" />
     <View role="banner" style={styles.header}>
-      <View style={{ alignItems: 'flex-start', gap: 3 }}><Text style={styles.brand}>FIREPATH</Text><Text numberOfLines={1} style={styles.pill}>{business ? t('head.business') : t('head.pilot')}</Text></View>
+      {!narrow && <View style={{ alignItems: 'flex-start', gap: 3 }}><Text style={styles.brand}>FIREPATH</Text><Text numberOfLines={1} style={styles.pill}>{business ? t('head.business') : t('head.pilot')}</Text></View>}
       <View style={{ flex: 1 }} />
       <Pressable accessibilityRole="button" accessibilityLabel={t('a11y.emergency')} onPress={() => setEmergency(!emergency)} style={styles.sos}><Text style={styles.sosText}>{emergency ? t('head.close') : t('head.emergency')}</Text></Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={t('a11y.profile')} accessibilityState={{ selected: tab === 'Profile' }} onPress={() => { setEmergency(false); setTab('Profile'); }} style={[styles.avatar, tab === 'Profile' && !emergency && styles.avatarOn]}>
