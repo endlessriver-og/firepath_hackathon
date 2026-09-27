@@ -1,105 +1,60 @@
-# FirePath — preparedness for where you live
+# FirePath — your place, your plan
 
-**New builder:** start with [the complete handoff packet](docs/CLAUDE_HANDOFF.md) for product context, repo map, known limits and next steps.
+**Try it:** <https://firepath-ruddy.vercel.app> · **Demo video:** <https://youtu.be/7uOw3mHqUbE> · Built at Jewel City Hacks 5.0 (Glendale, September 2026)
 
-A Glendale pilot that combines mapped local hazards, a household checklist, official alert links, a local-only draft of useful property facts for possible responder workflows, and an optional USB in-home notification demo. The old fire-routing experiment remains at `/fire-lab.html`.
+FirePath turns a Glendale address into a practical preparedness plan for the people who live or work there. Anyone can check an address against seven state and federal hazard maps and the City's own permit and inspection records, with no account. A household or business then adds who is actually there (someone who needs help leaving, kids, pets, hazardous materials) and gets a short numbered checklist, drills for real alert types, one-tap emergency steps and a printable plan.
 
-The main interface has two modes: **Resident** for location, actions and optional property notes; **Responder demo** for a short, source-labeled exercise brief. The responder view includes three fictional scenarios, a compact field layout, and a switch between fictional sample facts and the current browser's saved draft. It has no login, City access, dispatch connection or live calls.
+FirePath is an independent Glendale pilot prototype, not a City of Glendale service. It never replaces official instructions, certified alarms or 911.
 
-## Quick start
+## Try it in two minutes
 
-Requires Node.js 20+ and Python 3.11+. The browser UI needs no JavaScript dependencies.
+1. Open <https://firepath-ruddy.vercel.app> on a phone.
+2. Type an address, for example `1613 Glencoe Way`, and pick the City's suggestion. You see which of the seven maps include it (⚠ with the map's level), and the City's permit and inspection records for that parcel.
+3. Tap **Explore the app → Begin** for a five-stop tour with a fictional household: Dana, her daughter, her mother Rosa who uses a walker, and two dogs. No sign-up.
+4. On the **Map** tab, switch the view to **3D terrain** and tap any building or lot for its parcel, zoning, fire station district, nearby schools and permit history.
+5. Tap **Emergency** (top right, on every screen) and pick a situation.
+
+## What is real, and what is not
+
+| Status | What |
+| --- | --- |
+| **Live** | City of Glendale address geocoder and public permit/inspection search (Tyler EnerGov). Seven hazard maps: CAL FIRE wildfire severity, FEMA flood, CGS fault, liquefaction and landslide, DWR dam inundation, USGS debris flow (a dated planning snapshot, not live incidents). National Weather Service alerts. LA County Assessor parcels. City zoning, fire station districts, historic districts and schools. |
+| **Prototype** | Accounts (scrypt-hashed passwords, hashed bearer sessions) and mailed-code address verification (the code shows in a labelled demo mailbox). The responder brief: residents consent and preview it, but nothing is sent to 911, dispatch or the City. The ESP32 in-home alert: firmware compiles and its protocol is tested; it has not yet run on a physical board. City venue packages are labelled examples. |
+| **Needs the City** | Evacuation zones and the City alert feed, a dispatch (CAD) test connection, parcel ownership records. The app shows each as a "Needs City data" card naming the dataset and what it would unlock (`src/city-data.js`). |
+
+A point outside a mapped zone is labelled "Outside", never "safe". Weather alerts are not City evacuation orders. FirePath never chooses an evacuation route.
+
+## How it is built
+
+- **Resident app:** Expo / React Native (`apps/mobile`), exported to the web at `/app/`; also bundles for iOS and Android.
+- **API:** Node (`server/api.mjs`), dependency-injected so the same routes run locally (`server.mjs`) and as a Vercel function (`api/index.mjs`). On Vercel the account store is one private Vercel Blob document (`server/blob-store.mjs`).
+- **Hazard lookups:** [HackerFund's GlendaleGisMcp](https://github.com/HackerFund/GlendaleGisMcp) (GPL-3.0-or-later, installed as a dependency, not vendored). Locally it runs as a Python process (`scripts/lookup-hazards.py`); on Vercel as a Python function (`api/gis.py`) that downloads and verifies the published snapshot on a cold start.
+- **Maps:** `map.html` (Leaflet, a graded ~150 m "combined planning index" with a tap-to-explain breakdown and illustrative weights, not an official risk score) and `map3d.html` (MapLibre with OpenFreeMap buildings and AWS terrain tiles). Layers are built by `scripts/build-map-layers.py` into `data/map-layers/`, which is committed.
+- **Permits:** `scripts/crawl-permits.mjs` read the City's public permit catalog (75 permit types, 195 work classes, 1,652 business license types) into `src/glendale-permits.json` for plain-language search. FirePath never submits to the City portal and never invents a fee.
+- **Parcels and neighborhood:** `server/parcels.mjs` (LA County Assessor; assessed values are deliberately not requested) and `server/neighborhood.mjs` (City zoning, historic districts, fire districts, school zones).
+
+## Run it locally
+
+Requires Node.js 20+ and Python 3.11+.
 
 ```bash
-npm start
-```
-
-Open <http://localhost:5173>. The general checklist, household preferences, official links, and simulated hardware alert work immediately. Run `npm test` for the deterministic models.
-
-Click **Try sample location** to see seven real map-layer results for a public point near Glendale Civic Center without installing Python GIS dependencies. The sample is a dated snapshot and is explicitly labeled as an example, not your address.
-
-For a quick walkthrough, open <http://localhost:5173/?demo=1> or click **Take the 90-second tour**. It moves through the public sample map point, a preparedness checklist, and a separate fictional responder exercise. The walkthrough needs no GIS package, credentials or hardware.
-
-The walkthrough can also run on a simple static host: serve `index.html` and `src/` from the project root, for example `python3 -m http.server 5173`, then open `/?demo=1`. On a static host the sample works, but personal address lookups require the Node server and separately installed Glendale GIS package. The app explains that limitation if someone attempts one.
-
-For a shareable static preview, run `cd apps/mobile && npm install` once, then `npm run build:demo`, and publish the generated `dist/` directory. It contains the browser workspace at `/` and the resident phone app as a static web export at `/app/`, so a judge can open `/app/` on any phone without Expo Go. The included `vercel.json` sets that build command and output directory for a Vercel project connected to this repository. Only the frontend, the dated public sample snapshot and the separate fire-routing lab enter `dist/`; no local household data or Python backend files are included. This is a demo deployment path, not a live-alert or address-lookup service.
-
-## Enable real mapped hazard lookup
-
-The seven Glendale map layers come from [HackerFund's Glendale GIS MCP project](https://github.com/HackerFund/GlendaleGisMcp). It is a separate GPL-3.0-or-later package; this repository invokes it as a Python process and does not vendor its source. Install the package and download its map snapshot using its current README instructions, in a Python environment of your choice. For example, with `uv` installed:
-
-```bash
+cd apps/mobile && npm install && cd ../..
 uv venv .venv
 uv pip install --python .venv/bin/python 'git+https://github.com/HackerFund/GlendaleGisMcp.git'
 .venv/bin/glendale-gis-mcp --fetch-snapshot
+npm run build:demo
 GLENDALE_GIS_PYTHON=.venv/bin/python npm start
 ```
 
-A street-address submission is sent to the **City of Glendale geocoder** for matching, then evaluated against the local snapshot. The app stores household choices and the entered address in that browser's `localStorage`; it does not store address lookups on the Node server. You can instead enter latitude/longitude to avoid geocoding; the map check then stays local. If the package, snapshot, or geocoder is unavailable, no result is fabricated. Check the source date in each card. Currently the location lookup is **Glendale only**.
+Open <http://localhost:5173/app/>. Run `npm test` for the test suite. Local accounts are stored in `data/firepath-dev.json` (gitignored).
 
-Mapped layers: CAL FIRE wildfire severity, FEMA flood zones, fault, liquefaction, landslide, dam inundation, and debris flow. The map is for planning, not live incident detection or a site-specific assessment. A FEMA Zone X polygon is not a Special Flood Hazard Area; the checklist adds flood coverage review only when the mapped `SFHA_TF` flag is true or dam inundation is mapped. A point outside a mapped zone does not mean safe.
+**Deploying to Vercel:** `vercel.json` builds the web app and maps and deploys both API functions. The deployment needs a private Blob store connected to the project (`BLOB_READ_WRITE_TOKEN`).
 
-## What works
+## More
 
-- Household form for Glendale location, owner/renter, home type, pets and assistance; preferences and checklist completion persist locally.
-- Address or coordinate lookup against the GIS snapshot, with source links and dates and a candid status for each layer.
-- Deterministic tasks for a go bag, contact plan, official notifications and earthquake readiness, plus relevant mapped-zone and household tasks.
-- Official [Glendale Everbridge](https://www.glendaleca.gov/Everbridge), [Know Your Zone](https://www.glendaleca.gov/government/departments/fire-department/other-links/emergency-preparedness-response/know-your-zone), and City emergency-alert links. The app does **not** receive live city alerts or send push notifications.
-- Simulated alert over Web Serial to an ESP32; Arduino-framework C++ sketch with MQ-2 input on GPIO33 and buzzer output on GPIO12. See [hardware wiring and limits](docs/HARDWARE.md).
-- Resident-entered property facts and an illustrative, copyable responder text summary. This draft stays in browser storage; it does not connect to dispatch, CAD, or City systems. See the [City integration hypothesis](docs/CITY_INTEGRATION.md).
-- A dedicated responder **training** workspace that orders facts by exercise type and separates fictional facts, resident-entered notes, mapped planning layers and unavailable City systems. The field readout strips the side panels for a quick scan.
-- Earlier simulated interior fire routing at `/fire-lab.html`, with its own [bridge protocol](docs/FIRE_LAB.md).
+- [Handoff and repo map](docs/CLAUDE_HANDOFF.md) · [Demo script](docs/DEMO.md) · [Playtest notes](docs/PLAYTEST-2026-09-26.md)
+- [City integration questions](docs/CITY_INTEGRATION.md) · [Mobile and safety plan](docs/MOBILE_AND_SAFETY.md)
+- [In-home device wiring and limits](docs/HARDWARE.md) · [Earlier fire-routing lab](docs/FIRE_LAB.md) (`/fire-lab.html`)
+- The original browser workspace with a responder training view is at `/classic`.
 
-## Next build targets
-
-1. Validate geocoding and source-layer interpretations with Glendale emergency staff; add household-review language and accessibility support.
-2. Work with City GIS and dispatch teams on verified parcel matching, permit-zone definitions, floor-plan access, consent, provenance, and a short CAD-compatible summary. See [open City questions](docs/CITY_INTEGRATION.md).
-3. Integrate a licensed, authenticated real alert feed with alert ID, source, geography, expiry, cancellation and test modes. Do not turn GIS hazard polygons into an active incident feed.
-4. Add opt-in browser/mobile notification delivery and verified address-to-alert-area matching.
-5. Finish enclosure, power budget, modem/carrier selection and measured SIM800L/SIM7600 failover; pilot the in-home buzzer as a companion to certified alarms and official channels.
-6. Expand beyond Glendale only after adding verified jurisdiction-specific sources and rules.
-
-The prototype never replaces emergency instructions, certified alarms, or professional advice about insurance or property risk. Call 911 for immediate danger.
-
-### Resident accounts (current main flow)
-
-The resident app (`apps/mobile`, which runs on web, iOS and Android) now has these parts:
-- **Onboarding:** account creation, then household members, a Glendale address and responder details.
-- **Checklist:** a numbered, prioritized checklist with a completion ring (no points or badges).
-- **Recommendations:** search and filters.
-- **Alerts:** live National Weather Service alerts for the address.
-- **Permits:** a guide that links to the City's portal.
-
-The API is `server/api.mjs`, mounted in `server.mjs`. Accounts use scrypt password hashes and hashed bearer sessions, stored in a local JSON file (`data/`, gitignored). This is prototype storage, not production identity.
-
-Address verification has two levels:
-- **Matched:** the City geocoder confirms the address.
-- **Verified by mail:** the resident enters a 6-digit code. In production it would be printed on a mailed postcard; locally it appears in a labeled demo mailbox. Set `FIREPATH_DEMO_MAILBOX=0` to hide it.
-
-**Permit catalog.** `scripts/crawl-permits.mjs` saves the City's public permit catalog to `src/glendale-permits.json`: every permit type and work class, plus business license types, crawled read-only and unauthenticated from the Glendale Permits (Tyler EnerGov Self Service) public search API. `src/permit-catalog.js` provides plain-language search and an event planner. FirePath never submits to the City portal.
-
-**Businesses** use the same accounts, address verification, map and alerts, and add their own profile (occupancy, hazardous materials, sprinklers, key contact, assembly point), checklist, permits (HMBP, fire operational permit, tenant improvement, sign, MEP) and responder brief. See `buildBusinessRecommendations` in `src/readiness.js` and `PUT /api/me/business`.
-
-The **Map** tab embeds `map.html`, a Leaflet map of real GIS zone polygons built by `npm run map:build` (`scripts/build-map-layers.py`: clip to the city boundary, simplify, and tag each polygon with its source's severity class). Wildfire and flood use the classes their sources define. Fault, liquefaction, landslide and dam inundation are shown as "in mapped zone" with no invented score. The default **Combined** view is a graded ~150 m grid, like a heatmap: each square sums the mapped layers with illustrative weights, wildfire decays outward from High/Very High zones, and tapping any spot shows its breakdown. It is labeled a FirePath planning index, not an official risk score.
-
-Neither level proves ownership. Nothing is sent to 911, dispatch or the City. Wherever City data is missing, a "Needs City data" callout (`src/city-data.js`) names the dataset and the capability it would unlock. See `docs/DEMO.md` for the walkthrough.
-
-### Native resident prototype
-
-`apps/mobile` is an Expo iOS/Android resident prototype. A first-run flow picks one of two **public sample places** and asks four household questions (own/rent, house/apartment, pets, someone who needs help leaving). The app then has four tabs:
-
-- **Home:** what the maps show at the sample point, in plain language; the next three steps, ranked with official alerts first, then mapped-zone steps, then household steps; and the City alert signup.
-- **Plan:** the full checklist with progress, plus the household's meeting places and out-of-area contact.
-- **Map:** the pin plus a source-dated card for each layer.
-- **Alerts:** official links and a clearly labeled **local test** notification.
-
-Profile, checklist progress and meeting places persist on the device through AsyncStorage. The app has no address entry, GPS, account, backend, live alert delivery or route guidance. The web responder experience remains a training prototype; see [mobile safety and integration plan](docs/MOBILE_AND_SAFETY.md).
-
-The two samples are dated GIS snapshots of public places, not homes:
-
-- **Sparr Heights Community Center** (1613 Glencoe Way, a City facility; `src/sample-sparr-heights.json`) is inside a mapped CAL FIRE *High* zone and a state liquefaction zone.
-- **The Civic Center map point** (`src/sample-location.json`) is inside none of the seven layers.
-
-Regenerate a sample with `.venv/bin/python scripts/lookup-hazards.py` after installing the GIS package.
-
-Run `npm run mobile:sync` after changing the shared sample or task engine, then `cd apps/mobile && npm install && npx expo start`. Use a phone with Expo Go for the local demo, or press `w` (or run `npx expo start --web`) to open the same app in a browser. On web the native map is replaced by an OpenStreetMap embed of the sample point. Android and iOS production maps and remote push require platform configuration and development builds.
+Call 911 for immediate danger.
