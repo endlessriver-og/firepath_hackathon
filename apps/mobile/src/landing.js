@@ -21,7 +21,7 @@ export function CityRecords({ records, initiallyOpen, loading }) {
   if (!records) return null;
   const t = records.totals;
   return <Collapsible icon="🗂" initiallyOpen={initiallyOpen} title={tr('rec.title', { n: t.total })} summary={`${tr('rec.summary', { p: t.permits, i: t.inspections })}${records.parcel ? ` · parcel ${records.parcel}` : ''}`}>
-    {records.recent.length === 0 ? <Muted style={{ marginTop: 10 }}>No permits or inspections found for this exact address.</Muted> : records.recent.slice(0, 5).map(r => <View key={`${r.kind}-${r.number}`} style={{ paddingVertical: 8, borderBottomWidth: 1, borderColor: color.line }}>
+    {records.recent.length === 0 ? <Muted style={{ marginTop: 10 }}>{tr('mx.noRecords')}</Muted> : records.recent.slice(0, 5).map(r => <View key={`${r.kind}-${r.number}`} style={{ paddingVertical: 8, borderBottomWidth: 1, borderColor: color.line }}>
       <Text style={{ color: color.ink, fontWeight: '700' }}>{r.type}</Text>
       <Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{r.kind} {r.number} · {r.status || 'status unknown'}{r.date ? ` · ${r.date}` : ''}</Text>
     </View>)}
@@ -80,7 +80,7 @@ export function AddressCheck({ onResult, onRegister, showPreview = false, label 
         <Text style={{ flex: 1, color: color.ink, fontWeight: '700' }}>{t(`hz.${l.key}`)}</Text><Text style={{ color: inZone(l) ? color.warm : color.muted, fontWeight: '800', fontSize: 12 }}>{inZone(l) ? `⚠ ${typeof l.level === 'number' ? (t(`lvl.${l.label}`) === `lvl.${l.label}` ? l.label : t(`lvl.${l.label}`)) : t('map.inZone')}` : l.level === 'unknown' ? `? ${t('map.unavailable')}` : `○ ${t('map.outside')}`}</Text>
       </View>)}
       <Collapsible title={t('res.sources')} summary={t('res.sourcesSub')}>{result.layers.map(l => hazardViewers[l.key] && <Link key={l.key} onPress={() => Linking.openURL(hazardViewers[l.key].url)}>{l.name}: official map ↗</Link>)}<Caption>Checked {result.checkedAt.slice(0, 10)}. Planning maps, not live incidents or evacuation orders.</Caption></Collapsible>
-      {showPreview && result.preview.length > 0 && <><Section>Where to start</Section>
+      {showPreview && result.preview.length > 0 && <><Section>{t('mx.whereStart')}</Section>
         {result.preview.map(p => <Card key={p.id}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{p.title}</Text><Muted style={{ marginTop: 4 }}>{p.description}</Muted></Card>)}</>}
     </>}
   </>;

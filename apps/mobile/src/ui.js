@@ -77,7 +77,8 @@ export function CityDataCallout({ id }) {
 
 // Severity dots: filled up to the level on sources with a 3-step scale; binary layers get a pill instead.
 export function SeverityBadge({ severity }) {
-  if (severity.level === 'zone') return <Text style={{ alignSelf: 'flex-start', backgroundColor: '#F3E3EF', color: '#7B2D8B', fontWeight: '800', fontSize: 11, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, overflow: 'hidden' }}>IN MAPPED ZONE</Text>;
+  const { t } = useI18n();
+  if (severity.level === 'zone') return <Text style={{ alignSelf: 'flex-start', backgroundColor: '#F3E3EF', color: '#7B2D8B', fontWeight: '800', fontSize: 11, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, overflow: 'hidden' }}>{t('mx.inZone')}</Text>;
   if (typeof severity.level !== 'number') return <Text style={{ color: color.muted, fontWeight: '700', fontSize: 12 }}>{severity.label}</Text>;
   return <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} accessibilityLabel={`Severity ${severity.label}`}>
     {[1, 2, 3].map(n => <View key={n} style={{ width: 16, height: 8, borderRadius: 4, backgroundColor: n <= severity.level ? ['#F5CF4A', '#E8641E', '#B3261A'][severity.level - 1] : '#E0E5DE' }} />)}
@@ -103,8 +104,9 @@ export function Collapsible({ title, summary, icon, initiallyOpen = false, child
 
 // Completion ring: percent done, drawn with SVG so it looks the same on web, iOS and Android.
 export function ProgressRing({ percent, size = 96, stroke = 10, track = '#DDE4DC', fill = color.green, label, textColor = color.ink }) {
+  const { t } = useI18n();
   const r = (size - stroke) / 2, c = 2 * Math.PI * r, p = Math.min(Math.max(percent, 0), 100);
-  return <View accessibilityRole="progressbar" accessibilityLabel={`${p}% complete`} style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+  return <View accessibilityRole="progressbar" accessibilityLabel={t('mx.complete', { p })} style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
     <Svg width={size} height={size} style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}>
       <Circle cx={size / 2} cy={size / 2} r={r} stroke={track} strokeWidth={stroke} fill="none" />
       <Circle cx={size / 2} cy={size / 2} r={r} stroke={fill} strokeWidth={stroke} fill="none" strokeLinecap="round" strokeDasharray={`${c} ${c}`} strokeDashoffset={c * (1 - p / 100)} />

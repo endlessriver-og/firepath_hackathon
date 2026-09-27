@@ -84,7 +84,7 @@ function App() {
     setMe(null); setTab('Home');
   }
 
-  if (error) return <Shell><ErrorText>{error}</ErrorText><Button onPress={load}>Try again</Button></Shell>;
+  if (error) return <Shell><ErrorText>{error}</ErrorText><Button onPress={load}>{t('mx.retry')}</Button></Shell>;
   if (me === undefined) return <Shell><ActivityIndicator color={color.green} style={{ marginTop: 80 }} /></Shell>;
   if (emergency && (me === null || step)) return <Shell><EmergencyNow me={me} onClose={() => setEmergency(false)} /></Shell>;
   if (me === null && hub) return <Shell><WalkthroughHub onStart={startTour} onClose={() => setHub(false)} busy={demoBusy} error={demoError} /></Shell>;

@@ -47,14 +47,14 @@ const shortTaskTitles = {
 };
 
 export function TaskCard({ task, number, done, busy, onToggle }) {
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
   const title = taskTitles[lang]?.[task.id] || shortTaskTitles[task.id] || task.title;
   return <View style={[s.card, { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }]}>
-    <Pressable accessibilityRole="checkbox" aria-checked={Boolean(done)} accessibilityState={{ checked: done, busy }} accessibilityLabel={task.title} onPress={() => onToggle(task.id)} style={{ width: 30, height: 30, borderRadius: 9, borderWidth: 2, borderColor: color.green, backgroundColor: done ? color.green : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+    <Pressable accessibilityRole="checkbox" aria-checked={Boolean(done)} accessibilityState={{ checked: done, busy }} accessibilityLabel={title} onPress={() => onToggle(task.id)} style={{ width: 30, height: 30, borderRadius: 9, borderWidth: 2, borderColor: color.green, backgroundColor: done ? color.green : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ color: '#FFF', fontWeight: '900' }}>{busy ? '…' : done ? '✓' : ''}</Text>
     </Pressable>
     <Text style={{ flex: 1, color: done ? color.muted : color.ink, fontSize: 16, fontWeight: done ? '600' : '700', textDecorationLine: done ? 'line-through' : 'none' }}>{number ? `${number}. ` : ''}{title}</Text>
-    {task.url ? <Pressable accessibilityRole="link" accessibilityLabel={`${task.link || 'Official guidance'} for ${task.title}`} onPress={() => Linking.openURL(task.url)} hitSlop={10}><Text style={{ color: color.green, fontSize: 18, fontWeight: '800' }}>↗</Text></Pressable> : null}
+    {task.url ? <Pressable accessibilityRole="link" accessibilityLabel={t('mx.guideFor', { title })} onPress={() => Linking.openURL(task.url)} hitSlop={10}><Text style={{ color: color.green, fontSize: 18, fontWeight: '800' }}>↗</Text></Pressable> : null}
   </View>;
 }
 
@@ -93,11 +93,11 @@ export function Home({ me, onChange, go }) {
         <Caption>{me.address.text} · {me.address.verified === 'mail' ? 'verified' : 'not yet verified'}</Caption>
         {place.mapped.map(item => <View key={item.key} style={{ flexDirection: 'row', gap: 12, backgroundColor: color.warmBg, borderWidth: 1, borderColor: color.warmLine, borderRadius: 14, padding: 14, marginTop: 8 }}>
           <Text style={{ color: color.warm }}>●</Text><View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{item.name} · {hazardSeverity(item.key, me.hazards[item.key]).label}</Text><Muted>{item.label}</Muted><Link style={{ marginTop: 6 }} onPress={() => go('Map', [item.key])}>See zones on the map →</Link></View></View>)}
-        <Caption>Outside a mapped zone does not mean no risk. These are planning maps, not live incidents.</Caption>
+        <Caption>{t('mx.outsideNote')}</Caption>
       </Collapsible>
       <HomeRecords me={me} />
     </>}
-    <Collapsible icon="🔗" title={t('home.connects')} summary={t(me.user.type === 'business' ? 'home.connectsSite' : 'home.connectsHome')}><Muted style={{ marginTop: 10 }}>See every data source and device, and which are live today.</Muted><Link onPress={() => go('Systems')}>Open →</Link></Collapsible>
+    <Collapsible icon="🔗" title={t('home.connects')} summary={t(me.user.type === 'business' ? 'home.connectsSite' : 'home.connectsHome')}><Muted style={{ marginTop: 10 }}>{t('mx.sources')}</Muted><Link onPress={() => go('Systems')}>{t('mx.open')}</Link></Collapsible>
     <Collapsible icon="📚" title={t('home.resources')} summary={t('home.resourcesSub')}><Resources compact /></Collapsible>
     <Pressable accessibilityRole="button" onPress={() => go('Walkthrough')} style={{ marginTop: 16, backgroundColor: '#12302A', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <Text style={{ fontSize: 20, color: '#F2C46D' }}>▶</Text>
@@ -192,7 +192,7 @@ export function Alerts({ me, onChange, sub, setSub }) {
       {!me.address ? <Muted style={{ marginTop: 12 }}>{t('al.noAddress')}</Muted>
         : error ? <ErrorText>{error}</ErrorText>
         : !feed ? <Muted style={{ marginTop: 12 }}>{t('al.checking')}</Muted>
-        : feed.unavailable ? <Card><Muted>The National Weather Service could not be reached. Check official channels directly.</Muted><Link onPress={load}>Try again</Link></Card>
+        : feed.unavailable ? <Card><Muted>{t('mx.nwsDown')}</Muted><Link onPress={load}>{t('mx.retry')}</Link></Card>
         : feed.alerts.length === 0 ? <Card><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>{t('al.none')}</Text><Caption>{t('al.checked', { time: time(feed.checkedAt) })}</Caption><Link onPress={load}>{t('al.refresh')}</Link></Card>
         : feed.alerts.map(a => <Card key={a.id} style={{ borderColor: color.warmLine, backgroundColor: color.warmBg }}>
             <Tag tone="warm">{a.severity} · {a.sender}</Tag>
@@ -200,7 +200,7 @@ export function Alerts({ me, onChange, sub, setSub }) {
             <Muted style={{ marginTop: 4 }}>{a.headline}</Muted>
             {a.instruction ? <Text style={{ color: color.ink, marginTop: 8, lineHeight: 20 }}>{a.instruction}</Text> : null}
             <Caption>Until {time(a.expires)}</Caption>
-            {a.playbook && <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: color.warmLine }}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>Your plan for this alert</Text><Playbook playbook={a.playbook} /></View>}
+            {a.playbook && <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: color.warmLine }}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>{t('mx.alertPlan')}</Text><Playbook playbook={a.playbook} /></View>}
           </Card>)}
       <Card><Tag>{t('al.official')}</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>{t('al.cityOrders')}</Text><Muted>{t('al.cityOrdersSub')}</Muted><Link onPress={() => Linking.openURL(EVERBRIDGE)}>{t('al.signup')}</Link><Link onPress={() => Linking.openURL(KNOW_YOUR_ZONE)}>{t('al.zone')}</Link></Card>
       <Collapsible icon="🧩" title="What City data would add" summary="Live orders matched to your address"><CityDataCallout id="alertFeed" /><CityDataCallout id="evacuationZones" /></Collapsible>
@@ -245,7 +245,7 @@ function PermitSearch({ me }) {
     <Field label={t('pm.planning')} value={q} onChangeText={setQ} placeholder={audience === 'business' ? 'e.g., outdoor dining, block party, sign, propane' : 'e.g., new roof, ADU, solar, remove an oak tree'} autoCapitalize="none" />
     {result && <View>
       <FeeGuide />
-      {result.permits.length === 0 ? <Caption>No City permit type matches. Try other words, or ask the City's Permit Services Center.</Caption> : result.permits.slice(0, 5).map(p => <Card key={p.name} style={{ marginTop: 8, padding: 14 }}>
+      {result.permits.length === 0 ? <Caption>{t('mx.noPermit')}</Caption> : result.permits.slice(0, 5).map(p => <Card key={p.name} style={{ marginTop: 8, padding: 14 }}>
         <Text style={{ color: color.ink, fontSize: 15, fontWeight: '800' }}>{p.name}</Text><PermitPrice />
         {p.matched.length > 0 && <Text style={{ color: color.muted, fontSize: 13, marginTop: 4 }}>Work class: {p.matched.slice(0, 3).join(' · ')}</Text>}
         {p.hazards.includes('wildfire') && me.hazards && describeHazard('wildfire', me.hazards.wildfire).tone === 'mapped' && <Text style={{ color: color.warm, fontSize: 12, marginTop: 4 }}>Your address is in a mapped fire zone; ask about wildfire-related rules.</Text>}
