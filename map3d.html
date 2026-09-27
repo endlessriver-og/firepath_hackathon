@@ -79,7 +79,9 @@ if (TX[params.get('lang')]) document.documentElement.lang = params.get('lang');
 // Screen-reader labels and the no-WebGL message in the same language.
 document.querySelector('h1.sr').textContent = tr('FirePath Glendale 3D map');
 for (const [id, label] of [['map', 'Glendale 3D hazard map'], ['layer', 'Hazard layer'], ['card', 'Parcel details']]) document.getElementById(id).setAttribute('aria-label', tr(label));
-document.querySelector('#fallback > div').innerHTML = `<b>${tr('3D needs WebGL, which this browser has turned off.')}</b><br>${tr('The flat map shows the same hazard zones.')}`;
+// Link to the flat map with the same place, language and layer (the 3D view's own query string).
+const flat = new URLSearchParams(location.search); if (flat.get('layers')?.startsWith('combined')) flat.set('layers', 'combined');
+document.querySelector('#fallback > div').innerHTML = `<b>${tr('3D needs WebGL, which this browser has turned off.')}</b><br><a href="map.html?${flat.toString().replace(/"/g, '')}" style="color:#086B56;font-weight:700">${tr('The flat map shows the same hazard zones.')}</a>`;
 const base = params.get('api') || '';
 const lat = parseFloat(params.get('lat')), lon = parseFloat(params.get('lon'));
 const home = Number.isFinite(lat) && Number.isFinite(lon) ? [lon, lat] : null;
