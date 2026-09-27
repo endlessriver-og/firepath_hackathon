@@ -27,7 +27,10 @@ const now = await boxes(); check(names.length === 2 && names.every(n => now[n] =
 await p.reload({ waitUntil: 'networkidle2' }); await sleep(3000); await planTab();
 const after = await boxes(); check(names.every(n => after[n] === 'true'), 'ticks survive an offline reload');
 offline = false;
+// Back online, untick the first step normally before the queue is sent: the queued tick must not undo it later.
+await p.evaluate(n => [...document.querySelectorAll('main [role=checkbox]')].find(c => (c.getAttribute('aria-label') || c.innerText.trim().slice(0, 30)) === n).click(), names[0]); await sleep(2500);
+check(Object.keys(JSON.parse(await pending()) || {}).length === 1, 'an untick saved online removes that step from the queue');
 await p.evaluate(() => dispatchEvent(new Event('online'))); await sleep(3000);
-const server = await serverDone(); check(await pending() === null, 'queue empties once back online'); check(Object.values(server).filter(Boolean).length === Object.values(before).filter(v => v === 'true').length + 2, 'the server has both ticks');
+const server = await serverDone(); check(await pending() === null, 'queue empties once back online'); check(Object.values(server).filter(Boolean).length === Object.values(before).filter(v => v === 'true').length + 1, 'the server has the queued tick, and the later untick was not undone');
 await b.close();
 process.exitCode = failed ? 1 : 0;

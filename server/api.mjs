@@ -46,6 +46,14 @@ function demoHousehold(lang) {
 export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, combinedIndex = () => null, cityRecords = async () => null, parcelAt = async () => null, neighborhoodAt = async () => null, version = 'local', permitCatalog = { permitTypes: [], businessLicenseTypes: [] }, demoMailbox = true, now = () => Date.now(), ipHeaders = process.env.VERCEL ? ['x-vercel-forwarded-for', 'x-real-ip'] : ['cf-connecting-ip', 'x-forwarded-for'] }) {
   const { data } = store;
   const failures = new Map(); // email -> [timestamps] of failed logins, in memory only
+  // Confirms an account's password for password change and deletion, sharing the login lockout, so a stolen
+  // session cannot be used to guess the password from many addresses.
+  function confirmPassword(user, password) {
+    const recent = (failures.get(user.email) || []).filter(t => t > now() - 10 * 60_000);
+    if (recent.length >= 5) fail(429, 'Too many attempts. Wait 10 minutes and try again.');
+    if (typeof password !== 'string' || !checkPassword(password, user.passwordHash)) { failures.set(user.email, [...recent, now()]); fail(403, 'That password is not right.'); }
+    failures.delete(user.email);
+  }
   const alertCache = new Map();
   const venueHazards = new Map(); // venue id -> hazard lookup (venues are fixed points, so cache for the process)
   const publicHits = new Map(); // ip -> timestamps; public checks are capped per visitor, in memory only
@@ -184,7 +192,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
     'POST /api/account/delete': async (req, body) => {
       throttle(req, 10, 'delete');
       const user = session(req);
-      if (!user.demo && (typeof body.password !== 'string' || !checkPassword(body.password, user.passwordHash))) fail(403, 'That password is not right.');
+      if (!user.demo) confirmPassword(user, body.password);
       for (const [key, row] of Object.entries(data.sessions)) if (row.userId === user.id) delete data.sessions[key];
       delete data.users[user.id];
       store.save();
@@ -196,7 +204,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
     'POST /api/account/password': async (req, body) => {
       throttle(req, 10, 'password');
       const user = session(req);
-      if (typeof body.current !== 'string' || !checkPassword(body.current, user.passwordHash)) fail(403, 'That password is not right.');
+      confirmPassword(user, body.current);
       if (typeof body.next !== 'string' || body.next.length < 8 || body.next.length > 200) fail(400, 'Use a password of at least 8 characters.');
       user.passwordHash = hashPassword(body.next);
       const current = tokenKey(/^Bearer (.+)$/.exec(req.headers.authorization)[1]);

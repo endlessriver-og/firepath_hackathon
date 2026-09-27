@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { showTestNotification } from './notify';
-import { queueTask } from './offline';
+import { queueTask, settleTask } from './offline';
 import { api, apiBase } from './api';
 import MapFrame from './MapFrame';
 import { describeHazard, hazardNames, nextSteps, summarizePlace } from './preparedness';
@@ -29,7 +29,7 @@ function useToggle(me, onChange) {
   const [busy, setBusy] = useState(null);
   return [busy, async id => {
     setBusy(id);
-    try { onChange(await api('PUT', '/api/me/tasks', { id, done: !me.done[id] })); }
+    try { onChange(await api('PUT', '/api/me/tasks', { id, done: !me.done[id] })); await settleTask(id); }
     catch (e) {
       // No connection: keep the tick on this device; it is sent the next time FirePath loads.
       if (e.status === 0) onChange(await queueTask(me, id, !me.done[id]));
@@ -163,7 +163,7 @@ function Drill({ me, onChange }) {
     setBusy(true);
     try {
       // Finished with no connection (the steps were already loaded): keep it on this device and send it later.
-      if (!me.done.drill) onChange(await api('PUT', '/api/me/tasks', { id: 'drill', done: true }).catch(async e => { if (e.status === 0) return queueTask(me, 'drill', true); throw e; }));
+      if (!me.done.drill) onChange(await api('PUT', '/api/me/tasks', { id: 'drill', done: true }).then(async view => { await settleTask('drill'); return view; }, async e => { if (e.status === 0) return queueTask(me, 'drill', true); throw e; }));
       setEvent(null); setPlaybook(null); setPracticed({});
     } catch (err) { setError(err.message); } finally { setBusy(false); }
   };

@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Icon } from './src/icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setupNotifications } from './src/notify';
 import { api, loadSession, saveSession } from './src/api';
-import { ME_CACHE, clearOffline, flushTasks } from './src/offline';
+import { ME_CACHE, clearOffline, flushTasks, withPending } from './src/offline';
 import { AboutYou, AddressPanel, BusinessDetails, BusinessProfile, HouseholdForm } from './src/onboarding';
 import { Actions, Alerts, Home, MapTab, Permits, Profile, Systems } from './src/tabs';
 import { Landing } from './src/landing';
@@ -60,13 +60,16 @@ function App() {
   const scroller = useRef(null);
   const top = () => scroller.current?.scrollTo({ y: 0, animated: false });
 
-  async function load() {
+  // One load at a time: the first load, the online event and the offline banner can all ask at once.
+  const loading = useRef(null);
+  const load = () => (loading.current ||= loadOnce().finally(() => { loading.current = null; }));
+  async function loadOnce() {
     setError('');
     const token = await loadSession();
     if (!token) return setMe(null);
     try {
       // Ticks made offline go first, so the view below already includes them.
-      const current = (await flushTasks()) || await api('GET', '/api/me');
+      const current = await withPending((await flushTasks()) || await api('GET', '/api/me'));
       setMe(current); setOffline(false);
       AsyncStorage.setItem(ME_CACHE, JSON.stringify(current)).catch(() => {});
       setStep(current.user.demo ? 0 : Number(await AsyncStorage.getItem(stepKey(current.user)).catch(() => 0)) || 0);
@@ -78,8 +81,9 @@ function App() {
     }
   }
   useEffect(() => { load(); }, []);
-  // Back online in a browser: reload, which also sends any ticks made offline.
+  // Back online in a browser, or the app back in front on a phone: reload, which also sends any ticks made offline.
   useEffect(() => { if (typeof window === 'undefined' || !window.addEventListener) return; const back = () => load(); window.addEventListener('online', back); return () => window.removeEventListener('online', back); }, []);
+  useEffect(() => { if (Platform.OS === 'web') return; const sub = AppState.addEventListener('change', state => { if (state === 'active') load(); }); return () => sub.remove(); }, []);
   const goStep = async (n, user = me?.user) => { setStep(n); await AsyncStorage.setItem(stepKey(user), String(n)).catch(() => {}); };
   const finish = async () => { setStep(0); setTab('Home'); await AsyncStorage.removeItem(stepKey(me?.user)).catch(() => {}); };
   async function signOut() {

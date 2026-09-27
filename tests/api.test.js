@@ -617,3 +617,12 @@ test('password change needs the current password, signs out other devices and ke
   const demo = (await call('POST', '/api/demo/start')).body.token;
   assert.equal((await call('POST', '/api/account/password', { current: 'demo:no-login', next: 'battery-staple' }, demo)).status, 403, 'the demo household has no password');
 });
+
+test('password change and deletion share the login lockout, so a stolen session cannot guess the password', async () => {
+  const { call } = setup();
+  const token = await signup(call, 'guess@example.test');
+  for (let i = 0; i < 5; i++) assert.equal((await call('POST', '/api/account/password', { current: `wrong-${i}-horse`, next: 'battery-staple' }, token)).status, 403);
+  assert.equal((await call('POST', '/api/account/password', { current: 'correct-horse', next: 'battery-staple' }, token)).status, 429, 'locked even with the right password');
+  assert.equal((await call('POST', '/api/account/delete', { password: 'correct-horse' }, token)).status, 429);
+  assert.equal((await call('POST', '/api/account/login', { email: 'guess@example.test', password: 'correct-horse' })).status, 429, 'login is locked too');
+});

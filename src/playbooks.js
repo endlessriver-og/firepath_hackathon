@@ -25,8 +25,8 @@ const list = items => items.length <= 1 ? items.join('') : `${items.slice(0, -1)
 // Armenian way (Ռոզա → Ռոզային, Արմեն → Արմենին); a Latin-script name keeps the hyphen (Rosa-ին).
 const hyLast = w => String(w).trim().slice(-1);
 const isHy = ch => ch >= '\u0531' && ch <= '\u0587';
-export const hyDat = w => !isHy(hyLast(w)) ? `${w}-ին` : /[աո]$/.test(w) ? `${w}յին` : `${w}ին`;
-export const hyDef = w => !isHy(hyLast(w)) ? `${w}-ն` : /[աեըիոու]$/.test(w) ? `${w}ն` : `${w}ը`;
+export const hyDat = w => !isHy(hyLast(w)) ? `${w}-ին` : /[աո]$/i.test(String(w).trim()) ? `${w}յին` : `${w}ին`;
+export const hyDef = w => !isHy(hyLast(w)) ? `${w}-ն` : /[աեըիոու]$/i.test(String(w).trim()) ? `${w}ն` : `${w}ը`;
 
 // Korean object particle: 을 after a final consonant, 를 after a vowel. A Latin-script name goes by its
 // last letter (Mia → 를, John → 을); anything else (a digit, a symbol) keeps the neutral 을(를).

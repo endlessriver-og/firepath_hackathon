@@ -56,3 +56,11 @@ test('license words match whole words, give or take an English ending', () => {
   assert.ok(searchLicenses(catalog, 'barber').some(n => /Barbershop/.test(n)));
   assert.match(searchLicenses(catalog, 'pharmacy')[0], /Pharmacies/);
 });
+
+test('search keeps working for re- words, partial license words and Armenian near-misses', () => {
+  assert.match(top('reroof'), /Re-Roof/);
+  assert.match(top('repaint'), /Sign|Mural/);
+  assert.equal(searchPermits(catalog, 'ծառայություն').length, 0, '"tree" must not fire inside "service"');
+  assert.match(searchLicenses(catalog, 'auto')[0] || '', /Automotive/);
+  assert.ok(searchLicenses(catalog, 'automot').length, 'a partial word falls back to substrings');
+});

@@ -77,6 +77,7 @@ test('Armenian endings attach to Armenian-script names, and typed places are nev
   assert.equal(hyDat('Ռոզա'), 'Ռոզային');
   assert.equal(hyDat('Արմեն'), 'Արմենին');
   assert.equal(hyDat('Rosa'), 'Rosa-ին');
+  assert.equal(hyDat('ՌՈԶԱ'), 'ՌՈԶԱյին', 'capitals');
   assert.equal(hyDef('Ռոզա'), 'Ռոզան');
   assert.equal(hyDef('Արմեն'), 'Արմենը');
   const household = { meetNear: 'Անկյունի փոստարկղը', meetFar: 'Մոնտրոզի գրադարանը', contact: 'Լյուսիա մորաքույրը', members: [{ name: 'Ռոզա', ageGroup: 'senior', needsHelp: true }] };

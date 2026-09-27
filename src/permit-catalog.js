@@ -20,7 +20,7 @@ const SYNONYMS = [
   [/kitchen|bath|cocina|baño|խոհանոց|լոգարան|սանհանգույց|주방|부엌|욕실|화장실/, ['kitchen and bath']],
   [/solar|panel|battery|batería|արևային|մարտկոց|태양광|태양|패널|배터리/, ['solar', 'battery system']],
   [/quake|earthquake|retrofit|bolt|brace|foundation|sismo|terremoto|temblor|refuerzo|cimentación|cimientos|երկրաշարժ|սեյսմիկ|ամրացում|հիմք|지진|내진|보강|기초/, ['seismic bolt and brace']],
-  [/tree|oak|sycamore|bay|árbol|roble|sicomoro|ծառ|կաղնի|나무|참나무/, ['indigenous tree', 'street tree']],
+  [/tree|oak|sycamore|bay|árbol|roble|sicomoro|ծառ(?!այ)|կաղնի|나무|참나무/, ['indigenous tree', 'street tree']],
   [/brush|weed|clearance|defensible|fuel|vegetation|wildfire|maleza|hierba|desmonte|espacio defendible|vegetación|incendio forestal|թփուտ|մոլախոտ|բուսականություն|անտառային հրդեհ|잡목|잡초|방어 공간|초목|산불/, ['landscape/fuel modification', 'fire clearance']],
   [/water heater|plumb|pipe|sewer|calentador|boiler|plomería|tubería|drenaje|alcantarillado|ջրատաքացուցիչ|ջրմուղ|խողովակ|կոյուղի|온수기|배관|파이프|하수/, ['plumbing', 'sewer connection']],
   [/hvac|air condition|furnace|heat pump|mechanical|aire acondicionado|calefacción|calentón|bomba de calor|minisplit|օդորակիչ|ջեռուցում|ջերմային պոմպ|에어컨|냉난방|보일러|히트펌프/, ['mechanical']],
@@ -34,9 +34,11 @@ const SYNONYMS = [
   [/sprinkler|alarm|extinguish|rociador|alarma|extintor|սփրինքլեր|ազդանշան|կրակմարիչ|스프링클러|경보기|소화기/, ['sprinkler', 'fire alarm', 'extinguishing']],
 ];
 
-// Latin-script words must start a word, so "door" does not fire inside "outdoor", "sign" inside "design" or "oil"
-// inside "boiler"; endings stay free ("running"). Armenian and Korean have no \b in JavaScript, so they match as written.
-const WORD_SYNONYMS = SYNONYMS.map(([re, extra]) => [new RegExp(re.source.split('|').map(w => /^[a-z]/.test(w) ? `\\b${w}` : w).join('|')), extra]);
+// Latin-script words must start a word (an optional "re" in front is fine: reroof, repaint), so "door" does not
+// fire inside "outdoor", "sign" inside "design" or "oil" inside "boiler"; endings stay free ("running"). JavaScript's
+// \b ignores Armenian letters, so an Armenian word must not follow another Armenian letter ("ծառ" not inside
+// "ծառայություն"). Korean matches as written.
+const WORD_SYNONYMS = SYNONYMS.map(([re, extra]) => [new RegExp(re.source.split('|').map(w => /^[a-z]/.test(w) ? `\\b(?:re)?${w}` : /^[\u0531-\u0587]/.test(w) ? `(?<![\u0531-\u0587])${w}` : w).join('|')), extra]);
 
 // Phrases that point clearly at one City permit type.
 const BOOSTS = [[/block party|street (party|fair|closure)|parade|fiesta de (la )?cuadra|fiesta en la calle|cierre de calle|desfile|փողոցային տոն|շքերթ|동네 파티|골목 파티|도로 통제|퍼레이드/, 'PW - ROW - Street Use'], [/wedding|private party|boda|fiesta privada|հարսանիք|결혼식|웨딩/, 'Building Temporary Structure Permit']];
@@ -62,6 +64,7 @@ export function searchPermits(catalog, query, { audience = null, limit = 8 } = {
 // Everyday business words in English, Spanish, Armenian and Korean -> words in the City's license names
 // (which follow the federal industry list, e.g. "Snack and Nonalcoholic Beverage Bars" for a coffee shop).
 const LICENSE_WORDS = [
+  [/\bautos?\b|automóvil|automotive/, ['automotive']],
   [/restaurant|restaurante|ռեստորան|식당|레스토랑|음식점/, ['full-service restaurants', 'limited-service restaurants']],
   [/bakery|panader|pasteler|հացատուն|հրուշակ|빵집|베이커리|제과/, ['retail bakeries']],
   [/coffee|\bcafe|café|cafeter|սրճարան|카페|커피/, ['snack and nonalcoholic beverage bars']],
@@ -101,7 +104,11 @@ export function searchLicenses(catalog, query, limit = 6) {
     return words.length ? catalog.businessLicenseTypes.filter(name => { const parts = norm(name).split(/[^a-z0-9]+/); return words.every(w => parts.some(x => x.startsWith(w) && ENDING.test(x.slice(w.length)))); }) : [];
   };
   const mapped = LICENSE_WORDS.filter(([re]) => re.test(q)).flatMap(([, phrases]) => phrases.flatMap(byWords));
-  return [...new Set([...mapped, ...byWords(q)])].slice(0, limit);
+  const found = [...new Set([...mapped, ...byWords(q)])];
+  if (found.length) return found.slice(0, limit);
+  // Nothing by whole words: fall back to plain substrings so a partial word still finds something.
+  const loose = q.split(/[^a-z0-9]+/).filter(w => w.length > 2);
+  return loose.length ? catalog.businessLicenseTypes.filter(name => loose.every(w => norm(name).includes(w))).slice(0, limit) : [];
 }
 
 export const eventQuestions = [
