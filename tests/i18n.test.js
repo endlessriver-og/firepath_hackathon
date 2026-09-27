@@ -29,3 +29,16 @@ test('checklist titles cover the same tasks in every language', () => {
   const [first, ...rest] = ['es', 'hy', 'ko'].map(lang => Object.keys(taskTitles[lang]).sort().join(','));
   for (const other of rest) assert.equal(other, first);
 });
+
+test('both map pages translate every fixed phrase they pass through tr() or trv()', () => {
+  for (const page of ['map.html', 'map3d.html']) {
+    const html = readFileSync(new URL(`../${page}`, import.meta.url), 'utf8');
+    const TX = JSON.parse(html.split('\n').find(line => line.startsWith('const TX = ')).slice('const TX = '.length).replace(/;\s*$/, ''));
+    const phrases = new Set([...html.matchAll(/\btrv?\((['"])((?:(?!\1).)+)\1/g)].map(m => m[2]));
+    for (const lang of ['es', 'hy', 'ko']) {
+      assert.deepEqual(Object.keys(TX[lang]).sort(), Object.keys(TX.es).sort(), `${page} ${lang} keys`);
+      assert.deepEqual([...phrases].filter(p => !(p in TX[lang])), [], `${page} ${lang} missing`);
+      for (const [en, value] of Object.entries(TX[lang])) assert.equal(vars(value), vars(en), `${page} ${lang} placeholders in "${en}"`);
+    }
+  }
+});
