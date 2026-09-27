@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { showTestNotification } from './notify';
+import { queueTask } from './offline';
 import { api, apiBase } from './api';
 import MapFrame from './MapFrame';
 import { describeHazard, hazardNames, nextSteps, summarizePlace } from './preparedness';
@@ -28,7 +29,12 @@ function useToggle(me, onChange) {
   const [busy, setBusy] = useState(null);
   return [busy, async id => {
     setBusy(id);
-    try { onChange(await api('PUT', '/api/me/tasks', { id, done: !me.done[id] })); } catch (e) { showAlert(t('al.saveFailed'), translateError(lang, e.message)); } finally { setBusy(null); }
+    try { onChange(await api('PUT', '/api/me/tasks', { id, done: !me.done[id] })); }
+    catch (e) {
+      // No connection: keep the tick on this device; it is sent the next time FirePath loads.
+      if (e.status === 0) onChange(await queueTask(me, id, !me.done[id]));
+      else showAlert(t('al.saveFailed'), translateError(lang, e.message));
+    } finally { setBusy(null); }
   }];
 }
 

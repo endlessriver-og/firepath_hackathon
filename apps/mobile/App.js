@@ -5,6 +5,7 @@ import { Icon } from './src/icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setupNotifications } from './src/notify';
 import { api, loadSession, saveSession } from './src/api';
+import { ME_CACHE, clearOffline, flushTasks } from './src/offline';
 import { AboutYou, AddressPanel, BusinessDetails, BusinessProfile, HouseholdForm } from './src/onboarding';
 import { Actions, Alerts, Home, MapTab, Permits, Profile, Systems } from './src/tabs';
 import { Landing } from './src/landing';
@@ -17,8 +18,6 @@ import { Button, ErrorText, color } from './src/ui';
 // Onboarding progress is remembered per account, so one account's unfinished setup never leaks into another's.
 const ONBOARDING = 'firepath-onboarding-step';
 const stepKey = user => `${ONBOARDING}:${user?.email || user?.id || 'anon'}`;
-// The last account view that loaded, kept on this device so plans and emergency steps still open offline.
-const ME_CACHE = 'firepath-me-cache';
 // Bottom bar: four icon tabs around a raised Home button. Profile lives in the top bar.
 const TABS = [['Map', 'map', 'nav.map'], ['Plan', 'checkbox', 'nav.plan'], ['Home', 'home', 'nav.home'], ['Alerts', 'notifications', 'nav.alerts'], ['Permits', 'document-text', 'nav.permits']];
 setupNotifications();
@@ -66,23 +65,26 @@ function App() {
     const token = await loadSession();
     if (!token) return setMe(null);
     try {
-      const current = await api('GET', '/api/me');
+      // Ticks made offline go first, so the view below already includes them.
+      const current = (await flushTasks()) || await api('GET', '/api/me');
       setMe(current); setOffline(false);
       AsyncStorage.setItem(ME_CACHE, JSON.stringify(current)).catch(() => {});
       setStep(current.user.demo ? 0 : Number(await AsyncStorage.getItem(stepKey(current.user)).catch(() => 0)) || 0);
     } catch (e) {
-      if (e.status === 401) { await saveSession(null); await AsyncStorage.removeItem(ME_CACHE).catch(() => {}); setMe(null); return; }
+      if (e.status === 401) { await saveSession(null); await clearOffline(); setMe(null); return; }
       // No network: fall back to the saved plan rather than a dead end.
       const cached = e.status === 0 ? await AsyncStorage.getItem(ME_CACHE).catch(() => null) : null;
       if (cached) { setMe(JSON.parse(cached)); setOffline(true); } else setError(e.message);
     }
   }
   useEffect(() => { load(); }, []);
+  // Back online in a browser: reload, which also sends any ticks made offline.
+  useEffect(() => { if (typeof window === 'undefined' || !window.addEventListener) return; const back = () => load(); window.addEventListener('online', back); return () => window.removeEventListener('online', back); }, []);
   const goStep = async (n, user = me?.user) => { setStep(n); await AsyncStorage.setItem(stepKey(user), String(n)).catch(() => {}); };
   const finish = async () => { setStep(0); setTab('Home'); await AsyncStorage.removeItem(stepKey(me?.user)).catch(() => {}); };
   async function signOut() {
     await api('POST', '/api/account/logout').catch(() => {});
-    await saveSession(null); await AsyncStorage.removeItem(stepKey(me?.user)).catch(() => {}); await AsyncStorage.removeItem(ME_CACHE).catch(() => {});
+    await saveSession(null); await AsyncStorage.removeItem(stepKey(me?.user)).catch(() => {}); await clearOffline();
     setMe(null); setTab('Home');
   }
 
