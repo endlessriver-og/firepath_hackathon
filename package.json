@@ -21,7 +21,8 @@
     "check:tour": "node scripts/tour-check.mjs",
     "check:business": "node scripts/business-check.mjs",
     "check:household": "node scripts/household-check.mjs",
-    "check:offline-ticks": "node scripts/offline-ticks-check.mjs"
+    "check:offline-ticks": "node scripts/offline-ticks-check.mjs",
+    "check:onboarding-lang": "node scripts/onboarding-sweep.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0"
