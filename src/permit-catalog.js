@@ -34,6 +34,10 @@ const SYNONYMS = [
   [/sprinkler|alarm|extinguish|rociador|alarma|extintor|սփրինքլեր|ազդանշան|կրակմարիչ|스프링클러|경보기|소화기/, ['sprinkler', 'fire alarm', 'extinguishing']],
 ];
 
+// Latin-script words must start a word, so "door" does not fire inside "outdoor", "sign" inside "design" or "oil"
+// inside "boiler"; endings stay free ("running"). Armenian and Korean have no \b in JavaScript, so they match as written.
+const WORD_SYNONYMS = SYNONYMS.map(([re, extra]) => [new RegExp(re.source.split('|').map(w => /^[a-z]/.test(w) ? `\\b${w}` : w).join('|')), extra]);
+
 // Phrases that point clearly at one City permit type.
 const BOOSTS = [[/block party|street (party|fair|closure)|parade|fiesta de (la )?cuadra|fiesta en la calle|cierre de calle|desfile|փողոցային տոն|շքերթ|동네 파티|골목 파티|도로 통제|퍼레이드/, 'PW - ROW - Street Use'], [/wedding|private party|boda|fiesta privada|հարսանիք|결혼식|웨딩/, 'Building Temporary Structure Permit']];
 const norm = s => s.toLowerCase();
@@ -44,7 +48,7 @@ export function searchPermits(catalog, query, { audience = null, limit = 8 } = {
   const q = norm(query || '').trim();
   if (!q) return [];
   const terms = new Set(q.split(/\s+/).filter(w => w.length > 2 && !STOP.has(w)).map(w => w.replace(/(es|s)$/, '')));
-  for (const [re, extra] of SYNONYMS) if (re.test(q)) extra.forEach(t => terms.add(t));
+  for (const [re, extra] of WORD_SYNONYMS) if (re.test(q)) extra.forEach(t => terms.add(t));
   return catalog.permitTypes.map(type => {
     const name = norm(type.name);
     const hits = type.workClasses.filter(w => [...terms].some(t => norm(w).includes(t)));

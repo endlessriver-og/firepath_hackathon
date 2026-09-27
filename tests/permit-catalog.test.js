@@ -18,9 +18,15 @@ test('permit search finds the same City permit from everyday words in all four l
   for (const [expected, queries] of cases) for (const q of queries) assert.match(top(q), expected, `"${q}" found ${top(q) || 'nothing'}`);
 });
 
-test('translated words do not leak into English queries', () => {
+test('search words only fire as whole words (in Latin script)', () => {
   // "called" contains the Spanish "calle"; it must not pull in street-use permits.
   assert.equal(searchPermits(catalog, 'called about it').length, 0);
+  // Nor may an English word fire inside a longer one.
+  assert.ok(!searchPermits(catalog, 'outdoor dining').some(t => /Window and Door/.test(t.name)), 'door inside outdoor');
+  assert.equal(searchPermits(catalog, 'design studio').length, 0, 'sign inside design');
+  assert.equal(searchPermits(catalog, 'brunch').length, 0, 'run inside brunch');
+  assert.ok(!searchPermits(catalog, 'new boiler').some(t => /Hazmat/.test(t.name)), 'oil inside boiler');
+  assert.match(searchPermits(catalog, 'running event')[0]?.name || '', /Special Event/, 'endings still match');
 });
 
 test('every example in the permit search placeholder finds a permit, in every language', () => {
