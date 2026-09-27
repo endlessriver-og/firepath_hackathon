@@ -36,7 +36,7 @@ const BUSINESS = process.argv.includes('business'), password = randomBytes(9).to
 const api = (path, body, token) => p.evaluate(async (path, body, token) => (await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body) })).json(), path, body, token);
 const token = BUSINESS
   ? (await api('/api/account/signup', { type: 'business', email: `lang-sweep-${Date.now()}@example.test`, password, name: 'Sweep Test', businessName: 'Sweep Test Cafe', businessKind: 'restaurant' })).token
-  : (await api('/api/demo/start', {})).token;
+  : (await api('/api/demo/start', { lang: LANG })).token;
 if (BUSINESS) await api('/api/me/address', { address: '613 E Broadway, Glendale, CA 91206' }, token);
 await p.evaluate(t => localStorage.setItem('firepath-session', t), token);
 await p.reload({ waitUntil: 'networkidle2' }); await sleep(2500);
