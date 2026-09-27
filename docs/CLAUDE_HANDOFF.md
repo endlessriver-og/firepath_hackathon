@@ -149,6 +149,7 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
 - **Known gaps:**
   - Concurrent Blob writes: fixed and deployed (ETag-conditional write, per-record merge on conflict). Reads return weak ETags (`W/"…"`); conditional writes need the strong form.
   - No physical phone or ESP32 run.
+  - No password reset: a resident who forgets their password cannot get back in (they can only sign up again with another email). It needs an email service to send a reset link or code; which service is the owner's decision. Address verification codes are also shown in a labelled demo mailbox rather than mailed.
 
 **Resident accounts slice (2026-09-26, evening):**
 
