@@ -34,6 +34,22 @@ async def lookup(lat, lon):
 
 
 class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        # Warm-up (a Vercel cron calls this): load the snapshot so the next lookup is fast.
+        global state
+        try:
+            state = state or build_state(Settings.from_env())
+            state.require_snapshot()
+            status, body = 200, {'ok': True}
+        except Exception:
+            status, body = 503, {'ok': False}
+        data = json.dumps(body).encode()
+        self.send_response(status)
+        self.send_header('content-type', 'application/json')
+        self.send_header('content-length', str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def do_POST(self):
         try:
             payload = json.loads(self.rfile.read(min(int(self.headers.get('content-length') or 0), 1024)))
