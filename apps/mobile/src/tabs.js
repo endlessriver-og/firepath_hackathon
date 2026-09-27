@@ -176,7 +176,7 @@ function Drill({ me, onChange }) {
     {event && !playbook && !error && <Muted style={{ marginTop: 10 }}>{t('dr.preparing')}</Muted>}
     {playbook && <Card style={{ borderColor: '#E3C98E', backgroundColor: '#FFFCF3' }}>
       <Text style={{ alignSelf: 'flex-start', backgroundColor: color.goldBg, color: color.gold, fontWeight: '900', fontSize: 11, letterSpacing: 1, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>{t('dr.badge')}</Text>
-      <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{t('dr.imagine', { event: t(`ev.${event}`) === `ev.${event}` ? event : t(`ev.${event}`) })}</Text>
+      <Text accessibilityLiveRegion="polite" aria-live="polite" style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{t('dr.imagine', { event: t(`ev.${event}`) === `ev.${event}` ? event : t(`ev.${event}`) })}</Text>
       <Muted style={{ marginTop: 6 }}>{t('dr.practice', { n: practiceSteps.length })}</Muted>
       {practiceSteps.map((step, i) => <Pressable key={`${i}-${step.text}`} accessibilityRole="checkbox" aria-checked={Boolean(Boolean(practiced[i]))} accessibilityState={{ checked: Boolean(practiced[i]) }} onPress={() => setPracticed(current => ({ ...current, [i]: !current[i] }))} style={{ flexDirection: 'row', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderColor: color.line }}>
         <Text style={{ width: 26, fontSize: 18, color: color.green, fontWeight: '900' }}>{practiced[i] ? '☑' : '☐'}</Text><Text style={{ flex: 1, color: color.ink, lineHeight: 21 }}>{step.text}</Text>
@@ -210,10 +210,10 @@ export function Alerts({ me, onChange, sub, setSub }) {
         : error ? <ErrorText>{error}</ErrorText>
         : !feed ? <Muted style={{ marginTop: 12 }}>{t('al.checking')}</Muted>
         : feed.unavailable ? <Card><Muted>{t('mx.nwsDown')}</Muted><Link onPress={load}>{t('mx.retry')}</Link></Card>
-        : feed.alerts.length === 0 ? <Card><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>{t('al.none')}</Text>{feed.checkedAt ? <Caption>{t('al.checked', { time: time(feed.checkedAt) })}</Caption> : null}<Link onPress={load}>{t('al.refresh')}</Link></Card>
+        : feed.alerts.length === 0 ? <Card><Text accessibilityLiveRegion="polite" aria-live="polite" style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>{t('al.none')}</Text>{feed.checkedAt ? <Caption>{t('al.checked', { time: time(feed.checkedAt) })}</Caption> : null}<Link onPress={load}>{t('al.refresh')}</Link></Card>
         : feed.alerts.map(a => <Card key={a.id} style={{ borderColor: color.warmLine, backgroundColor: color.warmBg }}>
             {(a.severity || a.sender) ? <Tag tone="warm">{[a.severity && (t(`sev.${a.severity}`) === `sev.${a.severity}` ? a.severity : t(`sev.${a.severity}`)), a.sender].filter(Boolean).join(' · ')}</Tag> : null}
-            <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{t(`ev.${a.event}`) === `ev.${a.event}` ? a.event : t(`ev.${a.event}`)}</Text>
+            <Text accessibilityLiveRegion="polite" aria-live="polite" style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{t(`ev.${a.event}`) === `ev.${a.event}` ? a.event : t(`ev.${a.event}`)}</Text>
             {lang !== 'en' && <Caption>{t('al.nwsEnglish')}</Caption>}
             <Muted style={{ marginTop: 4 }}>{a.headline}</Muted>
             {a.instruction ? <Text style={{ color: color.ink, marginTop: 8, lineHeight: 20 }}>{a.instruction}</Text> : null}
