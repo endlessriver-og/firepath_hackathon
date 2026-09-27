@@ -34,7 +34,7 @@ const playbookLang = url => oneOf(url.searchParams.get('lang'), ['en', 'es', 'hy
 // The demo household's typed details, written the way a resident using that language would type them.
 const DEMO_TEXT = {
   en: { kind: 'dogs', where: 'backyard', assistance: 'Rosa uses a walker; needs a step-free exit', access: 'Side gate on the left', utilities: 'Gas meter on the east wall', meetNear: 'Corner mailbox', meetFar: 'Montrose library', contact: 'Aunt Lucia in Fresno' },
-  es: { kind: 'perros', where: 'patio trasero', assistance: 'Rosa usa andadera; necesita una salida sin escalones', access: 'Portón lateral a la izquierda', utilities: 'Medidor de gas en la pared este', meetNear: 'El buzón de la esquina', meetFar: 'La biblioteca de Montrose', contact: 'Tía Lucía en Fresno' },
+  es: { kind: 'perros', where: 'patio trasero', assistance: 'Rosa usa andadera; necesita una salida sin escalones', access: 'Portón lateral a la izquierda', utilities: 'Medidor de gas en la pared este', meetNear: 'el buzón de la esquina', meetFar: 'la biblioteca de Montrose', contact: 'la tía Lucía en Fresno' },
   hy: { kind: 'շուն', where: 'բակում', assistance: 'Ռոզան քայլակով է քայլում, պետք է առանց աստիճանների ելք', access: 'Կողային դարպասը ձախ կողմում', utilities: 'Գազի հաշվիչը արևելյան պատին', meetNear: 'Անկյունի փոստարկղը', meetFar: 'Մոնտրոզի գրադարանը', contact: 'Լյուսիա մորաքույրը Ֆրեզնոյում' },
   ko: { kind: '강아지', where: '뒷마당', assistance: '로사는 보행기를 사용합니다. 계단 없는 출구가 필요합니다', access: '왼쪽 옆문', utilities: '동쪽 벽 가스 계량기', meetNear: '모퉁이 우체통', meetFar: '몬트로즈 도서관', contact: '프레즈노에 사는 루시아 이모' },
 };
