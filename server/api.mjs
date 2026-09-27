@@ -415,7 +415,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       const answers = Object.fromEntries(['commercial', 'tents', 'flame', 'fireworks', 'filming', 'alcohol', 'food', 'sound'].map(k => [k, body.answers?.[k] === true]));
       const time = t => /^\d{2}:\d{2}$/.test(t || '') ? t : '';
       const input = { answers, attendees: Math.min(Math.max(Number.parseInt(body.attendees, 10) || 0, 0), 1_000_000), start: time(body.start), end: time(body.end) };
-      const pkg = venuePackage(permitCatalog, venue.id, input, venueHazards.get(venue.id));
+      const pkg = venuePackage(permitCatalog, venue.id, input, venueHazards.get(venue.id), text(body.lang, 5) || 'en');
       const date = /^\d{4}-\d{2}-\d{2}$/.test(body.date || '') ? body.date : '';
       const summary = [`Event: ${text(body.name, 100) || 'unnamed event'} at ${venue.name} (${venue.where})`, `When: ${date || 'date not set'}${input.start ? `, ${input.start}` : ''}${input.end ? ` to ${input.end}` : ''}${input.attendees ? `, about ${input.attendees} people` : ''}`, `Organizer: ${user.type === 'business' ? `${user.business?.name || 'business'} · ${user.name}` : user.name}`, 'City of Glendale permits:', ...pkg.items.map(i => `- ${i.type}${i.workClass && !i.type.includes(i.workClass) ? ` (${i.workClass})` : ''}`), ...(pkg.outside.length ? ['Other agencies:', ...pkg.outside.map(o => `- ${o.name} (${o.who})`)] : []), VENUE_NOTE_LINE].join('\n');
       return { body: { ...pkg, summary, hazardsChecked: Boolean(venueHazards.get(venue.id)), portal: permitCatalog.portal } };

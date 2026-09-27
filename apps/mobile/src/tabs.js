@@ -14,7 +14,7 @@ import { printHtml } from './print';
 import { taskTitles, translateError, useI18n } from './i18n';
 import { connect as connectDevice, sendToDevice, subscribe as subscribeDevice } from './device';
 import { AddressCheck, CityRecords } from './landing';
-import { eventTemplates, venues } from './venues';
+import { eventTemplates, venues, VENUE_TX } from './venues';
 import { AddressPanel, AddressSearch, BusinessDetails, BusinessProfile, HouseholdForm } from './onboarding';
 import { Toggle } from './ui';
 import { Button, Caption, Card, Chips, CityDataCallout, PrivacyNote, ErrorText, Field, Link, Muted, ScoreBar, Collapsible, LanguageSettings, ProgressRing, Section, SubTabs, Segment, Select, SeverityBadge, Tag, Title, color, s } from './ui';
@@ -304,25 +304,25 @@ const VENUE_QUESTIONS = [['commercial', 'Ticketed or run by a business'], ['tent
 const HOURS = Array.from({ length: 36 }, (_, i) => { const h = 6 + Math.floor(i / 2), m = i % 2 ? '30' : '00'; const v = `${String(h).padStart(2, '0')}:${m}`; return [v, `${((h + 11) % 12) + 1}:${m} ${h < 12 ? 'AM' : 'PM'}`]; });
 
 function VenuePlanner({ me }) {
-  const { t: tr } = useI18n();
+  const { t: tr, lang } = useI18n();
   const [venueId, setVenueId] = useState(null), [templateId, setTemplateId] = useState(null);
   const [form, setForm] = useState({ name: '', date: '', start: '17:00', end: '21:00', attendees: '', answers: {} });
   const [pkg, setPkg] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false);
   const set = patch => { setPkg(null); setForm(current => ({ ...current, ...patch })); };
-  const useTemplate = id => { setTemplateId(id); const t = eventTemplates.find(x => x.id === id); if (t) set({ answers: { ...t.answers }, start: t.start, end: t.end, name: form.name || t.name }); };
+  const useTemplate = id => { setTemplateId(id); const t = eventTemplates.find(x => x.id === id); if (t) set({ answers: { ...t.answers }, start: t.start, end: t.end, name: form.name || VENUE_TX[lang]?.templates[t.id] || t.name }); };
   const venue = venues.find(v => v.id === venueId);
   async function build() {
     setBusy(true); setError(''); setCopied(false);
-    try { setPkg(await api('POST', '/api/me/venues/package', { venueId, ...form, attendees: Number(form.attendees) || 0 })); } catch (e) { setError(e.message); } finally { setBusy(false); }
+    try { setPkg(await api('POST', '/api/me/venues/package', { venueId, ...form, lang, attendees: Number(form.attendees) || 0 })); } catch (e) { setError(e.message); } finally { setBusy(false); }
   }
   return <Card style={{ borderColor: '#2E5A88', borderWidth: 1.5 }}>
     <Tag>{tr('pz.venueTag')}</Tag>
     <Text style={{ color: color.ink, fontSize: 17, fontWeight: '800' }}>{tr('pz.venueTitle')}</Text>
     <Muted style={{ marginTop: 4 }}>{tr('pz.venueIntro')}</Muted>
     <Select label={tr('pz.venue')} value={venueId} placeholder={tr('pz.chooseVenue')} options={venues.map(v => [v.id, v.name])} onChange={id => { setVenueId(id); setPkg(null); }} />
-    {venue && <Caption>{venue.where}. {venue.about}</Caption>}
+    {venue && <Caption>{venue.where}. {VENUE_TX[lang]?.about[venue.id] || venue.about}</Caption>}
     {venue && <>
-      <Select label={tr('pz.eventType')} value={templateId} placeholder={tr('pz.chooseStart')} options={eventTemplates.map(t => [t.id, t.name])} onChange={useTemplate} />
+      <Select label={tr('pz.eventType')} value={templateId} placeholder={tr('pz.chooseStart')} options={eventTemplates.map(x => [x.id, VENUE_TX[lang]?.templates[x.id] || x.name])} onChange={useTemplate} />
       <Field label={tr('pz.eventName')} value={form.name} onChangeText={name => set({ name })} placeholder={tr('pz.venueNamePh')} maxLength={100} />
       <Field label={tr('pz.date')} hint="YYYY-MM-DD" value={form.date} onChangeText={date => set({ date: date.replace(/[^\d-]/g, '') })} placeholder="2026-10-17" maxLength={10} />
       <View style={{ flexDirection: 'row', gap: 8 }}>

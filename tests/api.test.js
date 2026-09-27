@@ -582,3 +582,15 @@ test('event planner explanations come back in the requested language; permit typ
   assert.ok(hy.items.every(i => !/[A-Za-z]{4,} [a-z]{3,}/.test(i.why)), 'why lines are translated');
   assert.ok(hy.notes.every(n => /[\u0531-\u058F]/.test(n)), 'notes are in Armenian');
 });
+
+test('City-venue packages come back in the requested language; venue, agency and permit names stay English', async () => {
+  const { call } = setup();
+  const token = (await call('POST', '/api/demo/start')).body.token;
+  const body = { venueId: 'brand-park', attendees: 800, end: '22:00', answers: { commercial: true, tents: true, food: true, alcohol: true, sound: true } };
+  const en = (await call('POST', '/api/me/venues/package', body, token)).body;
+  const ko = (await call('POST', '/api/me/venues/package', { ...body, lang: 'ko' }, token)).body;
+  assert.equal(ko.status, undefined);
+  assert.deepEqual(ko.outside.map(o => o.name), en.outside.map(o => o.name));
+  assert.equal(ko.summary, en.summary, 'the summary for City staff stays English');
+  assert.ok([...ko.outside.map(o => o.why), ...ko.notes, ...ko.timeline.flatMap(t => [t.when, t.what])].every(x => /[가-힯]/.test(x)), 'all guidance is in Korean');
+});
