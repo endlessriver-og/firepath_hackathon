@@ -180,7 +180,7 @@ async function inspect(lngLat) {
   card.style.display = 'block';
   card.innerHTML = `<button class="x" aria-label="${tr('Close')}" onclick="closeCard()">×</button><h2>${tr('Looking this up…')}</h2><div class="muted">${tr('Parcel, hazard maps and City records.')}</div>`;
   let d;
-  try { const r = await fetch(`${base}/api/public/point?lat=${lngLat.lat.toFixed(6)}&lon=${lngLat.lng.toFixed(6)}${TX[params.get('lang')] ? `&lang=${params.get('lang')}` : ''}`); d = await r.json(); if (!r.ok) throw new Error(d.error || r.status); }
+  try { const r = await fetch(`${base}/api/public/point`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ lat: lngLat.lat.toFixed(6), lon: lngLat.lng.toFixed(6), ...(TX[params.get('lang')] ? { lang: params.get('lang') } : {}) }) }); d = await r.json(); if (!r.ok) throw new Error(d.error || r.status); }
   catch (e) { card.innerHTML = `<button class="x" aria-label="${tr('Close')}" onclick="closeCard()">×</button><h2>${tr('Could not look this up')}</h2><div class="muted">${esc(e.message)}</div>`; return; }
   const p = d.parcel, n = d.neighborhood;
   const dist = m => m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1)} km`;

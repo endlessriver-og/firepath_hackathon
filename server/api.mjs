@@ -460,6 +460,16 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
     },
   };
 
+  // The same lookups by POST, so an address or map point travels in the body rather than the URL
+  // (URLs end up in hosting logs). The GET forms stay for the maps' older links and the smoke test.
+  for (const path of ['/api/public/suggest', '/api/public/point', '/api/public/records', '/api/address/suggest']) {
+    routes[`POST ${path}`] = (req, body, url) => {
+      const inBody = new URL(url);
+      for (const [key, value] of Object.entries(body)) if (typeof value === 'string' || typeof value === 'number') inBody.searchParams.set(key, String(value));
+      return routes[`GET ${path}`](req, body, inBody);
+    };
+  }
+
   return async function handle(req, res, url) {
     const handler = routes[`${req.method} ${url.pathname}`];
     if (!handler) return false;

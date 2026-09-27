@@ -45,7 +45,7 @@ export function AddressCheck({ onResult, onRegister, showPreview = false, label 
     try {
       const r = await api('POST', '/api/public/check', { address: text, magicKey }); setResult(r); onResult?.(r);
       setRecords('loading');
-      api('GET', `/api/public/records?address=${encodeURIComponent(r.address)}`).then(d => id === lookup.current && setRecords(d.records)).catch(() => id === lookup.current && setRecords(null));
+      api('POST', '/api/public/records', { address: r.address }).then(d => id === lookup.current && setRecords(d.records)).catch(() => id === lookup.current && setRecords(null));
     }
     catch (e) { setError(e.message); setCandidates(e.data?.candidates || []); }
     finally { setBusy(false); }

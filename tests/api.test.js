@@ -514,3 +514,22 @@ test('privacy note claims hold: signed-out checks store nothing, sharing starts 
   const me = (await call('GET', '/api/me', null, token)).body;
   assert.equal(Boolean(me.household.shareWithResponders), false, 'sharing with responders starts off');
 });
+
+test('address and map-point lookups also work by POST, so the address stays out of the URL', async () => {
+  const store = { data: { users: {}, sessions: {} }, save() {} };
+  const handle = createApi({ store, lookupHazards: async () => sparr, fetchAlerts: async () => [], cityRecords: async key => ({ totals: { total: key.length } }), parcelAt: async () => ({ apn: '5615-017-003', city: 'GLENDALE' }), neighborhoodAt: async () => ({ schools: [], notes: [] }) });
+  async function call(method, path, body) {
+    const req = { method, headers: {}, async *[Symbol.asyncIterator]() { if (body) yield JSON.stringify(body); } };
+    const res = { writeHead(status) { this.status = status; }, end(text) { this.body = JSON.parse(text); } };
+    await handle(req, res, new URL(path, 'http://localhost'));
+    return res;
+  }
+  const viaUrl = await call('GET', '/api/public/records?address=1613%20GLENCOE%20WAY');
+  const viaBody = await call('POST', '/api/public/records', { address: '1613 GLENCOE WAY' });
+  assert.equal(viaBody.status, 200); assert.deepEqual(viaBody.body, viaUrl.body);
+  const point = await call('POST', '/api/public/point', { lat: '34.19912', lon: '-118.2311' });
+  assert.equal(point.status, 200); assert.equal(point.body.parcel.apn, '5615-017-003');
+  assert.equal((await call('POST', '/api/public/point', { lat: 'x', lon: 'y' })).status, 400);
+  assert.equal((await call('POST', '/api/public/records', { address: 'x' })).status, 400);
+  assert.equal((await call('POST', '/api/public/suggest', { q: '16' })).status, 200);
+});

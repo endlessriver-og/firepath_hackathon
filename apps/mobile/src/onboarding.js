@@ -257,7 +257,7 @@ export function AddressSearch({ value, onChangeText, onPick, onSubmit, suggestPa
   const [suggestions, setSuggestions] = useState([]), [picked, setPicked] = useState('');
   useEffect(() => {
     if (value.trim().length < 4 || value === picked || value === settled) { setSuggestions([]); return; }
-    const timer = setTimeout(() => api('GET', `${suggestPath}?q=${encodeURIComponent(value)}`).then(r => setSuggestions(r.suggestions || [])).catch(() => setSuggestions([])), 250);
+    const timer = setTimeout(() => api('POST', suggestPath, { q: value }).then(r => setSuggestions(r.suggestions || [])).catch(() => setSuggestions([])), 250);
     return () => clearTimeout(timer);
   }, [value, settled]);
   const pick = item => { setPicked(item.text); onChangeText(item.text); setSuggestions([]); onPick(item.text, item.magicKey); };
