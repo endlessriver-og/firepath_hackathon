@@ -16,6 +16,14 @@ Review in this order. The first two are safety text; a mistake there could chang
 4. **Permit guidance.** Permits tab: a project's "what you'll usually need" list and notes, the event planner's explanations, and a City-venue package's timeline. Official permit and agency names stay English on purpose.
 5. **Everything else.** Sign-up, the checklist, maps and settings, the official-links list (Home → resources; the agency names stay English, the one-line descriptions are translated) and the "How FirePath connects" page (Home → How FirePath connects).
 
+## Added on 2026-09-27 (not yet seen by any reviewer)
+
+- Live weather alerts: alert names (`ev.*`, 24 more), severities (`sev.*`), "Until …", and the note that NWS text is official English.
+- The "How FirePath connects" page (`sys.*`) and the official-links descriptions (`res.*`).
+- Offline and account messages: "Checklist changes saved on this device" (`off.queued`), password change (`pw.*`), "Download my data" (`exp.*`), storage and code-limit errors (`err.*`), the test notification (`nt.*`).
+- "Verified with a demo code" (`ad.verifiedDemo`, `home.verifiedDemo`) and the permit search hint (`pz.searchHint`).
+- The demo household's typed details (`DEMO_TEXT` in `server/api.mjs`) and the search words (`SYNONYMS`, `LICENSE_WORDS`).
+
 ## Words the builder was unsure about
 
 These are known weak spots. Please check them first.
