@@ -252,8 +252,9 @@ export function BusinessDetails({ me, onSaved, onboarding }) {
 
 // Address field with City of Glendale suggestions (debounced). Used by the public check and registration.
 // `settled` is text the parent already looked up (e.g. via its own button); no suggestions for it.
-export function AddressSearch({ value, onChangeText, onPick, onSubmit, suggestPath, hint, label = 'Glendale street address', settled, placeholder = 'Start typing, e.g., 1613 Glencoe' }) {
+export function AddressSearch({ value, onChangeText, onPick, onSubmit, suggestPath, hint, label, settled, placeholder }) {
   const { t } = useI18n();
+  label ??= t('land.addr'); placeholder ??= t('land.placeholder');
   const [suggestions, setSuggestions] = useState([]), [picked, setPicked] = useState('');
   useEffect(() => {
     if (value.trim().length < 4 || value === picked || value === settled) { setSuggestions([]); return; }
