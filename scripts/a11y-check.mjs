@@ -1,11 +1,11 @@
 // Accessibility audit with axe-core in Chrome across the main screens (signed out and as the demo
-// household). Usage: node scripts/a11y-check.mjs [base-url]. Exits 1 on serious or critical issues.
+// household) and both map pages. Usage: node scripts/a11y-check.mjs [base-url]. Exits 1 on serious or critical issues.
 import puppeteer from 'puppeteer-core';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 const axeSource = readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8');
 const BASE = process.argv[2] || 'https://firepath-ruddy.vercel.app';
-const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true });
+const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const page = await browser.newPage();
 await page.setViewport({ width: 390, height: 844, isMobile: true });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -38,6 +38,12 @@ await page.reload({ waitUntil: 'networkidle2' }); await sleep(2000);
 const pageLang = await page.evaluate(() => document.documentElement.lang);
 if (pageLang !== 'hy') found.set('serious · page-lang', { help: `page language is "${pageLang}" after switching to Armenian`, screens: new Set(['home (hy)']), examples: [] });
 await audit('home (hy)');
+// The two map pages, which the app embeds (the 3D one with a parcel card open).
+for (const path of ['map.html?layers=combined,wildfire&lat=34.19912&lon=-118.2311', 'map3d.html?lat=34.19912&lon=-118.2311']) {
+  await page.goto(`${BASE}/${path}`, { waitUntil: 'networkidle2' }); await sleep(3000);
+  if (path.startsWith('map3d')) { await page.evaluate(() => inspect({ lat: 34.19912, lng: -118.2311 })); await sleep(6000); }
+  await audit(path.split('?')[0]);
+}
 await browser.close();
 const order = ['critical', 'serious', 'moderate', 'minor'];
 const rows = [...found.entries()].sort((a, b) => order.indexOf(a[0].split(' · ')[0]) - order.indexOf(b[0].split(' · ')[0]));

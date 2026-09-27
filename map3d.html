@@ -10,6 +10,7 @@
   :root { --ink: #17372E; --muted: #64756E; --green: #1D5B4D; }
   html, body { margin: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: #E6EFE9; }
   #map { position: absolute; inset: 0; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .panel { position: absolute; left: 10px; top: 10px; right: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; pointer-events: none; }
   .panel > * { pointer-events: auto; }
   select, button { font: 700 14px/1 inherit; color: var(--ink); background: #FFF; border: 1px solid #C9D4CC; border-radius: 12px; padding: 9px 12px; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
@@ -34,6 +35,8 @@
 </style>
 </head>
 <body>
+<main>
+<h1 class="sr">FirePath Glendale 3D map</h1>
 <div id="map" role="region" aria-label="Glendale 3D hazard map"></div>
 <div class="panel">
   <select id="layer" aria-label="Hazard layer"></select>
@@ -44,6 +47,7 @@
 <div id="hint">Tap any building or lot to inspect it</div>
 <div id="card" role="dialog" aria-label="Parcel details" aria-live="polite"></div>
 <div id="fallback"><div><b>3D needs WebGL, which this browser has turned off.</b><br>The flat map shows the same hazard zones.</div></div>
+</main>
 <script>
 // 3D view of the same public planning layers as map.html: OpenStreetMap buildings extruded to their
 // mapped heights, real terrain (so the Verdugos and San Rafael Hills rise), and hazard zones draped on top.
