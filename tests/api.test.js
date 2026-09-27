@@ -499,3 +499,18 @@ test('an account can be deleted for good: password required, every session ends,
   assert.equal((await call('POST', '/api/account/delete', {}, demo)).status, 200, 'the demo household needs no password');
   assert.equal((await call('POST', '/api/account/delete', {})).status, 401);
 });
+
+test('privacy note claims hold: signed-out checks store nothing, sharing starts off, secrets are not stored readable', async () => {
+  const { store, call } = setup();
+  const before = JSON.stringify(store.data), saves = store.saves;
+  assert.equal((await call('POST', '/api/public/check', { address: '1613 Glencoe Way' })).status, 200);
+  await call('GET', '/api/public/point?lat=34.19912&lon=-118.2311');
+  assert.equal(JSON.stringify(store.data), before, 'a signed-out address check changes nothing');
+  assert.equal(store.saves, saves, 'and saves nothing');
+  const token = await signup(call, 'privacy@example.test');
+  const stored = JSON.stringify(store.data);
+  assert.ok(!stored.includes('correct-horse'), 'the password is not stored as typed');
+  assert.ok(!stored.includes(token), 'the session token is not stored as issued');
+  const me = (await call('GET', '/api/me', null, token)).body;
+  assert.equal(Boolean(me.household.shareWithResponders), false, 'sharing with responders starts off');
+});
