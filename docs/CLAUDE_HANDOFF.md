@@ -131,6 +131,8 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
   - `App.js` keeps the last `/api/me` in `firepath-me-cache` and uses it only when the server is unreachable (status 0), showing an offline banner.
   - Installable: `assets/pwa/` icons and a manifest are added by the build. Check with `npm run check:installable [url]`, which uses Chrome's own installability check.
   - Check with `npm run check:offline [url]` (headless Chrome, network cut). The in-app browser pane cannot register service workers, so test in Chrome.
+- **Accessibility:** `npm run check:a11y [url]` runs axe-core in Chrome across landing, Home, Plan, Alerts, Map, Permits and Emergency. It reported zero violations on production on 2026-09-27. Keep text at or above the muted `#53655E` (4.5:1 on every background).
+- **Checks before calling a deploy done:** `scripts/smoke.sh`, `npm run check:a11y`, `npm run check:offline`, `npm run check:installable`. The Chrome-based checks time out when the machine is overloaded (load average above 100); wait and rerun.
 - **Known gaps:**
   - Concurrent Blob writes: fixed and deployed (ETag-conditional write, per-record merge on conflict). Reads return weak ETags (`W/"…"`); conditional writes need the strong form.
   - No physical phone or ESP32 run.
