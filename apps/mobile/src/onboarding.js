@@ -77,6 +77,7 @@ export function AboutYou({ me, onSaved }) {
 
 // Address registration + mailed-code verification. Used in onboarding and on the Profile tab.
 export function AddressPanel({ me, onChange, onDone, onboarding, initialAddress }) {
+  const { t } = useI18n();
   const [address, setAddress] = useState(initialAddress || '');
   const [editing, setEditing] = useState(!me.address);
   const [busy, setBusy] = useState(''), [error, setError] = useState('');
@@ -92,38 +93,38 @@ export function AddressPanel({ me, onChange, onDone, onboarding, initialAddress 
   const place = me.hazards ? summarizePlace(me.hazards) : null;
 
   return <>
-    {onboarding && <Step n={2} of={3} label="Your address" />}
-    {onboarding && <Title>{me.user.type === 'business' ? 'Where is the business?' : 'Where is home?'}</Title>}
+    {onboarding && <Step n={2} of={3} label={t('ad.step')} />}
+    {onboarding && <Title>{t(me.user.type === 'business' ? 'ad.whereBiz' : 'ad.whereHome')}</Title>}
     {editing ? <>
-      <Muted>We check your address against seven state and federal hazard maps.</Muted>
-      <AddressSearch value={address} onChangeText={setAddress} onPick={(text, magicKey) => lookup(text, magicKey)} onSubmit={() => lookup()} suggestPath="/api/address/suggest" hint="Sent to the City of Glendale's address lookup (geocoder) to find the map point." />
+      <Muted>{t('ad.intro')}</Muted>
+      <AddressSearch value={address} onChangeText={setAddress} onPick={(text, magicKey) => lookup(text, magicKey)} onSubmit={() => lookup()} suggestPath="/api/address/suggest" hint={t('ad.hint')} />
       <ErrorText>{error}</ErrorText>
       {candidates.length > 0 && <View style={{ marginTop: 6 }}>{candidates.map(c => <Button key={c} kind="outline" style={{ marginTop: 8 }} onPress={() => { setAddress(c); lookup(c); }}>{c}</Button>)}</View>}
-      <Button busy={busy === 'lookup'} disabled={address.trim().length < 5} onPress={() => lookup()}>Find my address</Button>
-      {busy === 'lookup' && <Caption>Checking seven hazard maps. This can take up to 20 seconds.</Caption>}
-      {a && <Link onPress={() => setEditing(false)}>Cancel</Link>}
+      <Button busy={busy === 'lookup'} disabled={address.trim().length < 5} onPress={() => lookup()}>{t('ad.find')}</Button>
+      {busy === 'lookup' && <Caption>{t('ad.checking')}</Caption>}
+      {a && <Link onPress={() => setEditing(false)}>{t('ad.cancel')}</Link>}
     </> : <>
       <Card>
-        <Tag>{a.verified === 'mail' ? 'VERIFIED BY MAIL' : 'MATCHED · NOT YET VERIFIED'}</Tag>
+        <Tag>{t(a.verified === 'mail' ? 'ad.verified' : 'ad.matched')}</Tag>
         <Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>{a.text}</Text>
-        {place && <Muted style={{ marginTop: 6 }}>{place.mapped.length ? place.mapped.map(i => `⚠ ${i.name}`).join('   ') : 'No hazard map flags this point. That does not mean no risk.'}</Muted>}
-        <Link onPress={() => setEditing(true)}>Use a different address</Link>
+        {place && <Muted style={{ marginTop: 6 }}>{place.mapped.length ? place.mapped.map(i => `⚠ ${t(`hz.${i.key}`)}`).join('   ') : t('ad.noZone')}</Muted>}
+        <Link onPress={() => setEditing(true)}>{t('ad.different')}</Link>
       </Card>
       <MapPanel style={{ height: 180, borderRadius: 17, marginTop: 12 }} point={{ latitude: a.lat, longitude: a.lon }} title="Your registered address" />
       {a.verified !== 'mail' && <Card>
-        <Tag tone="gold">{me.user.type === 'business' ? 'Verify this is your business' : 'Verify you live here'}</Tag>
-        <Muted>{me.user.type === 'business' ? 'We mail a 6-digit code to the business. It confirms the location, not ownership.' : 'We mail a 6-digit code to this address. It confirms you live here, not ownership.'}</Muted>
-        {!a.codePending && !mailbox && <Button kind="outline" busy={busy === 'mail'} onPress={mail}>Mail me a code</Button>}
-        {mailbox && <View style={{ backgroundColor: color.goldBg, borderRadius: 12, padding: 12, marginTop: 14 }}><Text style={{ color: color.gold, fontWeight: '800', fontSize: 11, letterSpacing: 1 }}>DEMO MAILBOX</Text><Text style={{ color: color.ink, fontSize: 24, fontWeight: '800', letterSpacing: 4, marginVertical: 4 }}>{mailbox.code}</Text><Text style={{ color: color.gold, fontSize: 12 }}>{mailbox.note}</Text></View>}
+        <Tag tone="gold">{t(me.user.type === 'business' ? 'ad.verifyBiz' : 'ad.verifyHome')}</Tag>
+        <Muted>{t(me.user.type === 'business' ? 'ad.mailBiz' : 'ad.mailHome')}</Muted>
+        {!a.codePending && !mailbox && <Button kind="outline" busy={busy === 'mail'} onPress={mail}>{t('ad.mailMe')}</Button>}
+        {mailbox && <View style={{ backgroundColor: color.goldBg, borderRadius: 12, padding: 12, marginTop: 14 }}><Text style={{ color: color.gold, fontWeight: '800', fontSize: 11, letterSpacing: 1 }}>{t('ad.mailbox')}</Text><Text style={{ color: color.ink, fontSize: 24, fontWeight: '800', letterSpacing: 4, marginVertical: 4 }}>{mailbox.code}</Text><Text style={{ color: color.gold, fontSize: 12 }}>{mailbox.note}</Text></View>}
         {(a.codePending || mailbox) && <>
-          <Field label="Code from your postcard" value={code} onChangeText={t => setCode(t.replace(/\D/g, ''))} keyboardType="number-pad" maxLength={6} placeholder="6 digits" />
-          <Button busy={busy === 'verify'} disabled={code.length !== 6} onPress={verify}>Verify address</Button>
-          {!mailbox && <Link onPress={mail}>Send a new code</Link>}
+          <Field label={t('ad.code')} value={code} onChangeText={v => setCode(v.replace(/\D/g, ''))} keyboardType="number-pad" maxLength={6} placeholder={t('ad.codePh')} />
+          <Button busy={busy === 'verify'} disabled={code.length !== 6} onPress={verify}>{t('ad.verify')}</Button>
+          {!mailbox && <Link onPress={mail}>{t('ad.newCode')}</Link>}
         </>}
         <ErrorText>{error}</ErrorText>
       </Card>}
       <CityDataCallout id="parcels" />
-      {onboarding && <Button onPress={onDone}>{a.verified === 'mail' ? 'Continue' : 'Continue, verify later'}</Button>}
+      {onboarding && <Button onPress={onDone}>{t(a.verified === 'mail' ? 'ad.continue' : 'ad.continueLater')}</Button>}
     </>}
   </>;
 }
