@@ -60,6 +60,7 @@ Open <http://localhost:5173/app/>. Run `npm test` for the test suite. Local acco
 ## More
 
 - [Handoff and repo map](docs/CLAUDE_HANDOFF.md) · [Demo script](docs/DEMO.md) · [Playtest notes](docs/PLAYTEST-2026-09-26.md)
+- [Reviewing the translations](docs/TRANSLATION_REVIEW.md) (for native-speaker volunteers)
 - [City integration questions](docs/CITY_INTEGRATION.md) · [Mobile and safety plan](docs/MOBILE_AND_SAFETY.md)
 - [In-home device wiring and limits](docs/HARDWARE.md) · [Earlier fire-routing lab](docs/FIRE_LAB.md) (`/fire-lab.html`)
 - The original browser workspace with a responder training view is at `/classic`.

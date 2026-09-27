@@ -119,6 +119,7 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
   - The video (<https://youtu.be/7uOw3mHqUbE>) is a crossfaded slideshow of real screens; a live screencast glitched.
   - Pitch deck: a claude.ai Slides artifact (owner's gallery).
 - **Languages (es, hy, ko; drafts, not yet reviewed by native speakers):**
+  - `docs/TRANSLATION_REVIEW.md` is the guide for native-speaker reviewers: priorities (emergency steps and printed sheets first), the words the builder was unsure of, and what stays English on purpose.
   - Translated: the public page and address result, sign-up and onboarding, Home, the checklist titles, Plan, Alerts and the drill frame, Map, Permits, Profile and the household form, the "Needs City data" cards, and the guided tour.
   - Household drill and alert-plan steps, including the Emergency weather situations, are translated too (`RESIDENT` in `src/playbooks.js`; the API takes `?lang=`).
   - Business alert plans are translated as well (`BUSINESS` in `src/playbooks.js`).
