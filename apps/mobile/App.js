@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Tex
 import { StatusBar } from 'expo-status-bar';
 import { Icon } from './src/icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
+import { setupNotifications } from './src/notify';
 import { api, loadSession, saveSession } from './src/api';
 import { AboutYou, AddressPanel, BusinessDetails, BusinessProfile, HouseholdForm } from './src/onboarding';
 import { Actions, Alerts, Home, MapTab, Permits, Profile, Systems } from './src/tabs';
@@ -21,7 +21,7 @@ const stepKey = user => `${ONBOARDING}:${user?.email || user?.id || 'anon'}`;
 const ME_CACHE = 'firepath-me-cache';
 // Bottom bar: four icon tabs around a raised Home button. Profile lives in the top bar.
 const TABS = [['Map', 'map', 'nav.map'], ['Plan', 'checkbox', 'nav.plan'], ['Home', 'home', 'nav.home'], ['Alerts', 'notifications', 'nav.alerts'], ['Permits', 'document-text', 'nav.permits']];
-Notifications.setNotificationHandler({ handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }) });
+setupNotifications();
 
 export default function Root() {
   return <I18nProvider><App /></I18nProvider>;

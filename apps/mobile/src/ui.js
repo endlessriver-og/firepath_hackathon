@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import Svg, { Circle } from 'react-native-svg';
 import { cityData } from './city-data';
@@ -11,6 +11,8 @@ export const Title = ({ children, style }) => <Text role="heading" aria-level={1
 export const Section = ({ children }) => <Text style={s.section}>{children}</Text>;
 export const Muted = ({ children, style }) => <Text style={[s.muted, style]}>{children}</Text>;
 export const Caption = ({ children, style }) => <Text style={[s.caption, style]}>{children}</Text>;
+// Alert.alert is a no-op in react-native-web, so the browser gets window.alert instead.
+export const showAlert = (title, message) => Platform.OS === 'web' ? window.alert(message ? `${title}\n\n${message}` : title) : Alert.alert(title, message);
 export const Tag = ({ children, tone }) => <Text style={[s.tag, tone === 'warm' && { color: color.warm }, tone === 'gold' && { color: color.gold }]}>{[].concat(children).join('').toUpperCase()}</Text>;
 export const Card = ({ children, style }) => <View style={[s.card, style]}>{children}</View>;
 export function Step({ n, of, label }) {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import * as Notifications from 'expo-notifications';
+import { showTestNotification } from './notify';
 import { api, apiBase } from './api';
 import MapFrame from './MapFrame';
 import { describeHazard, hazardNames, nextSteps, summarizePlace } from './preparedness';
@@ -17,7 +17,7 @@ import { connect as connectDevice, sendToDevice, subscribe as subscribeDevice } 
 import { AddressCheck, CityRecords } from './landing';
 import { eventTemplates, venues, VENUE_TX } from './venues';
 import { AddressPanel, AddressSearch, BusinessDetails, BusinessProfile, HouseholdForm } from './onboarding';
-import { Toggle } from './ui';
+import { showAlert, Toggle } from './ui';
 import { Button, Caption, Card, Chips, CityDataCallout, PrivacyNote, ErrorText, Field, Link, Muted, ScoreBar, Collapsible, LanguageSettings, ProgressRing, Section, SubTabs, Segment, Select, SeverityBadge, Tag, Title, color, s } from './ui';
 
 const EVERBRIDGE = 'https://www.glendaleca.gov/Everbridge';
@@ -28,7 +28,7 @@ function useToggle(me, onChange) {
   const [busy, setBusy] = useState(null);
   return [busy, async id => {
     setBusy(id);
-    try { onChange(await api('PUT', '/api/me/tasks', { id, done: !me.done[id] })); } catch (e) { Alert.alert(t('al.saveFailed'), translateError(lang, e.message)); } finally { setBusy(null); }
+    try { onChange(await api('PUT', '/api/me/tasks', { id, done: !me.done[id] })); } catch (e) { showAlert(t('al.saveFailed'), translateError(lang, e.message)); } finally { setBusy(null); }
   }];
 }
 
@@ -182,10 +182,8 @@ export function Alerts({ me, onChange, sub, setSub }) {
   useEffect(load, [me.address?.lat, lang]);
   async function testNotification() {
     try {
-      const permission = await Notifications.requestPermissionsAsync();
-      if (permission.status !== 'granted') return Alert.alert(t('al.notifOff'), t('al.notifOffSub'));
-      await Notifications.scheduleNotificationAsync({ content: { title: 'FirePath test', body: 'This is a local test, not an emergency alert.', data: { demo: true } }, trigger: null });
-    } catch (e) { Alert.alert(t('al.notifUnavailable'), String(e?.message || e)); }
+      if (!(await showTestNotification(t('nt.testTitle'), t('nt.testBody')))) showAlert(t('al.notifOff'), t('al.notifOffSub'));
+    } catch { showAlert(t('al.notifUnavailable'), t('nt.unsupported')); }
   }
   const time = iso => iso ? formatDate(iso, lang, { time: true }) : '';
   return <>
