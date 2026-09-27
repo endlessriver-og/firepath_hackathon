@@ -18,14 +18,14 @@ FirePath is an independent Glendale pilot prototype, not a City of Glendale serv
 4. On the **Map** tab, switch the view to **3D terrain** and tap any building or lot for its parcel, zoning, fire station district, nearby schools and permit history.
 5. Tap **Emergency** (top right, on every screen) and pick a situation.
 6. Tap 🌐 (or Profile → Settings) to switch to Español, Հայերեն or 한국어. The app, both maps, the printable sheets, the demo household and the permit guidance follow, and permit and business-license search accept words in any of the four languages; official City permit, agency and venue names stay in English. The translations are drafts that native speakers have not yet reviewed.
-7. Add it to your phone's home screen (Share → Add to Home Screen, or Chrome's Install). It opens full-screen, and once opened it keeps working offline: your saved plan and the Emergency steps still load with no signal.
+7. Add it to your phone's home screen (Share → Add to Home Screen, or Chrome's Install). It opens full-screen, and once opened it keeps working offline: your saved plan and the Emergency steps still load with no signal, and checklist ticks made offline are kept on the phone and sent once it reconnects.
 
 ## What is real, and what is not
 
 | Status | What |
 | --- | --- |
 | **Live** | City of Glendale address geocoder and public permit/inspection search (Tyler EnerGov). Seven hazard maps: CAL FIRE wildfire severity, FEMA flood, CGS fault, liquefaction and landslide, DWR dam inundation, USGS debris flow (a dated planning snapshot, not live incidents). National Weather Service alerts. LA County Assessor parcels. City zoning, fire station districts, historic districts and schools. |
-| **Prototype** | Accounts (scrypt-hashed passwords, hashed bearer sessions) and mailed-code address verification (the code shows in a labelled demo mailbox). A plain-language "What FirePath keeps" note on sign-up and in Settings, and account deletion (Profile → Settings). The responder brief: residents consent and preview it, but nothing is sent to 911, dispatch or the City. The ESP32 in-home alert: firmware compiles and its protocol is tested; it has not yet run on a physical board. City venue packages are labelled examples. |
+| **Prototype** | Accounts (scrypt-hashed passwords, hashed bearer sessions) and mailed-code address verification (the code shows in a labelled demo mailbox). A plain-language "What FirePath keeps" note on sign-up and in Settings, plus password change, a download of everything kept for the account, and account deletion (Profile → Settings). The responder brief: residents consent and preview it, but nothing is sent to 911, dispatch or the City. The ESP32 in-home alert: firmware compiles and its protocol is tested; it has not yet run on a physical board. City venue packages are labelled examples. |
 | **Needs the City** | Evacuation zones and the City alert feed, a dispatch (CAD) test connection, parcel ownership records. The app shows each as a "Needs City data" card naming the dataset and what it would unlock (`src/city-data.js`). |
 
 A point outside a mapped zone is labelled "Outside", never "safe". Weather alerts are not City evacuation orders. FirePath never chooses an evacuation route.
@@ -43,7 +43,7 @@ A point outside a mapped zone is labelled "Outside", never "safe". Weather alert
 ## How it is checked
 
 - **On every push:** the test suite (`npm test`) runs in GitHub Actions and again inside the Vercel build, so a failing push never replaces production. They cover the API, including a sweep of malformed input that must never cause a server error, the translations in every language, the printable sheets and the privacy promises.
-- **Every 6 hours, against production:** the API smoke test, the guided tour walked in Chrome, an axe accessibility audit (main screens, Armenian, both maps), and checks that the Emergency steps open offline and the app is installable.
+- **Every 6 hours, against production:** the API smoke test, the guided tour walked in Chrome, an axe accessibility audit (main screens, every Profile tab, Armenian, both maps), household and business sign-up paths, and checks that the Emergency steps open offline, offline checklist ticks are sent once back online, and the app is installable.
 - **By hand after UI changes:** `npm run check:layout` walks every screen in all four languages at 320 and 390 px, at normal and large text sizes.
 
 ## Run it locally
