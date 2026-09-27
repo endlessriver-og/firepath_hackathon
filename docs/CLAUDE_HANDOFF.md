@@ -126,6 +126,10 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
 - **Deployed:** `17328e4`, 2026-09-26 at 7:15 PM.
   - Production passed all 15 `scripts/smoke.sh` checks.
   - The address check takes 0.3–0.6 s; City records load separately.
+- **Offline:**
+  - `scripts/build-demo.mjs` writes `dist/app/sw.js`. Pages are network-first and the fingerprinted bundle is cache-first; `/api/` is never cached.
+  - `App.js` keeps the last `/api/me` in `firepath-me-cache` and uses it only when the server is unreachable (status 0), showing an offline banner.
+  - Verified in headless Chrome with network offline, locally and on production. The in-app browser pane cannot register service workers, so test in Chrome.
 - **Known gaps:**
   - Concurrent Blob writes: fixed and deployed (ETag-conditional write, per-record merge on conflict). Reads return weak ETags (`W/"…"`); conditional writes need the strong form.
   - No physical phone or ESP32 run.
