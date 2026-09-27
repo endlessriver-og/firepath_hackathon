@@ -36,8 +36,17 @@ self.addEventListener('fetch', event => {
   event.respondWith(caches.match(event.request).then(hit => hit || fetch(event.request).then(res => { if (res.ok) caches.open(CACHE).then(c => c.put(event.request, res.clone())); return res; })));
 });
 `);
+  // Installable: "Add to Home Screen" opens FirePath full-screen with its own icon.
+  await cp(resolve(root, 'assets/pwa'), resolve(appDir, 'pwa'), { recursive: true });
+  await writeFile(resolve(appDir, 'manifest.webmanifest'), JSON.stringify({
+    name: 'FirePath', short_name: 'FirePath', description: 'Emergency preparedness for your Glendale address.',
+    start_url: '/app/', scope: '/app/', display: 'standalone', background_color: '#F5F6F1', theme_color: '#1D5B4D',
+    icons: [{ src: '/app/pwa/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' }, { src: '/app/pwa/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }],
+  }, null, 1));
   const indexPath = resolve(appDir, 'index.html');
-  const html = await readFile(indexPath, 'utf8');
-  if (!html.includes('/app/sw.js')) await writeFile(indexPath, html.replace('</body>', `<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/app/sw.js', { scope: '/app/' }).catch(() => {});</script></body>`));
+  let html = await readFile(indexPath, 'utf8');
+  if (!html.includes('manifest.webmanifest')) html = html.replace('</head>', '<link rel="manifest" href="/app/manifest.webmanifest"><link rel="apple-touch-icon" href="/app/pwa/apple-touch-icon.png"><meta name="theme-color" content="#1D5B4D"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="FirePath"></head>');
+  if (!html.includes('/app/sw.js')) html = html.replace('</body>', `<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/app/sw.js', { scope: '/app/' }).catch(() => {});</script></body>`);
+  await writeFile(indexPath, html);
 }
 console.log('Static FirePath demo built in dist/. Open /?demo=1 for the tour, or /app/ for the resident phone app.');

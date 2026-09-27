@@ -18,7 +18,7 @@ const appRoot = resolve(root, 'dist/app');
 const layerRoot = resolve(root, 'data/map-layers');
 const port = Number(process.env.PORT || 5173);
 const python = process.env.GLENDALE_GIS_PYTHON || 'python3';
-const mime = { '.geojson': 'application/geo+json', '.ttf': 'font/ttf', '.png': 'image/png', '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg' };
+const mime = { '.webmanifest': 'application/manifest+json', '.geojson': 'application/geo+json', '.ttf': 'font/ttf', '.png': 'image/png', '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg' };
 
 function lookup(payload) {
   return new Promise((resolveLookup, reject) => {

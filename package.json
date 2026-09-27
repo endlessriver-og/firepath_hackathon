@@ -13,7 +13,8 @@
     "device:flash": ".venv/bin/python scripts/device_check.py --flash",
     "map:build": ".venv/bin/python scripts/build-map-layers.py",
     "public": "bash scripts/public.sh",
-    "check:offline": "node scripts/offline-check.mjs"
+    "check:offline": "node scripts/offline-check.mjs",
+    "check:installable": "node scripts/installable-check.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0"
