@@ -14,6 +14,10 @@ for (const file of ['app.js', 'prep.css', 'preparedness.js', 'responder.js', 'wo
 await cp(resolve(root, 'assets/pwa/favicon.ico'), resolve(output, 'favicon.ico'));
 await mkdir(resolve(output, 'audio'), { recursive: true });
 await writeFile(resolve(output, 'audio/manifest.json'), existsSync(resolve(root, 'audio/manifest.json')) ? await readFile(resolve(root, 'audio/manifest.json')) : '{}');
+// Crawlers: everything but the API, and the three public pages.
+const PUBLIC_SITE = 'https://firepath-ruddy.vercel.app';
+await writeFile(resolve(output, 'robots.txt'), `User-agent: *\nDisallow: /api/\n\nSitemap: ${PUBLIC_SITE}/sitemap.xml\n`);
+await writeFile(resolve(output, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${['/app/', '/map.html', '/map3d.html'].map(path => `  <url><loc>${PUBLIC_SITE}${path}</loc></url>`).join('\n')}\n</urlset>\n`);
 // Public planning layers for the maps (built by scripts/build-map-layers.py; committed).
 await cp(resolve(root, 'data/map-layers'), resolve(output, 'map-layers'), { recursive: true });
 // The resident phone app as a static web export at /app/. Requires `npm install` in apps/mobile first.
