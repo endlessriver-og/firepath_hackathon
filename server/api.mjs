@@ -41,8 +41,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
     publicHits.set(ip, [...recent, now()]);
   }
   // Geocode (City geocoder when available) + coordinate hazard lookup. Shared by registration and the public check.
-  // onMatched lets a caller start work that needs the matched address while the hazard lookup runs.
-  async function locate(address, magicKey, onMatched) {
+  async function locate(address, magicKey) {
     let matched = null, result;
     if (geocoder) {
       try { matched = await geocoder.resolve(address, magicKey); }
@@ -52,7 +51,6 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
         fail(503, 'The City address service did not respond. Try again in a moment.');
       }
       if (!matched) fail(422, 'No Glendale address matched. Check the house number and street, e.g. "613 E Broadway".');
-      onMatched?.(matched.address);
     }
     try { result = await lookupHazards(matched ? { lat: matched.lat, lon: matched.lon } : { address }); } catch { fail(422, 'That address could not be matched in Glendale. Check the street number and name.'); }
     if (!result?.location?.in_city) fail(422, 'That address is outside the Glendale pilot area.');
@@ -274,12 +272,11 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       throttle(req, 20);
       const address = text(body.address, 200);
       if (address.length < 5) fail(400, 'Enter a Glendale street address.');
-      let pendingRecords = null;
-      const result = await locate(address, text(body.magicKey, 200) || undefined, matched => { pendingRecords = cityRecords(matched).catch(() => null); });
+      // City records (about 3 s) load separately via GET /api/public/records, so the hazard result shows first.
+      const result = await locate(address, text(body.magicKey, 200) || undefined);
       const layers = Object.keys(hazardNames).map(key => ({ key, name: hazardNames[key], ...hazardSeverity(key, result.hazards[key]), source: result.hazards[key]?._meta?.source || null }));
       const preview = buildRecommendations({}, {}, result.hazards).filter(r => r.tag.startsWith('Mapped') || r.id === 'alerts').slice(0, 3).map(({ id, title, description }) => ({ id, title, description }));
-      const records = await (pendingRecords || cityRecords(result.location.matched_address || address).catch(() => null));
-      return { body: { records, address: result.location.matched_address || address, lat: result.location.lat, lon: result.location.lon, layers, combined: combinedIndex(result.location.lat, result.location.lon), preview, checkedAt: new Date(now()).toISOString() } };
+      return { body: { address: result.location.matched_address || address, lat: result.location.lat, lon: result.location.lon, layers, combined: combinedIndex(result.location.lat, result.location.lon), preview, checkedAt: new Date(now()).toISOString() } };
     },
 
     // Tap-to-inspect on the 3D map: the parcel, mapped hazards, combined index and City records at a point.
@@ -292,6 +289,14 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       // The City's permit system is keyed to the same parcel number (AIN = APN without dashes).
       const records = parcel?.apn && parcel.city === 'GLENDALE' ? await cityRecords(parcel.apn.replace(/-/g, '')).catch(() => null) : null;
       return { body: { lat, lon, parcel, neighborhood, layers, combined: combinedIndex(lat, lon), records, inCity: !!lookup, checkedAt: new Date(now()).toISOString() } };
+    },
+
+    // Public City permit and inspection records for a matched Glendale address (from the address check).
+    'GET /api/public/records': async (req, body, url) => {
+      throttle(req, 40);
+      const address = text(url.searchParams.get('address'), 200);
+      if (address.length < 5) fail(400, 'Enter a Glendale street address.');
+      return { body: { records: await cityRecords(address).catch(() => null) } };
     },
 
     // Plain-language search over the City of Glendale permit catalog (crawled by scripts/crawl-permits.mjs).

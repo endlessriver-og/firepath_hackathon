@@ -375,3 +375,22 @@ test('tap-to-inspect: bounds check, records keyed by parcel number, and graceful
   assert.equal(partial.body.parcel, null);
   assert.ok(partial.body.layers.length > 0);
 });
+
+test('address check answers without waiting on City records, which load from their own route', async () => {
+  const store = { data: { users: {}, sessions: {} }, save() {} };
+  let recordCalls = 0;
+  const handle = createApi({ store, lookupHazards: async () => sparr, fetchAlerts: async () => [], cityRecords: async () => { recordCalls++; return { totals: { total: 65 } }; } });
+  async function call(method, path, body) {
+    const req = { method, headers: {}, async *[Symbol.asyncIterator]() { if (body) yield JSON.stringify(body); } };
+    const res = { writeHead(status) { this.status = status; }, end(text) { this.body = JSON.parse(text); } };
+    await handle(req, res, new URL(path, 'http://localhost'));
+    return res;
+  }
+  const check = await call('POST', '/api/public/check', { address: '1613 Glencoe Way' });
+  assert.equal(check.status, 200);
+  assert.equal('records' in check.body, false);
+  assert.equal(recordCalls, 0);
+  const records = await call('GET', '/api/public/records?address=1613%20GLENCOE%20WAY');
+  assert.equal(records.body.records.totals.total, 65);
+  assert.equal((await call('GET', '/api/public/records?address=x')).status, 400);
+});

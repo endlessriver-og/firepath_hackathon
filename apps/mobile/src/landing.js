@@ -15,7 +15,8 @@ import { HeroIllustration } from './illustration';
 // Search + results for any Glendale address (public endpoint; nothing stored). Used on the public
 // page and, when signed in, to check places other than your own address.
 // Public City records for an address (Glendale Permits public search), in a collapsible container.
-export function CityRecords({ records, initiallyOpen }) {
+export function CityRecords({ records, initiallyOpen, loading }) {
+  if (loading) return <Card><Muted>🗂  Loading City permit and inspection records…</Muted></Card>;
   if (!records) return null;
   const t = records.totals;
   return <Collapsible icon="🗂" initiallyOpen={initiallyOpen} title={`City records · ${t.total}`} summary={`${t.permits} permits · ${t.inspections} inspections${records.parcel ? ` · parcel ${records.parcel}` : ''}`}>
@@ -35,9 +36,16 @@ export function AddressCheck({ onResult, onRegister, showPreview = false, label 
   const { t } = useI18n();
   const [address, setAddress] = useState('');
   const [result, setResult] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [candidates, setCandidates] = useState([]), [checked, setChecked] = useState('');
+  const [records, setRecords] = useState(null); // null | 'loading' | records
+  const lookup = React.useRef(0); // ignores records that arrive after a newer check started
   async function check(text = address, magicKey) {
-    setChecked(text); setBusy(true); setError(''); setCandidates([]); setResult(null); onResult?.(null);
-    try { const r = await api('POST', '/api/public/check', { address: text, magicKey }); setResult(r); onResult?.(r); }
+    const id = ++lookup.current;
+    setChecked(text); setBusy(true); setError(''); setCandidates([]); setResult(null); setRecords(null); onResult?.(null);
+    try {
+      const r = await api('POST', '/api/public/check', { address: text, magicKey }); setResult(r); onResult?.(r);
+      setRecords('loading');
+      api('GET', `/api/public/records?address=${encodeURIComponent(r.address)}`).then(d => id === lookup.current && setRecords(d.records)).catch(() => id === lookup.current && setRecords(null));
+    }
     catch (e) { setError(e.message); setCandidates(e.data?.candidates || []); }
     finally { setBusy(false); }
   }
@@ -63,7 +71,7 @@ export function AddressCheck({ onResult, onRegister, showPreview = false, label 
         <Button kind="outline" onPress={() => onRegister('business')}>Register my business</Button>
         <Caption>Free plan · City permit fees may apply</Caption>
       </Card>}
-      <CityRecords records={result.records} />
+      <CityRecords records={records === 'loading' ? null : records} loading={records === 'loading'} />
       <MapFrame src={`${apiBase()}/map.html?layers=combined&label=This%20address&lat=${result.lat}&lon=${result.lon}`} style={{ height: 320, borderRadius: 17, marginTop: 12, borderWidth: 1, borderColor: color.line }} />
       <Section>Seven hazard maps</Section>
       <Caption style={{ marginTop: 0 }}>⚠ In zone · ○ Outside · ? Unavailable. Planning maps, not live alerts.</Caption>
