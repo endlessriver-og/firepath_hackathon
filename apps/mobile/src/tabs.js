@@ -512,7 +512,7 @@ export function PrintSheets({ me }) {
   const { t, lang } = useI18n();
   const [error, setError] = useState('');
   const business = me.user.type === 'business';
-  const run = async html => { setError(''); try { await printHtml(html); } catch (e) { setError(e.message); } };
+  const run = async html => { setError(''); try { await printHtml(html, { printLabel: t('pt.print'), blocked: t('pt.blocked') }); } catch (e) { setError(e.message); } };
   const custom = () => business
     ? businessPosterPrintout({ business: me.business, address: me.address?.text, hazards: me.hazards, name: me.user.name }, { lang, t })
     : householdPlanPrintout({ name: me.user.name, address: me.address?.text, hazards: me.hazards, household: me.household }, { lang, t });
