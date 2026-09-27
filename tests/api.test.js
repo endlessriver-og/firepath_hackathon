@@ -653,3 +653,16 @@ test('an account hashed the old way still signs in, and the login upgrades its h
   assert.match(user.passwordHash, /^scrypt2:/, 'upgraded on login');
   assert.equal((await call('POST', '/api/account/login', { email: 'legacy@example.test', password: 'correct-horse' })).status, 200, 'the upgraded hash verifies');
 });
+
+test('the login lockout is kept on the account, so another server instance enforces it too', async () => {
+  const first = setup();
+  await signup(first.call, 'spread@example.test');
+  for (let i = 0; i < 5; i++) assert.equal((await first.call('POST', '/api/account/login', { email: 'spread@example.test', password: `wrong-${i}-horse` })).status, 401);
+  // A second instance with its own memory, reading the same stored accounts.
+  const handle = createApi({ store: first.store, lookupHazards: async () => sparr, fetchAlerts: async () => [] });
+  const req = { method: 'POST', headers: {}, async *[Symbol.asyncIterator]() { yield JSON.stringify({ email: 'spread@example.test', password: 'correct-horse' }); } };
+  const res = { writeHead(status) { this.status = status; }, end() {} };
+  await handle(req, res, new URL('/api/account/login', 'http://localhost'));
+  assert.equal(res.status, 429);
+  assert.equal(JSON.stringify(Object.values(first.store.data.users)[0]).includes('correct-horse'), false);
+});

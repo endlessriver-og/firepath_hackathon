@@ -45,15 +45,26 @@ function demoHousehold(lang) {
 
 export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, combinedIndex = () => null, cityRecords = async () => null, parcelAt = async () => null, neighborhoodAt = async () => null, version = 'local', permitCatalog = { permitTypes: [], businessLicenseTypes: [] }, demoMailbox = true, now = () => Date.now(), ipHeaders = process.env.VERCEL ? ['x-vercel-forwarded-for', 'x-real-ip'] : ['cf-connecting-ip', 'x-forwarded-for'] }) {
   const { data } = store;
-  const failures = new Map(); // email -> [timestamps] of failed logins, in memory only
+  // Failed password attempts are kept on the account itself, so the 5-in-10-minutes lockout holds across every
+  // serverless instance and cold start. An email with no account has nothing to lock; it is counted in this
+  // instance's memory only.
+  const failures = new Map(); // unknown email -> [timestamps]
+  const recentFailures = (user, email) => ((user ? user.passwordFailures : failures.get(email)) || []).filter(t => t > now() - 10 * 60_000);
+  function recordFailure(user, email, recent) {
+    if (user) { user.passwordFailures = [...recent, now()]; store.save(); } else failures.set(email, [...recent, now()]);
+  }
+  function clearFailures(user, email) {
+    if (!user) return failures.delete(email);
+    if (user.passwordFailures) { delete user.passwordFailures; store.save(); }
+  }
   const timingHash = hashPassword('firepath-timing-only'); // a promise, made once
   // Confirms an account's password for password change and deletion, sharing the login lockout, so a stolen
   // session cannot be used to guess the password from many addresses.
   async function confirmPassword(user, password) {
-    const recent = (failures.get(user.email) || []).filter(t => t > now() - 10 * 60_000);
+    const recent = recentFailures(user);
     if (recent.length >= 5) fail(429, 'Too many attempts. Wait 10 minutes and try again.');
-    if (typeof password !== 'string' || !(await checkPassword(password, user.passwordHash))) { failures.set(user.email, [...recent, now()]); fail(403, 'That password is not right.'); }
-    failures.delete(user.email);
+    if (typeof password !== 'string' || !(await checkPassword(password, user.passwordHash))) { recordFailure(user, user.email, recent); fail(403, 'That password is not right.'); }
+    clearFailures(user);
   }
   const alertCache = new Map();
   const venueHazards = new Map(); // venue id -> hazard lookup (venues are fixed points, so cache for the process)
@@ -168,16 +179,16 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
     'POST /api/account/login': async (req, body) => {
       throttle(req, 60, 'login');
       const email = text(body.email, 200).toLowerCase();
-      const recent = (failures.get(email) || []).filter(t => t > now() - 10 * 60_000);
-      if (recent.length >= 5) fail(429, 'Too many attempts. Wait 10 minutes and try again.');
       const user = Object.values(data.users).find(u => u.email === email);
+      const recent = recentFailures(user, email);
+      if (recent.length >= 5) fail(429, 'Too many attempts. Wait 10 minutes and try again.');
       // An unknown email still costs one password check, so the response time does not reveal which emails have accounts.
       if (!user) await checkPassword(String(body.password ?? ''), await timingHash);
       if (!user || typeof body.password !== 'string' || !(await checkPassword(body.password, user.passwordHash))) {
-        failures.set(email, [...recent, now()]);
+        recordFailure(user, email, recent);
         fail(401, 'Email or password is incorrect.');
       }
-      failures.delete(email);
+      clearFailures(user, email);
       if (needsRehash(user.passwordHash)) user.passwordHash = await hashPassword(body.password);
       const token = startSession(user);
       store.save();
