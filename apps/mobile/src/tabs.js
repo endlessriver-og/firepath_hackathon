@@ -87,7 +87,7 @@ export function Home({ me, onChange, go }) {
 
     <Section>{me.user.type === 'business' ? 'Your site' : 'Your home'}</Section>
     {!me.address ? <Card><Muted>Register your address to see which hazard maps include it.</Muted><Link onPress={() => go('Profile', null, 'address')}>Add your address →</Link></Card> : <>
-      <Collapsible icon="🗺" title="What the maps show" summary={place.mapped.length ? place.mapped.map(i => { const sev = hazardSeverity(i.key, me.hazards[i.key]); return `⚠ ${i.name}${typeof sev.level === 'number' ? ` ${sev.label}` : ''}`; }).join('   ') : 'No checked map shows a zone here'}>
+      <Collapsible icon="🗺" title="What the maps show" summary={place.mapped.length ? place.mapped.map(i => { const sev = hazardSeverity(i.key, me.hazards[i.key]); return `⚠ ${i.name}${typeof sev.level === 'number' ? ` ${sev.label}` : ''}`; }).join('   ') : 'No hazard map flags this address'}>
         <Caption>{me.address.text} · {me.address.verified === 'mail' ? 'verified' : 'not yet verified'}</Caption>
         {place.mapped.map(item => <View key={item.key} style={{ flexDirection: 'row', gap: 12, backgroundColor: color.warmBg, borderWidth: 1, borderColor: color.warmLine, borderRadius: 14, padding: 14, marginTop: 8 }}>
           <Text style={{ color: color.warm }}>●</Text><View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{item.name} · {hazardSeverity(item.key, me.hazards[item.key]).label}</Text><Muted>{item.label}</Muted><Link style={{ marginTop: 6 }} onPress={() => go('Map', [item.key])}>See zones on the map →</Link></View></View>)}
@@ -95,7 +95,7 @@ export function Home({ me, onChange, go }) {
       </Collapsible>
       <HomeRecords me={me} />
     </>}
-    <Collapsible icon="🔗" title="How FirePath connects" summary="Maps, City records, alerts, your household and devices"><Muted style={{ marginTop: 10 }}>See every data source and device, and which are live today.</Muted><Link onPress={() => go('Systems')}>Open →</Link></Collapsible>
+    <Collapsible icon="🔗" title="How FirePath connects" summary={`Maps, City records, alerts, your ${me.user.type === 'business' ? 'site' : 'household'} and devices`}><Muted style={{ marginTop: 10 }}>See every data source and device, and which are live today.</Muted><Link onPress={() => go('Systems')}>Open →</Link></Collapsible>
     <Collapsible icon="📚" title="Public resources" summary="20 official links: alerts, zones, CERT, outages, 211"><Resources compact /></Collapsible>
     <Pressable accessibilityRole="button" onPress={() => go('Walkthrough')} style={{ marginTop: 16, backgroundColor: '#12302A', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <Text style={{ fontSize: 20, color: '#F2C46D' }}>▶</Text>
