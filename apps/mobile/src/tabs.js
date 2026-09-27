@@ -159,7 +159,14 @@ function Drill({ me, onChange }) {
     ...(playbook.groups.find(g => g.label === 'Before you leave')?.steps.slice(0, 1) || []),
   ].slice(0, 4) : [];
   const practicedCount = practiceSteps.filter((_, i) => practiced[i]).length;
-  const finish = async () => { setBusy(true); try { if (!me.done.drill) onChange(await api('PUT', '/api/me/tasks', { id: 'drill', done: true })); setEvent(null); setPlaybook(null); setPracticed({}); } catch (err) { setError(err.message); } finally { setBusy(false); } };
+  const finish = async () => {
+    setBusy(true);
+    try {
+      // Finished with no connection (the steps were already loaded): keep it on this device and send it later.
+      if (!me.done.drill) onChange(await api('PUT', '/api/me/tasks', { id: 'drill', done: true }).catch(async e => { if (e.status === 0) return queueTask(me, 'drill', true); throw e; }));
+      setEvent(null); setPlaybook(null); setPracticed({});
+    } catch (err) { setError(err.message); } finally { setBusy(false); }
+  };
   return <>
     <Muted>{t('dr.intro')}</Muted>
     <Select label={t('dr.pick')} placeholder={t('dr.choose')} value={event} options={drillEvents.map(e => [e, t(`evs.${e}`)])} onChange={open} />
