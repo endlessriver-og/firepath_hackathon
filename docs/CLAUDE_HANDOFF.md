@@ -96,6 +96,7 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
   - Vercel serves the static app and maps.
   - `api/index.mjs` is the Node API; its store is a private Blob document (`server/blob-store.mjs`, store `firepath-store`).
   - `api/gis.py` runs HackerFund's GlendaleGisMcp; it downloads its snapshot to `/tmp` on a cold start (about 5 s).
+  - A Vercel cron calls `GET /api/gis` every 5 minutes to keep it warm (about 0.25 s warm).
   - Deployment Protection (`ssoProtection`) is off for this project only, so judges can open it.
 - **New since the accounts slice:**
   - `map3d.html`: MapLibre, 3D terrain and buildings, tap any lot.
