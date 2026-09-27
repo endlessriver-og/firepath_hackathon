@@ -116,10 +116,17 @@ const I18n = createContext({ lang: 'en', t: (k, v) => translate('en', k, v), set
 
 // Language + text size, remembered on the device. On web, text size scales the whole page (zoom);
 // native apps also follow the phone's own text-size setting.
+// First visit, nothing chosen yet: start in the first of the device's preferred languages that FirePath
+// has. Not saved, so a choice in Settings (which is saved) always wins.
+export function deviceLanguage(preferred = typeof navigator !== 'undefined' && navigator.languages?.length ? navigator.languages : [Intl.DateTimeFormat().resolvedOptions().locale]) {
+  for (const tag of preferred) { const base = String(tag).toLowerCase().split('-')[0]; if (dict[base]) return base; }
+  return 'en';
+}
+
 export function I18nProvider({ children }) {
   const [lang, setLangState] = useState('en'), [scale, setScaleState] = useState(1);
   useEffect(() => {
-    AsyncStorage.multiGet(['firepath-lang', 'firepath-scale']).then(([[, l], [, sc]]) => { if (dict[l]) setLangState(l); if (Number(sc)) setScaleState(Number(sc)); }).catch(() => {});
+    AsyncStorage.multiGet(['firepath-lang', 'firepath-scale']).then(([[, l], [, sc]]) => { setLangState(dict[l] ? l : deviceLanguage()); if (Number(sc)) setScaleState(Number(sc)); }).catch(() => {});
   }, []);
   useEffect(() => {
     // Korean wraps between words (keep-all), not mid-word.

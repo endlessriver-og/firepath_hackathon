@@ -53,3 +53,13 @@ test('every error message the API can send has a translation', () => {
   const known = new Set(Object.entries(dict.en).filter(([k]) => k.startsWith('err.')).map(([, v]) => v));
   assert.deepEqual(sent.filter(m => !known.has(m)), []);
 });
+
+test('first visit starts in the device language when FirePath has it', async () => {
+  const src = readFileSync(new URL('../apps/mobile/src/i18n.js', import.meta.url), 'utf8');
+  const fn = src.slice(src.indexOf('export function deviceLanguage'), src.indexOf('export function I18nProvider'));
+  const deviceLanguage = new Function('dict', 'navigator', 'Intl', fn.replace('export function', 'return function'))(dict, undefined, Intl);
+  assert.equal(deviceLanguage(['hy-AM', 'en-US']), 'hy');
+  assert.equal(deviceLanguage(['fr-FR', 'es-MX']), 'es', 'skips languages FirePath does not have');
+  assert.equal(deviceLanguage(['ko']), 'ko');
+  assert.equal(deviceLanguage(['fr-FR', 'de']), 'en', 'falls back to English');
+});
