@@ -119,15 +119,11 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
   - Translated: the public page and address result, sign-up and onboarding, Home, the checklist titles, Plan, Alerts and the drill frame, Map, Permits, Profile and the household form, the "Needs City data" cards, and the guided tour.
   - Still English: drill and alert-plan steps (`src/playbooks.js`, server-generated), official agency and permit names, and the responder card.
   - Keys live in `apps/mobile/src/i18n.js`; checklist titles are in `taskTitles`.
-- **Queued for the next deploy (production is on `34926bd`):**
-  - City records load separately.
-  - Conditional Blob writes.
-  - Onboarding progress kept per account.
-  - All translations.
-  - After deploying, run `scripts/smoke.sh`.
+- **Deployed:** `17328e4`, 2026-09-26 at 7:15 PM.
+  - Production passed all 15 `scripts/smoke.sh` checks.
+  - The address check takes 0.3–0.6 s; City records load separately.
 - **Known gaps:**
-  - The address check takes 3–4 s warm, mostly the City geocoder.
-  - Concurrent Blob writes: fixed in `server/blob-store.mjs` (ETag-conditional write, per-record merge on conflict; tested against the real store) but NOT yet deployed. Deploy after judging. Reads return weak ETags (`W/"…"`); conditional writes need the strong form.
+  - Concurrent Blob writes: fixed and deployed (ETag-conditional write, per-record merge on conflict). Reads return weak ETags (`W/"…"`); conditional writes need the strong form.
   - No physical phone or ESP32 run.
 
 **Resident accounts slice (2026-09-26, evening):**
