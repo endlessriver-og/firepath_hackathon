@@ -546,11 +546,12 @@ export function DeviceCard({ initiallyOpen }) {
   const [error, setError] = useState('');
   const run = async fn => { setError(''); try { await fn(); } catch (e) { if (e?.name !== 'NotFoundError') setError(e.message); } };
   const last = device.events[0];
-  return <Collapsible icon="📟" initiallyOpen={initiallyOpen} title={t('dv.title')} summary={device.connected ? `${t('dv.connected')}${last ? ` · last: ${last.type}${last.kind ? ` (${last.kind})` : ''}` : ''}` : t(device.supported ? 'dv.notConnected' : 'dv.unsupported')}>
+  const eventLabel = e => e.type === 'ack' ? t('dv.ack') : e.type === 'ready' ? t('dv.ready') : e.type === 'sensor' ? t(e.active ? 'dv.smokeOn' : 'dv.smokeOff', { value: e.value }) : e.type === 'sent' ? t('dv.sent', { kind: e.kind }) : e.type;
+  return <Collapsible icon="📟" initiallyOpen={initiallyOpen} title={t('dv.title')} summary={device.connected ? `${t('dv.connected')}${last ? ` · ${eventLabel(last)}` : ''}` : t(device.supported ? 'dv.notConnected' : 'dv.unsupported')}>
     <Muted style={{ marginTop: 10 }}>{t('dv.intro')}</Muted>
     {!device.connected ? <Button kind="outline" disabled={!device.supported} onPress={() => run(connectDevice)}>{t('dv.connect')}</Button>
       : <Button kind="outline" onPress={() => run(() => sendToDevice({ kind: 'test', text: 'FirePath test. Not an emergency.' }))}>{t('dv.test')}</Button>}
-    {device.events.length > 0 && <View style={{ marginTop: 10 }}>{device.events.map((e, i) => <Text key={i} style={{ color: color.muted, fontSize: 12 }}>{e.at} · {e.type === 'ack' ? t('dv.ack') : e.type === 'ready' ? t('dv.ready') : e.type === 'sensor' ? t(e.active ? 'dv.smokeOn' : 'dv.smokeOff', { value: e.value }) : e.type === 'sent' ? t('dv.sent', { kind: e.kind }) : e.type}</Text>)}</View>}
+    {device.events.length > 0 && <View style={{ marginTop: 10 }}>{device.events.map((e, i) => <Text key={i} style={{ color: color.muted, fontSize: 12 }}>{e.at} · {eventLabel(e)}</Text>)}</View>}
     <ErrorText>{error}</ErrorText>
   </Collapsible>;
 }
