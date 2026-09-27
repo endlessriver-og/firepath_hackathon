@@ -1,12 +1,12 @@
 // Signs up through the app's own form in a translated language, walks every onboarding step (household,
 // address, emergency details) to Home and lists English still showing at each step, then deletes the account.
 // Complements lang-sweep, which starts from an API-created account and so never sees onboarding.
-// Usage: node scripts/onboarding-sweep.mjs [lang: hy|ko] [base-url]. Expected leftovers: the test name, City record
+// Usage: node scripts/onboarding-sweep.mjs [lang: hy|ko] [base-url] [business]. Expected leftovers: the test name, City record
 // and agency names on Home.
 import puppeteer from 'puppeteer-core';
 import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-const LANG = process.argv[2] || 'hy', B = process.argv[3] || 'https://firepath-ruddy.vercel.app';
+const LANG = process.argv[2] || 'hy', B = process.argv[3] || 'https://firepath-ruddy.vercel.app', BUSINESS = process.argv[4] === 'business';
 const i18n = readFileSync('apps/mobile/src/i18n.js', 'utf8');
 const val = k => [...i18n.matchAll(new RegExp(`'${k.replace('.', '\\.')}': '((?:[^'\\\\]|\\\\.)*)'`, 'g'))][{ en: 0, es: 1, hy: 2, ko: 3 }[LANG]][1].replace(/\\'/g, "'");
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -21,7 +21,14 @@ const fill = async (label, value) => { const ok = await p.evaluate(label => { co
 const latin = async label => { await p.evaluate(() => document.querySelectorAll('[aria-expanded=false]').forEach(e => e.click())); await sleep(400); const text = await p.evaluate(() => document.querySelector('main')?.innerText + ' ' + [...document.querySelectorAll('input,textarea')].map(e => e.placeholder).join(' ') + ' ' + [...document.querySelectorAll('main [aria-label]')].map(e => e.getAttribute('aria-label')).join(' ')); console.log(label, '| LATIN:', [...new Set(text.match(/\b[A-Za-z][a-z]+(?:[ ,'-]+[A-Za-z][a-z]+){1,}\b/g) || [])].join(' | ') || '(none)'); return text; };
 console.log('create:', await click(val('land.create'))); await sleep(1200);
 await latin('sign-up form');
-console.log('filled:', await fill(val('au.name'), 'Ob Test'), await fill(val('au.email'), email), await fill(val('au.password'), password));
+if (BUSINESS) {
+  // The account-type and business-type pickers are <select>s.
+  await p.evaluate(() => { const s = [...document.querySelectorAll('main select')][0]; s.value = 'business'; s.dispatchEvent(new Event('change', { bubbles: true })); }); await sleep(600);
+  await fill(val('au.bizName'), 'Ob Test Cafe');
+  await p.evaluate(() => { const s = [...document.querySelectorAll('main select')][1]; s.value = 'restaurant'; s.dispatchEvent(new Event('change', { bubbles: true })); }); await sleep(400);
+  await latin('business sign-up form');
+}
+console.log('filled:', await fill(val(BUSINESS ? 'au.nameKey' : 'au.name'), 'Ob Test'), await fill(val('au.email'), email), await fill(val('au.password'), password));
 await click(val('au.createBtn')); await sleep(3500);
 const t1 = await latin('onboarding step A'); console.log('   ', t1.slice(0, 120).replace(/\n/g, ' / '));
 // Walk forward: press the primary button on each step up to 4 times, entering the address when a field is present.
