@@ -138,6 +138,7 @@ function Playbook({ playbook, drill }) {
 }
 
 function Drill({ me, onChange }) {
+  const { t } = useI18n();
   const device = useDevice();
   const [event, setEvent] = useState(null), [playbook, setPlaybook] = useState(null), [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const [practiced, setPracticed] = useState({});
@@ -150,8 +151,8 @@ function Drill({ me, onChange }) {
   const practicedCount = practiceSteps.filter((_, i) => practiced[i]).length;
   const finish = async () => { setBusy(true); try { if (!me.done.drill) onChange(await api('PUT', '/api/me/tasks', { id: 'drill', done: true })); setEvent(null); setPlaybook(null); setPracticed({}); } catch (err) { setError(err.message); } finally { setBusy(false); } };
   return <>
-    <Muted>Choose a scenario, say what you would do, then check each action. This is practice, not a real alert.</Muted>
-    <Select label="Alert to practice" placeholder="Choose an alert" value={event} options={drillEvents.map(e => [e, e.replace(' Warning', '').replace(' Alert', '')])} onChange={open} />
+    <Muted>{t('dr.intro')}</Muted>
+    <Select label={t('dr.pick')} placeholder={t('dr.choose')} value={event} options={drillEvents.map(e => [e, e.replace(' Warning', '').replace(' Alert', '')])} onChange={open} />
     <ErrorText>{error}</ErrorText>
     {event && !playbook && !error && <Muted style={{ marginTop: 10 }}>Preparing your drill…</Muted>}
     {playbook && <Card style={{ borderColor: '#E3C98E', backgroundColor: '#FFFCF3' }}>
@@ -170,6 +171,7 @@ function Drill({ me, onChange }) {
 }
 
 export function Alerts({ me, onChange, sub, setSub }) {
+  const { t } = useI18n();
   const [feed, setFeed] = useState(null), [error, setError] = useState('');
   const load = () => { setError(''); setFeed(null); api('GET', '/api/me/alerts').then(setFeed).catch(e => setError(e.message)); };
   useEffect(load, [me.address?.lat]);
@@ -182,14 +184,14 @@ export function Alerts({ me, onChange, sub, setSub }) {
   }
   const time = iso => iso ? new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
   return <>
-    <Title>Alerts</Title>
-    <SubTabs value={sub || 'live'} options={[['live', 'Live'], ['drill', 'Drill'], ['devices', 'Devices']]} onChange={setSub} />
+    <Title>{t('al.title')}</Title>
+    <SubTabs value={sub || 'live'} options={[['live', t('al.live')], ['drill', t('al.drill')], ['devices', t('al.devices')]]} onChange={setSub} />
     {(sub || 'live') === 'live' && <>
-      {!me.address ? <Muted style={{ marginTop: 12 }}>Register your address to see alerts that include your home.</Muted>
+      {!me.address ? <Muted style={{ marginTop: 12 }}>{t('al.noAddress')}</Muted>
         : error ? <ErrorText>{error}</ErrorText>
-        : !feed ? <Muted style={{ marginTop: 12 }}>Checking the National Weather Service…</Muted>
+        : !feed ? <Muted style={{ marginTop: 12 }}>{t('al.checking')}</Muted>
         : feed.unavailable ? <Card><Muted>The National Weather Service could not be reached. Check official channels directly.</Muted><Link onPress={load}>Try again</Link></Card>
-        : feed.alerts.length === 0 ? <Card><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>No weather alerts right now</Text><Caption>National Weather Service · checked {time(feed.checkedAt)}</Caption><Link onPress={load}>Refresh</Link></Card>
+        : feed.alerts.length === 0 ? <Card><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>{t('al.none')}</Text><Caption>{t('al.checked', { time: time(feed.checkedAt) })}</Caption><Link onPress={load}>{t('al.refresh')}</Link></Card>
         : feed.alerts.map(a => <Card key={a.id} style={{ borderColor: color.warmLine, backgroundColor: color.warmBg }}>
             <Tag tone="warm">{a.severity} · {a.sender}</Tag>
             <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{a.event}</Text>
@@ -198,9 +200,9 @@ export function Alerts({ me, onChange, sub, setSub }) {
             <Caption>Until {time(a.expires)}</Caption>
             {a.playbook && <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: color.warmLine }}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>Your plan for this alert</Text><Playbook playbook={a.playbook} /></View>}
           </Card>)}
-      <Card><Tag>Official</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>Get City evacuation orders</Text><Muted>FirePath doesn't receive these yet. Sign up with the City.</Muted><Link onPress={() => Linking.openURL(EVERBRIDGE)}>Sign up for City alerts ↗</Link><Link onPress={() => Linking.openURL(KNOW_YOUR_ZONE)}>Know your evacuation zone ↗</Link></Card>
+      <Card><Tag>{t('al.official')}</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>{t('al.cityOrders')}</Text><Muted>{t('al.cityOrdersSub')}</Muted><Link onPress={() => Linking.openURL(EVERBRIDGE)}>{t('al.signup')}</Link><Link onPress={() => Linking.openURL(KNOW_YOUR_ZONE)}>{t('al.zone')}</Link></Card>
       <Collapsible icon="🧩" title="What City data would add" summary="Live orders matched to your address"><CityDataCallout id="alertFeed" /><CityDataCallout id="evacuationZones" /></Collapsible>
-      <Caption>In an emergency, call 911.</Caption>
+      <Caption>{t('al.call911')}</Caption>
     </>}
     {sub === 'drill' && <Drill me={me} onChange={onChange} />}
     {sub === 'devices' && <>
