@@ -466,11 +466,10 @@ export function PrintSheets({ me }) {
     ? businessPosterPrintout({ business: me.business, address: me.address?.text, hazards: me.hazards, name: me.user.name })
     : householdPlanPrintout({ name: me.user.name, address: me.address?.text, hazards: me.hazards, household: me.household });
   return <>
-    <Muted style={{ marginTop: 12 }}>One-page sheets for the fridge, the front door or the break room. Anything not saved yet prints as a blank line to fill in by hand.</Muted>
+    <Muted style={{ marginTop: 12 }}>One page each, for the fridge or front door.</Muted>
     <Card style={{ borderColor: color.green, borderWidth: 1.5 }}>
       <Tag>Made for you</Tag>
       <Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>{business ? `${me.business?.name || 'Business'}: in an emergency` : 'Our emergency plan'}</Text>
-      <Muted style={{ marginTop: 4 }}>{business ? 'Assembly point, key contact, hazardous materials and evacuation steps for staff.' : 'Who lives here, meeting places, contacts, pets, shutoffs and your mapped hazards.'}</Muted>
       <Button onPress={() => run(custom())}>Print</Button>
     </Card>
     {standardPrintouts.map(d => <View key={d.id} style={[s.card, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 }]}>
