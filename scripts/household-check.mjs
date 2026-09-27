@@ -1,6 +1,6 @@
 // The household path end to end: sign up as a resident (English), walk the three onboarding steps
 // (who lives here, address, emergency details) to Home, verify the address with the demo-mailbox code,
-// sign out and back in, then delete the account through Settings.
+// sign out and back in, change the password, then delete the account through Settings.
 // Creates and deletes one example.test account. Usage: node scripts/household-check.mjs [base-url]
 import puppeteer from 'puppeteer-core';
 import { randomBytes } from 'node:crypto';
@@ -18,7 +18,8 @@ const heading = () => page.evaluate(() => document.querySelector('[role=heading]
 const click = t => page.evaluate(t => { const e = [...document.querySelectorAll('[role=button],[role=link],[role=tab]')].reverse().find(e => e.innerText.replace(/\s+/g, ' ').trim() === t || e.innerText.includes(t)); e?.click(); return !!e; }, t);
 const fill = async (label, value) => { const ok = await page.evaluate(label => { const i = [...document.querySelectorAll('input')].find(i => i.getAttribute('aria-label') === label); i?.focus(); return !!i; }, label); if (ok) await page.keyboard.type(value); return ok; };
 const choose = (value) => page.evaluate(value => { const s = [...document.querySelectorAll('select')].find(s => [...s.options].some(o => o.value === value)); if (!s) return false; s.value = value; s.dispatchEvent(new Event('change', { bubbles: true })); return true; }, value);
-const email = `household-check-${Date.now()}@example.test`, password = randomBytes(9).toString('hex');
+const email = `household-check-${Date.now()}@example.test`, newPassword = randomBytes(9).toString('hex');
+let password = randomBytes(9).toString('hex');
 let created = false;
 try {
   await page.goto(`${BASE}/app/`, { waitUntil: 'networkidle2' });
@@ -69,6 +70,12 @@ try {
   await click('Already registered? Sign in'); await sleep(1200);
   await fill('Email', email); await fill('Password', password); await click('Sign in'); await sleep(3000);
   step(/Hi Sam/.test(await text()), 'sign back in with the same email and password');
+  // Settings → Change password; the new one is used for the deletion below.
+  await page.evaluate(() => document.querySelectorAll('[aria-label]')[1]?.click()); await sleep(1000);
+  await page.evaluate(() => [...document.querySelectorAll('main [role=tab]')].pop()?.click()); await sleep(800);
+  await click('Change password'); await sleep(500);
+  await fill('Current password', password); await fill('New password', newPassword); await sleep(300); await click('Change password'); await sleep(2500);
+  if (step(/Password changed/.test(await text()), 'change the password in Settings')) password = newPassword;
 } finally {
   if (created) {
     await page.evaluate(() => document.querySelectorAll('[aria-label]')[1]?.click()); await sleep(1000);
