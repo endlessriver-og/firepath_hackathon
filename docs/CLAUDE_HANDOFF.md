@@ -117,7 +117,8 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
   - Pitch deck: a claude.ai Slides artifact (owner's gallery).
 - **Languages (es, hy, ko; drafts, not yet reviewed by native speakers):**
   - Translated: the public page and address result, sign-up and onboarding, Home, the checklist titles, Plan, Alerts and the drill frame, Map, Permits, Profile and the household form, the "Needs City data" cards, and the guided tour.
-  - Still English: drill and alert-plan steps (`src/playbooks.js`, server-generated), official agency and permit names, and the responder card.
+  - Household drill and alert-plan steps, including the Emergency weather situations, are translated too (`RESIDENT` in `src/playbooks.js`; the API takes `?lang=`).
+  - Still English: business alert plans, official agency and permit names, and the responder card.
   - Keys live in `apps/mobile/src/i18n.js`; checklist titles are in `taskTitles`.
 - **Deployed:** `17328e4`, 2026-09-26 at 7:15 PM.
   - Production passed all 15 `scripts/smoke.sh` checks.
