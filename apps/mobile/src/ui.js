@@ -9,8 +9,8 @@ export const color = { bg: '#F5F6F1', ink: '#17372E', green: '#1D5B4D', muted: '
 
 export const Title = ({ children, style }) => <Text role="heading" aria-level={1} style={[s.title, style]}>{children}</Text>;
 export const Section = ({ children }) => <Text style={s.section}>{children}</Text>;
-export const Muted = ({ children, style }) => <Text style={[s.muted, style]}>{children}</Text>;
-export const Caption = ({ children, style }) => <Text style={[s.caption, style]}>{children}</Text>;
+export const Muted = ({ children, style, ...rest }) => <Text {...rest} style={[s.muted, style]}>{children}</Text>;
+export const Caption = ({ children, style, ...rest }) => <Text {...rest} style={[s.caption, style]}>{children}</Text>;
 // Alert.alert is a no-op in react-native-web, so the browser gets window.alert instead.
 export const showAlert = (title, message) => Platform.OS === 'web' ? window.alert(message ? `${title}\n\n${message}` : title) : Alert.alert(title, message);
 export const Tag = ({ children, tone }) => <Text style={[s.tag, tone === 'warm' && { color: color.warm }, tone === 'gold' && { color: color.gold }]}>{[].concat(children).join('').toUpperCase()}</Text>;

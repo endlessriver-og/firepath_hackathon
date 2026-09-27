@@ -177,7 +177,7 @@ export function HouseholdForm({ me, onSaved, onboarding }) {
     <Toggle label={t('hh.share')} detail={t('hh.shareSub')} value={form.shareWithResponders} onChange={shareWithResponders => set({ shareWithResponders })} />
     <ErrorText>{error}</ErrorText>
     <Button busy={busy} onPress={save}>{t(onboarding ? 'hh.finish' : 'hh.save')}</Button>
-    {saved && !onboarding && <Caption>{t('hh.saved')}</Caption>}
+    {saved && !onboarding && <Caption accessibilityLiveRegion="polite" aria-live="polite">{t('hh.saved')}</Caption>}
   </>;
 }
 
@@ -245,7 +245,7 @@ export function BusinessDetails({ me, onSaved, onboarding }) {
     <CityDataCallout id="fireInspections" />
     <ErrorText>{error}</ErrorText>
     <Button busy={busy} onPress={save}>{onboarding ? t('bz.finish') : t('hh.save')}</Button>
-    {saved && !onboarding && <Caption>{t('hh.saved')}</Caption>}
+    {saved && !onboarding && <Caption accessibilityLiveRegion="polite" aria-live="polite">{t('hh.saved')}</Caption>}
   </>;
 }
 
