@@ -86,11 +86,15 @@ const LICENSE_WORDS = [
   [/lawyer|attorney|abogad|փաստաբան|իրավաբան|변호사|법률/, ['legal services']],
 ];
 
+const ENDING = /^(|s|es|ies|y|ry|ic|ics|ing|er|ers|al|ist|ists|ed|shops?)$/;
+
 export function searchLicenses(catalog, query, limit = 6) {
   const q = norm(query || '');
   const byWords = phrase => {
-    const words = phrase.split(/\s+/).filter(w => w.length > 2).map(w => w.replace(/(es|s)$/, ''));
-    return words.length ? catalog.businessLicenseTypes.filter(name => words.every(w => norm(name).includes(w))) : [];
+    const words = phrase.split(/[^a-z0-9]+/).filter(w => w.length > 2).map(w => w.replace(/(es|s)$/, ''));
+    // Each word must be a word in the name, give or take an English ending ("pharmacy" finds Pharmacies;
+    // "tax" does not find Taxi Service, nor "bar" Barber Shops).
+    return words.length ? catalog.businessLicenseTypes.filter(name => { const parts = norm(name).split(/[^a-z0-9]+/); return words.every(w => parts.some(x => x.startsWith(w) && ENDING.test(x.slice(w.length)))); }) : [];
   };
   const mapped = LICENSE_WORDS.filter(([re]) => re.test(q)).flatMap(([, phrases]) => phrases.flatMap(byWords));
   return [...new Set([...mapped, ...byWords(q)])].slice(0, limit);

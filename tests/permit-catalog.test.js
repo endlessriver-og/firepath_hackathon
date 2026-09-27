@@ -43,3 +43,10 @@ test('business license search understands everyday words in all four languages',
   ];
   for (const [expected, queries] of cases) for (const q of queries) assert.match(searchLicenses(catalog, q)[0] || '', expected, `"${q}" found ${searchLicenses(catalog, q)[0] || 'nothing'}`);
 });
+
+test('license words match whole words, give or take an English ending', () => {
+  assert.deepEqual(searchLicenses(catalog, 'tax'), ['Tax Preparation Services']);
+  assert.ok(!searchLicenses(catalog, 'bar').some(n => /Barber/.test(n)));
+  assert.ok(searchLicenses(catalog, 'barber').some(n => /Barbershop/.test(n)));
+  assert.match(searchLicenses(catalog, 'pharmacy')[0], /Pharmacies/);
+});
