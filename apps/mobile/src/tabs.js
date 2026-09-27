@@ -9,7 +9,7 @@ import { PERMIT_PORTAL, businessPermitTypes, hazardSeverity, permitTypes } from 
 import { drillEvents } from './playbooks';
 import { eventQuestions } from './permit-catalog';
 import { hazardViewers, resourceGroups, RESOURCES_CHECKED } from './resources';
-import { businessPosterPrintout, householdPlanPrintout, standardPrintout, standardPrintouts } from './printouts';
+import { businessPosterPrintout, businessPosterTitle, householdPlanPrintout, printoutTitle, standardPrintout, standardPrintouts } from './printouts';
 import { printHtml } from './print';
 import { taskTitles, useI18n } from './i18n';
 import { connect as connectDevice, sendToDevice, subscribe as subscribeDevice } from './device';
@@ -486,23 +486,23 @@ export function Resources({ compact }) {
 
 // Print-and-post sheets: a custom one from the account's saved data, plus standard guidance sheets.
 export function PrintSheets({ me }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [error, setError] = useState('');
   const business = me.user.type === 'business';
   const run = async html => { setError(''); try { await printHtml(html); } catch (e) { setError(e.message); } };
   const custom = () => business
-    ? businessPosterPrintout({ business: me.business, address: me.address?.text, hazards: me.hazards, name: me.user.name })
-    : householdPlanPrintout({ name: me.user.name, address: me.address?.text, hazards: me.hazards, household: me.household });
+    ? businessPosterPrintout({ business: me.business, address: me.address?.text, hazards: me.hazards, name: me.user.name }, { lang, t })
+    : householdPlanPrintout({ name: me.user.name, address: me.address?.text, hazards: me.hazards, household: me.household }, { lang, t });
   return <>
     <Muted style={{ marginTop: 12 }}>{t('plan.printIntro')}</Muted>
     <Card style={{ borderColor: color.green, borderWidth: 1.5 }}>
       <Tag>{t('plan.madeForYou')}</Tag>
-      <Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>{business ? `${me.business?.name || 'Business'}: in an emergency` : t('plan.ours')}</Text>
+      <Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>{business ? businessPosterTitle(me.business?.name, lang) : t('plan.ours')}</Text>
       <Button onPress={() => run(custom())}>{t('plan.printBtn')}</Button>
     </Card>
     {standardPrintouts.map(d => <View key={d.id} style={[s.card, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 }]}>
-      <Text style={{ color: color.ink, fontWeight: '700', flex: 1 }}>{d.title}</Text>
-      <Pressable accessibilityRole="button" onPress={() => run(standardPrintout(d.id))} style={{ borderWidth: 1.5, borderColor: color.green, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }}><Text style={{ color: color.green, fontWeight: '800' }}>{t('plan.printBtn')}</Text></Pressable>
+      <Text style={{ color: color.ink, fontWeight: '700', flex: 1 }}>{printoutTitle(d.id, lang)}</Text>
+      <Pressable accessibilityRole="button" onPress={() => run(standardPrintout(d.id, { lang }))} style={{ borderWidth: 1.5, borderColor: color.green, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }}><Text style={{ color: color.green, fontWeight: '800' }}>{t('plan.printBtn')}</Text></Pressable>
     </View>)}
     <ErrorText>{error}</ErrorText>
   </>;
