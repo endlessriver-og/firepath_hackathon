@@ -337,7 +337,7 @@ test('translated emergency steps keep household names and fall back to English w
   const fire = emergencyGuideIn('es', 'fire', ctx);
   assert.equal(fire.translated, true, 'household weather situations use the translated playbooks');
   assert.ok(fire.steps.some(s => s.text.includes('Rosa') && s.text.includes('ayuda')));
-  assert.equal(emergencyGuideIn('es', 'fire', { type: 'business', business: {} }).translated, false, 'business playbooks are English-only');
+  assert.equal(emergencyGuideIn('es', 'fire', { type: 'business', business: { employees: 4 } }).translated, true, 'business playbooks are translated too');
   assert.equal(emergencyGuideIn('en', 'earthquake', ctx).translated, true);
 });
 
@@ -411,4 +411,14 @@ test('household playbooks translate every step but keep what the household typed
     }
   }
   assert.equal(buildPlaybook('Red Flag Warning', { household, lang: 'xx' }).groups[0].title, 'Do now', 'unknown languages fall back to English');
+  const business = { employees: 12, assembly: 'NE lot', hazmat: ['propane'], hazmatNote: 'rear cage', contactName: 'Sam', needsHelp: 2 };
+  for (const event of drillEvents) {
+    const en = buildPlaybook(event, { type: 'business', business, hazards: sparr.hazards });
+    for (const lang of ['es', 'hy', 'ko']) {
+      const tr = buildPlaybook(event, { type: 'business', business, hazards: sparr.hazards, lang });
+      const english = new Set(en.groups.flatMap(g => g.steps.map(s => s.text)));
+      assert.deepEqual(tr.groups.map(g => g.steps.length), en.groups.map(g => g.steps.length), `business ${lang} ${event}`);
+      for (const step of tr.groups.flatMap(g => g.steps)) assert.ok(!english.has(step.text), `business ${lang} ${event}: untranslated "${step.text}"`);
+    }
+  }
 });

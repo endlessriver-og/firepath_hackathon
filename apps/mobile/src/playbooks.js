@@ -20,7 +20,7 @@ export function alertKind(event = '') {
 const list = items => items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`;
 
 // Household playbook phrases. English is the source; es, hy and ko are drafts not yet reviewed by
-// native speakers. Business playbooks are English only for now.
+// native speakers.
 const RESIDENT = {
   en: {
     and: ' and ', level: {},
@@ -124,6 +124,62 @@ const RESIDENT = {
   },
 };
 
+// Business playbook phrases (same rules as RESIDENT: English is the source, other languages are drafts).
+const BUSINESS = {
+  en: {
+    staff: 'staff', staffN: n => `${n} staff`,
+    fireZone: z => `Your site is in a CAL FIRE ${z} zone. Decide now who can close the business and when.`,
+    assembly: (staff, point) => `Brief ${staff} on the assembly point${point ? `: ${point}` : ''} and who takes the headcount.`,
+    hazmat: note => `Secure hazardous materials${note ? ` (${note})` : ''} and keep the storage area clear of anything that burns.`,
+    clear: 'Move pallets, dumpsters and anything that burns away from walls and vents.',
+    floodStock: 'Move stock, records and equipment off the floor; know where the utility shutoffs are.',
+    floodDrive: 'Tell staff not to drive through flooded streets on the way in or out.',
+    heat: staff => `Plan water, shade and breaks for ${staff}, especially anyone working outdoors or in kitchens.`,
+    smoke: 'Keep doors and windows closed, set HVAC to recirculate, and limit outdoor work.',
+    needsHelp: n => `Assign a staff member to each of the ${n} people who may need help leaving.`,
+    contact: name => `Keep the key contact${name ? ` (${name})` : ''} reachable and confirm how you will reach every employee.`,
+  },
+  es: {
+    staff: 'el personal', staffN: n => `sus ${n} empleados`,
+    fireZone: z => `Su local está en una zona de CAL FIRE de riesgo ${z}. Decida ya quién puede cerrar el negocio y cuándo.`,
+    assembly: (staff, point) => `Informe a ${staff} sobre el punto de reunión${point ? `: ${point}` : ''} y quién cuenta a las personas.`,
+    hazmat: note => `Asegure los materiales peligrosos${note ? ` (${note})` : ''} y mantenga el área de almacenamiento libre de todo lo que pueda arder.`,
+    clear: 'Aleje de paredes y ventilas tarimas, contenedores de basura y todo lo que pueda arder.',
+    floodStock: 'Suba del piso mercancía, archivos y equipo; sepa dónde están los cierres de servicios.',
+    floodDrive: 'Pida al personal no manejar por calles inundadas al llegar ni al salir.',
+    heat: staff => `Planee agua, sombra y descansos para ${staff}, sobre todo para quien trabaja al aire libre o en cocinas.`,
+    smoke: 'Mantenga puertas y ventanas cerradas, ponga el aire en recirculación y limite el trabajo al aire libre.',
+    needsHelp: n => `Asigne a un empleado a cada una de las ${n} personas que pueden necesitar ayuda para salir.`,
+    contact: name => `Mantenga localizable al contacto principal${name ? ` (${name})` : ''} y confirme cómo se comunicará con cada empleado.`,
+  },
+  hy: {
+    staff: 'աշխատակիցներին', staffN: n => `ձեր ${n} աշխատակիցներին`,
+    fireZone: z => `Ձեր վայրը գտնվում է CAL FIRE-ի «${z}» վտանգի գոտում։ Հիմա որոշեք, թե ով և երբ կարող է փակել բիզնեսը։`,
+    assembly: (staff, point) => `Տեղեկացրեք ${staff} հավաքման վայրի մասին${point ? `՝ ${point}` : ''} և թե ով է հաշվելու մարդկանց։`,
+    hazmat: note => `Ամրացրեք վտանգավոր նյութերը${note ? ` (${note})` : ''} և պահեստը մաքուր պահեք այն ամենից, ինչ կարող է այրվել։`,
+    clear: 'Պատերից և օդանցքներից հեռացրեք ծղոտե հարթակները, աղբամանները և այն ամենը, ինչ կարող է այրվել։',
+    floodStock: 'Ապրանքը, փաստաթղթերը և սարքավորումները բարձրացրեք հատակից, իմացեք, որտեղ են կոմունալ անջատիչները։',
+    floodDrive: 'Ասեք աշխատակիցներին չվարել ողողված փողոցներով գալիս կամ գնալիս։',
+    heat: staff => `Պլանավորեք ջուր, ստվեր և ընդմիջումներ ${staff} համար, հատկապես նրանց, ովքեր աշխատում են դրսում կամ խոհանոցում։`,
+    smoke: 'Փակ պահեք դռներն ու պատուհանները, օդափոխությունը դրեք վերաշրջանառության և սահմանափակեք դրսի աշխատանքը։',
+    needsHelp: n => `Օգնության կարիք ունեցող ${n} մարդկանցից յուրաքանչյուրին կցեք մեկ աշխատակցի։`,
+    contact: name => `Հասանելի պահեք հիմնական կոնտակտին${name ? ` (${name})` : ''} և հաստատեք, թե ինչպես կկապվեք յուրաքանչյուր աշխատակցի հետ։`,
+  },
+  ko: {
+    staff: '직원', staffN: n => `직원 ${n}명`,
+    fireZone: z => `사업장이 CAL FIRE 위험도 '${z}' 구역에 있습니다. 누가 언제 영업을 중단할지 지금 정하세요.`,
+    assembly: (staff, point) => `${staff}에게 집결 장소${point ? `(${point})` : ''}와 인원 확인 담당자를 알려 주세요.`,
+    hazmat: note => `위험물${note ? `(${note})` : ''}을 고정하고 보관 구역에 탈 수 있는 물건이 없게 하세요.`,
+    clear: '팔레트, 쓰레기통 등 탈 수 있는 것을 벽과 환기구에서 멀리 치우세요.',
+    floodStock: '재고, 서류, 장비를 바닥에서 올리고 가스·전기 차단 위치를 알아두세요.',
+    floodDrive: '출퇴근길에 침수된 도로를 운전하지 않도록 직원에게 알리세요.',
+    heat: staff => `${staff}을 위해 물, 그늘, 휴식을 계획하세요. 특히 야외나 주방에서 일하는 사람을 챙기세요.`,
+    smoke: '문과 창문을 닫고 냉난방을 내부 순환으로 설정하고 야외 작업을 줄이세요.',
+    needsHelp: n => `대피에 도움이 필요할 수 있는 ${n}명에게 각각 담당 직원을 정하세요.`,
+    contact: name => `담당자${name ? `(${name})` : ''}와 연락이 닿게 하고 모든 직원에게 연락할 방법을 확인하세요.`,
+  },
+};
+
 export function buildPlaybook(event, { type = 'resident', household = {}, business = {}, hazards = null, done = {}, lang = 'en' } = {}) {
   const { kind, title } = alertKind(event);
   const inZone = key => hazards?.[key] && describeHazard(key, hazards[key]).tone === 'mapped';
@@ -133,22 +189,22 @@ export function buildPlaybook(event, { type = 'resident', household = {}, busine
   const add = (group, text, why) => group.push({ text, why });
 
   if (type === 'business') {
-    const b = business;
-    const staff = b.employees ? `${b.employees} staff` : 'staff';
+    const b = business, B = BUSINESS[lang] || BUSINESS.en;
+    const staff = b.employees ? B.staffN(b.employees) : B.staff;
     if (['fire', 'wind'].includes(kind)) {
-      if (fireZone) add(now, `Your site is in a CAL FIRE ${fireZone} zone. Decide now who can close the business and when.`, 'Mapped wildfire zone at your address');
-      add(now, `Brief ${staff} on the assembly point${b.assembly ? `: ${b.assembly}` : ''} and who takes the headcount.`, b.assembly ? 'Your saved assembly point' : 'No assembly point saved yet');
-      if ((b.hazmat || []).length) add(now, `Secure hazardous materials${b.hazmatNote ? ` (${b.hazmatNote})` : ''} and keep the storage area clear of anything that burns.`, 'You reported hazardous materials on site');
-      if (!done.zone0 && fireZone) add(now, 'Move pallets, dumpsters and anything that burns away from walls and vents.', 'Open step: clear the first 5 feet');
+      if (fireZone) add(now, B.fireZone((RESIDENT[lang] || RESIDENT.en).level[fireZone] || fireZone), 'Mapped wildfire zone at your address');
+      add(now, B.assembly(staff, b.assembly), b.assembly ? 'Your saved assembly point' : 'No assembly point saved yet');
+      if ((b.hazmat || []).length) add(now, B.hazmat(b.hazmatNote), 'You reported hazardous materials on site');
+      if (!done.zone0 && fireZone) add(now, B.clear, 'Open step: clear the first 5 feet');
     }
     if (kind === 'flood') {
-      if (floodZone) add(now, 'Move stock, records and equipment off the floor; know where the utility shutoffs are.', 'Mapped flood or dam inundation area');
-      add(now, 'Tell staff not to drive through flooded streets on the way in or out.', 'Most flood deaths happen in vehicles');
+      if (floodZone) add(now, B.floodStock, 'Mapped flood or dam inundation area');
+      add(now, B.floodDrive, 'Most flood deaths happen in vehicles');
     }
-    if (kind === 'heat') add(now, `Plan water, shade and breaks for ${staff}, especially anyone working outdoors or in kitchens.`, 'Heat illness risk at work');
-    if (kind === 'smoke') add(now, 'Keep doors and windows closed, set HVAC to recirculate, and limit outdoor work.', 'Smoke exposure');
-    if (b.needsHelp) add(checkOn, `Assign a staff member to each of the ${b.needsHelp} people who may need help leaving.`, 'From your business profile');
-    add(leave, `Keep the key contact${b.contactName ? ` (${b.contactName})` : ''} reachable and confirm how you will reach every employee.`, done.contacts ? 'Your staff contact tree' : 'Open step: build a staff contact tree');
+    if (kind === 'heat') add(now, B.heat(staff), 'Heat illness risk at work');
+    if (kind === 'smoke') add(now, B.smoke, 'Smoke exposure');
+    if (b.needsHelp) add(checkOn, B.needsHelp(b.needsHelp), 'From your business profile');
+    add(leave, B.contact(b.contactName), done.contacts ? 'Your staff contact tree' : 'Open step: build a staff contact tree');
   } else {
     const h = household, P = RESIDENT[lang] || RESIDENT.en;
     const join = items => items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')}${P.and}${items.at(-1)}`;
@@ -180,7 +236,7 @@ export function buildPlaybook(event, { type = 'resident', household = {}, busine
     else add(leave, P.meetAgree, 'No meeting places saved yet');
     if (h.contact) add(leave, P.contact(h.contact), 'Your out-of-area contact');
   }
-  const P = (type === 'business' ? null : RESIDENT[lang]) || RESIDENT.en;
+  const P = RESIDENT[lang] || RESIDENT.en;
   add(leave, P.official, 'Official instructions come first');
   return {
     event, kind, title,
@@ -312,8 +368,8 @@ const TX = {
 };
 
 export function emergencyGuideIn(lang, id, ctx = {}) {
-  // Weather situations reuse the alert playbooks, which are translated for households.
-  const fromPlaybook = emergencySituations.find(s => s.id === id)?.event && ctx.type !== 'business' && RESIDENT[lang];
+  // Weather situations reuse the alert playbooks, which are translated.
+  const fromPlaybook = emergencySituations.find(s => s.id === id)?.event && RESIDENT[lang];
   const base = emergencyGuide(id, fromPlaybook ? { ...ctx, lang } : ctx);
   if (fromPlaybook) return { ...base, translated: true };
   const tx = TX[lang];
