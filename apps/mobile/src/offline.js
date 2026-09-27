@@ -7,7 +7,13 @@ export const ME_CACHE = 'firepath-me-cache';
 const PENDING = 'firepath-pending-tasks';
 
 const read = async key => { try { return JSON.parse(await AsyncStorage.getItem(key)) || null; } catch { return null; } };
-const write = (key, value) => (value && Object.keys(value).length ? AsyncStorage.setItem(key, JSON.stringify(value)) : AsyncStorage.removeItem(key)).catch(() => {});
+// Screens can show how many changes are still waiting to be sent.
+const listeners = new Set();
+export const onQueueChange = fn => { listeners.add(fn); read(PENDING).then(p => fn(Object.keys(p || {}).length)); return () => listeners.delete(fn); };
+const write = (key, value) => {
+  if (key === PENDING) listeners.forEach(fn => fn(Object.keys(value || {}).length));
+  return (value && Object.keys(value).length ? AsyncStorage.setItem(key, JSON.stringify(value)) : AsyncStorage.removeItem(key)).catch(() => {});
+};
 
 // Every read-modify-write of the queue runs one at a time, so two quick taps or a tap during a flush never
 // overwrite each other.
@@ -49,4 +55,4 @@ export const flushTasks = () => locked(async () => {
 // The view with any still-queued ticks laid over it, so a partial send never hides them.
 export const withPending = view => locked(async () => { const pending = await read(PENDING); return pending ? { ...view, done: { ...view.done, ...pending } } : view; });
 
-export const clearOffline = () => locked(() => Promise.all([ME_CACHE, PENDING].map(k => AsyncStorage.removeItem(k).catch(() => {}))));
+export const clearOffline = () => locked(() => { listeners.forEach(fn => fn(0)); return Promise.all([ME_CACHE, PENDING].map(k => AsyncStorage.removeItem(k).catch(() => {}))); });

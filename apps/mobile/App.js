@@ -5,7 +5,7 @@ import { Icon } from './src/icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setupNotifications } from './src/notify';
 import { api, loadSession, saveSession } from './src/api';
-import { ME_CACHE, clearOffline, flushTasks, withPending } from './src/offline';
+import { ME_CACHE, clearOffline, flushTasks, onQueueChange, withPending } from './src/offline';
 import { AboutYou, AddressPanel, BusinessDetails, BusinessProfile, HouseholdForm } from './src/onboarding';
 import { Actions, Alerts, Home, MapTab, Permits, Profile, Systems } from './src/tabs';
 import { Landing } from './src/landing';
@@ -57,6 +57,8 @@ function App() {
   const go = (next, withLayers, sub) => { if (withLayers) setLayers(withLayers); if (sub) setSubs(current => ({ ...current, [next]: sub })); setTab(next); };
   const [error, setError] = useState('');
   const [offline, setOffline] = useState(false);
+  const [queued, setQueued] = useState(0); // checklist changes kept on this device, not yet sent
+  useEffect(() => onQueueChange(setQueued), []);
   const scroller = useRef(null);
   const top = () => scroller.current?.scrollTo({ y: 0, animated: false });
 
@@ -113,6 +115,7 @@ function App() {
     </View>
     {narrow && <Text style={{ backgroundColor: color.goldBg, color: '#7A4A12', fontSize: 11, fontWeight: '800', letterSpacing: 1, textAlign: 'center', paddingVertical: 3 }}>FIREPATH · {business ? t('head.business') : t('head.pilot')}</Text>}
     {offline && <Pressable accessibilityRole="button" onPress={load} style={{ backgroundColor: '#F6E6C8', paddingVertical: 8, paddingHorizontal: 16 }}><Text style={{ color: '#6B4A0E', fontWeight: '700', fontSize: 13 }}>{t('off.banner')}</Text></Pressable>}
+    {!offline && queued > 0 && <Pressable accessibilityRole="button" onPress={load} style={{ backgroundColor: '#F6E6C8', paddingVertical: 8, paddingHorizontal: 16 }}><Text style={{ color: '#6B4A0E', fontWeight: '700', fontSize: 13 }}>{t('off.queued', { n: queued })}</Text></Pressable>}
     <ScrollView key={emergency ? 'sos' : tab} ref={scroller} role="main" contentContainerStyle={[styles.content, tour !== null && { paddingBottom: 280 }]} keyboardShouldPersistTaps="handled">
       {emergency && <EmergencyNow me={me} onClose={() => setEmergency(false)} />}
       {!emergency && tab === 'Home' && <Home me={me} onChange={setMe} go={go} />}
