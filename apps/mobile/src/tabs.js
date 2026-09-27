@@ -258,7 +258,7 @@ function PermitSearch({ me }) {
     return () => clearTimeout(timer);
   }, [q]);
   return <>
-    <Field label={t('pm.planning')} hint={t('pz.searchHint')} value={q} onChangeText={setQ} placeholder={audience === 'business' ? 'e.g., outdoor dining, block party, sign, propane' : 'e.g., new roof, ADU, solar, remove an oak tree'} autoCapitalize="none" />
+    <Field label={t('pm.planning')} hint={t('pz.searchHint')} value={q} onChangeText={setQ} placeholder={t(audience === 'business' ? 'pz.exBiz' : 'pz.exHome')} autoCapitalize="none" />
     {result && <View>
       <FeeGuide />
       {result.permits.length === 0 ? <Caption>{t('mx.noPermit')}</Caption> : result.permits.slice(0, 5).map(p => <Card key={p.name} style={{ marginTop: 8, padding: 14 }}>

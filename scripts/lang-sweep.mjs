@@ -2,7 +2,8 @@
 // placeholders and screen-reader labels). Usage: node scripts/lang-sweep.mjs [base-url] [lang] [business]
 // For hy and ko it lists Latin-script phrases. For es it also sweeps in English and lists only the phrases that come out
 // identical in both languages, since Spanish is Latin script too.
-// Expected leftovers: permit-search examples (the City catalog is English), venue names, "brace and bolt".
+// Expected leftovers: official names (agencies, map sources, venues, City permit records), "brace and bolt",
+// demo data the resident typed and the responder brief.
 import puppeteer from 'puppeteer-core';
 import { readFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';

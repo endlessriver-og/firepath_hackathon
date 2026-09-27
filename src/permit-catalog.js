@@ -4,36 +4,38 @@
 import { describeHazard } from './preparedness.js';
 
 // Everyday words -> the City's vocabulary. Each entry adds search terms that appear in the catalog.
+// English first, then Spanish, Armenian and Korean words (drafts), so a resident can search in their own
+// language and still land on the City's English permit names.
 const SYNONYMS = [
-  [/party|festival|fair|concert|market|gathering|celebration|event|block party|parade|run|walk/, ['special event', 'street use', 'tent/canopy', 'temporary structure']],
-  [/tent|canopy|stage|booth|bleacher|structure/, ['tent/canopy', 'temporary structure']],
-  [/food|truck|bbq|grill|cook|propane|fryer|candle|flame/, ['open flame/candle', 'commercial kitchen cooking oil']],
-  [/film|movie|shoot|video|photo/, ['filming']],
-  [/firework|pyro|special effect/, ['fireworks', 'pyrotechnics']],
-  [/street|road|closure|block|sidewalk|curb/, ['street use', 'sidewalk']],
-  [/patio|outdoor dining|tables|restaurant seating/, ['sidewalk and dining', 'back to business']],
-  [/roof/, ['re-roof']],
-  [/adu|granny|backyard home|accessory/, ['adu', 'combination (single family)']],
-  [/addition|remodel|renovat|bedroom|garage/, ['combination (single family)', 'addition', 'commercial and mixed use']],
-  [/kitchen|bath/, ['kitchen and bath']],
-  [/solar|panel|battery/, ['solar', 'battery system']],
-  [/quake|earthquake|retrofit|bolt|brace|foundation/, ['seismic bolt and brace']],
-  [/tree|oak|sycamore|bay/, ['indigenous tree', 'street tree']],
-  [/brush|weed|clearance|defensible|fuel|vegetation|wildfire/, ['landscape/fuel modification', 'fire clearance']],
-  [/water heater|plumb|pipe|sewer/, ['plumbing', 'sewer connection']],
-  [/hvac|air condition|furnace|heat pump|mechanical/, ['mechanical']],
-  [/electric|outlet|ev charger|charger|breaker/, ['electrical']],
-  [/sign|banner|mural|paint/, ['sign permit', 'mural', 'pedestrian sign']],
-  [/fence|wall/, ['fence/wall', 'retaining wall']],
-  [/pool|spa/, ['pool']],
-  [/demolish|demolition|tear down/, ['demolition']],
-  [/window|door/, ['window and door']],
-  [/chemical|hazmat|storage|tank|gas|oil/, ['hazmat storage', 'storage tank', 'medical gas', 'carbon dioxide']],
-  [/sprinkler|alarm|extinguish/, ['sprinkler', 'fire alarm', 'extinguishing']],
+  [/party|festival|fair|concert|market|gathering|celebration|event|block party|parade|run|walk|fiesta|feria|concierto|mercado|reunión|celebración|evento|desfile|carrera|միջոցառում|փառատոն|տոնավաճառ|համերգ|շուկա|տոն|շքերթ|파티|축제|행사|콘서트|시장|장터|퍼레이드|모임/, ['special event', 'street use', 'tent/canopy', 'temporary structure']],
+  [/tent|canopy|stage|booth|bleacher|structure|carpa|toldo|escenario|puesto|gradas|estructura|վրան|բեմ|տաղավար|կառույց|텐트|천막|무대|부스|구조물/, ['tent/canopy', 'temporary structure']],
+  [/food|truck|bbq|grill|cook|propane|fryer|candle|flame|comida|camión de comida|parrilla|asador|cocinar|propano|freidora|vela|llama|fogata|սնունդ|ուտելիք|խորոված|մանղալ|եփ|պրոպան|մոմ|կրակ|음식|푸드트럭|바비큐|그릴|요리|프로판|튀김|촛불|불꽃/, ['open flame/candle', 'commercial kitchen cooking oil']],
+  [/film|movie|shoot|video|photo|filmar|filmación|película|rodaje|foto|նկարահան|ֆիլմ|տեսանկար|լուսանկար|촬영|영화|비디오|영상|사진/, ['filming']],
+  [/firework|pyro|special effect|fuegos artificiales|pirotecnia|efectos especiales|հրավառություն|պիրոտեխնիկա|불꽃놀이|폭죽|특수 효과/, ['fireworks', 'pyrotechnics']],
+  [/street|road|closure|block|sidewalk|curb|calles?\b|cierre|cuadra|banqueta|acera|bordillo|փողոց|ճանապարհ|փակում|մայթ|거리|도로|통제|보도|인도/, ['street use', 'sidewalk']],
+  [/patio|outdoor dining|tables|restaurant seating|comedor al aire libre|mesas afuera|terraza|բացօթյա|ամառային սրահ|테라스|야외 식사|야외 좌석/, ['sidewalk and dining', 'back to business']],
+  [/roof|techo|tejado|azotea|տանիք|지붕/, ['re-roof']],
+  [/adu|granny|backyard home|accessory|casita|unidad adicional|vivienda accesoria|լրացուցիչ բնակարան|별채|부속 주택/, ['adu', 'combination (single family)']],
+  [/addition|remodel|renovat|bedroom|garage|ampliación|remodel|renovar|recámara|habitación|cochera|garaje|վերանորոգ|ընդլայն|ննջասենյակ|ավտոտնակ|증축|리모델링|개조|침실|차고/, ['combination (single family)', 'addition', 'commercial and mixed use']],
+  [/kitchen|bath|cocina|baño|խոհանոց|լոգարան|սանհանգույց|주방|부엌|욕실|화장실/, ['kitchen and bath']],
+  [/solar|panel|battery|batería|արևային|մարտկոց|태양광|태양|패널|배터리/, ['solar', 'battery system']],
+  [/quake|earthquake|retrofit|bolt|brace|foundation|sismo|terremoto|temblor|refuerzo|cimentación|cimientos|երկրաշարժ|սեյսմիկ|ամրացում|հիմք|지진|내진|보강|기초/, ['seismic bolt and brace']],
+  [/tree|oak|sycamore|bay|árbol|roble|sicomoro|ծառ|կաղնի|나무|참나무/, ['indigenous tree', 'street tree']],
+  [/brush|weed|clearance|defensible|fuel|vegetation|wildfire|maleza|hierba|desmonte|espacio defendible|vegetación|incendio forestal|թփուտ|մոլախոտ|բուսականություն|անտառային հրդեհ|잡목|잡초|방어 공간|초목|산불/, ['landscape/fuel modification', 'fire clearance']],
+  [/water heater|plumb|pipe|sewer|calentador|boiler|plomería|tubería|drenaje|alcantarillado|ջրատաքացուցիչ|ջրմուղ|խողովակ|կոյուղի|온수기|배관|파이프|하수/, ['plumbing', 'sewer connection']],
+  [/hvac|air condition|furnace|heat pump|mechanical|aire acondicionado|calefacción|calentón|bomba de calor|minisplit|օդորակիչ|ջեռուցում|ջերմային պոմպ|에어컨|냉난방|보일러|히트펌프/, ['mechanical']],
+  [/electric|outlet|ev charger|charger|breaker|eléctric|electricidad|enchufe|cargador|pastilla|էլեկտր|վարդակ|լիցքավորիչ|전기|콘센트|충전기|차단기/, ['electrical']],
+  [/sign|banner|mural|paint|letrero|anuncio|pancarta|manta|pintura|pintar|ցուցանակ|պաստառ|որմնանկար|ներկ|간판|현수막|벽화|페인트/, ['sign permit', 'mural', 'pedestrian sign']],
+  [/fence|wall|cerca|barda|muro|ցանկապատ|պարիսպ|울타리|담장|옹벽/, ['fence/wall', 'retaining wall']],
+  [/pool|spa|alberca|piscina|jacuzzi|լողավազան|수영장|스파/, ['pool']],
+  [/demolish|demolition|tear down|demoler|demolición|derribar|tumbar|քանդ|철거/, ['demolition']],
+  [/window|door|ventana|puerta|պատուհան|դուռ|창문|현관문|출입문/, ['window and door']],
+  [/chemical|hazmat|storage|tank|gas|oil|químico|materiales peligrosos|almacenamiento|tanque|aceite|քիմիական|վտանգավոր նյութ|պահեստ|բաք|գազ|յուղ|화학|위험물|저장|탱크|가스|오일/, ['hazmat storage', 'storage tank', 'medical gas', 'carbon dioxide']],
+  [/sprinkler|alarm|extinguish|rociador|alarma|extintor|սփրինքլեր|ազդանշան|կրակմարիչ|스프링클러|경보기|소화기/, ['sprinkler', 'fire alarm', 'extinguishing']],
 ];
 
 // Phrases that point clearly at one City permit type.
-const BOOSTS = [[/block party|street (party|fair|closure)|parade/, 'PW - ROW - Street Use'], [/wedding|private party/, 'Building Temporary Structure Permit']];
+const BOOSTS = [[/block party|street (party|fair|closure)|parade|fiesta de (la )?cuadra|fiesta en la calle|cierre de calle|desfile|փողոցային տոն|շքերթ|동네 파티|골목 파티|도로 통제|퍼레이드/, 'PW - ROW - Street Use'], [/wedding|private party|boda|fiesta privada|հարսանիք|결혼식|웨딩/, 'Building Temporary Structure Permit']];
 const norm = s => s.toLowerCase();
 const STOP = new Set(['new', 'add', 'the', 'and', 'for', 'our', 'my', 'around', 'house', 'home', 'want', 'need', 'build', 'put', 'install', 'get', 'with', 'have', 'host', 'hold', 'run', 'at', 'on', 'in', 'a']);
 
