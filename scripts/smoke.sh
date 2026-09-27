@@ -12,7 +12,7 @@ code() { curl -s -o /dev/null -w '%{http_code}' -m 30 "$@"; }
 echo "Smoke test: $BASE"
 health=$(curl -s -m 30 "$BASE/api/health")
 echo "$health" | grep -q '"ok":true' && ok "health: $(echo "$health" | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])' 2>/dev/null)" || bad "health: ${health:0:120}"
-for p in /app/ /map.html /map3d.html /map-layers/combined.json /map-layers/zoning.geojson; do
+for p in /app/ /map.html /map3d.html /map-layers/combined.json /map-layers/zoning.geojson /robots.txt /sitemap.xml /favicon.ico /app/pwa/og.png; do
   [ "$(code "$BASE$p")" = 200 ] && ok "GET $p" || bad "GET $p"
 done
 
