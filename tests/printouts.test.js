@@ -58,3 +58,12 @@ test('pet counts read naturally: "2 dogs" in English, "강아지 2마리" in Kor
   assert.equal(petLabel({ kind: 'cat', count: 1 }, 'es'), 'cat');
   assert.equal(petLabel({ kind: '강아지', count: 2 }, 'ko'), '강아지 2마리');
 });
+
+test('Korean object particle follows the last syllable', async () => {
+  const { eul } = await import('../src/playbooks.js');
+  assert.equal(eul('강아지 2마리'), '강아지 2마리를');
+  assert.equal(eul('고양이 한 마리와 강아지'), '고양이 한 마리와 강아지를');
+  assert.equal(eul('물고기'), '물고기를');
+  assert.equal(eul('닭'), '닭을');
+  assert.equal(eul('Mia'), 'Mia을(를)');
+});

@@ -21,6 +21,13 @@ const list = items => items.length <= 1 ? items.join('') : `${items.slice(0, -1)
 
 // Household playbook phrases. English is the source; es, hy and ko are drafts not yet reviewed by
 // native speakers.
+// Korean object particle: 을 after a final consonant, 를 after a vowel. Non-Hangul endings (a typed
+// English name, a digit) keep the neutral 을(를).
+export const eul = word => {
+  const c = String(word).trim().slice(-1).charCodeAt(0);
+  return c >= 0xAC00 && c <= 0xD7A3 ? `${word}${(c - 0xAC00) % 28 ? '을' : '를'}` : `${word}을(를)`;
+};
+
 const RESIDENT = {
   en: {
     and: ' and ', level: {},
@@ -103,20 +110,20 @@ const RESIDENT = {
     fireZone: z => `우리 집은 CAL FIRE 위험도 '${z}' 구역에 있습니다. 차를 출구 방향으로 세우고 연료를 채워 첫 명령에 바로 떠날 수 있게 하세요.`,
     bagReady: '비상 가방을 문 옆에 두고 휴대폰과 보조 배터리를 충전하세요.',
     bagPack: '지금 비상 가방을 싸세요: 물, 약, 서류, 충전기, 손전등.',
-    petsReady: p => `${p}을(를) 위한 이동장, 목줄, 사료를 준비하세요.`,
+    petsReady: p => `${eul(p)} 위한 이동장, 목줄, 사료를 준비하세요.`,
     clear: '현관 매트, 쿠션, 장작 등 탈 수 있는 것을 집에서 멀리 치우세요.',
     windPower: '정전이 있을 수 있습니다. 기기를 충전하고 손전등을 준비하세요.',
     floodValuables: '귀중품과 서류를 바닥에서 올리고 전기 차단 방법을 알아두세요.',
     debris: '산불 후 토석류 위험 지역 근처입니다. 큰비가 오기 전에 떠날 준비를 하세요.',
     water: '흐르는 물을 절대 걷거나 차로 건너지 마세요. 돌아가세요.',
-    petsInside: p => `${p}을(를) 실내로 데려오세요.`,
+    petsInside: p => `${eul(p)} 실내로 데려오세요.`,
     heat: '가장 더운 시간을 대비하세요: 시원한 방, 물, 가장 가까운 에어컨 있는 장소.',
-    heatPets: p => `${p}을(를) 물과 함께 실내에 두세요. 포장도로는 발바닥을 데게 합니다.`,
+    heatPets: p => `${eul(p)} 물과 함께 실내에 두세요. 포장도로는 발바닥을 데게 합니다.`,
     smoke: '창문을 닫고 HEPA 필터나 에어컨을 내부 순환으로 켜고 외출을 줄이세요.',
     helpersLeave: h => `${h} 님은 대피할 때 도움이 필요할 수 있습니다. 지금 이동 수단을 마련하고 일찍 떠나세요.`,
     helpersCheck: h => `${h} 님은 이런 날씨에 도움이 필요할 수 있습니다. 오늘 안부를 확인하세요.`,
     kidsPickup: k => `${k}의 하교 픽업 계획을 확인하세요.`,
-    kidsIndoors: k => `가장 심한 시간에는 ${k}을(를) 실내에 있게 하세요.`,
+    kidsIndoors: k => `가장 심한 시간에는 ${eul(k)} 실내에 있게 하세요.`,
     meet: (near, far) => `흩어지면: ${[near, far].filter(Boolean).join(', 더 멀리는 ')}에서 만나세요.`,
     meetAgree: '흩어질 경우 가족이 만날 장소를 지금 정하세요.',
     contact: c => `${c}에게 계획을 알리세요. 지역 회선이 붐빌 때도 외부 지역 회선은 연결되는 경우가 많습니다.`,
