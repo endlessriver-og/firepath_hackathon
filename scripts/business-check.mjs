@@ -35,6 +35,18 @@ try {
   step(/emergencia/i.test(await heading()), `step 3: "${await heading()}"`);
   await click('Terminar'); await sleep(3000);
   step(/Panadería de Prueba/.test(await heading()) && /de \d+ completados/.test(await text()), 'Home shows the business and its checklist');
+  // Permits: a project checklist, the event planner and a City-venue package.
+  await page.evaluate(() => [...document.querySelectorAll('[role=navigation] [role=tab]')].pop()?.click()); await sleep(1500);
+  await click('Proyectos'); await sleep(1000);
+  await choose('sign'); await sleep(800); await click('Ver mi lista de permisos'); await sleep(3000);
+  step(/permiso probable/i.test(await text()), 'project guide: a new sign gives a likely permit');
+  await click('← Todos los proyectos'); await sleep(1000);
+  await click('Eventos'); await sleep(1000);
+  await click('Empezar'); await sleep(800); await fill('Nombre del evento', 'Feria de prueba'); await click('Ver mi lista de permisos'); await sleep(3500);
+  step(/permisos probables de la ciudad · \d+/i.test(await text()), 'event planner lists likely City permits');
+  const venue = await page.evaluate(() => { const s = [...document.querySelectorAll('select')].find(s => [...s.options].some(o => /Elija un lugar/.test(o.text))); const opt = s && [...s.options].find(o => o.value && !/Elija/.test(o.text)); if (!opt) return null; s.value = opt.value; s.dispatchEvent(new Event('change', { bubbles: true })); return opt.text; }); await sleep(800);
+  if (venue) { await click('Armar mi paquete'); await sleep(3500); }
+  step(Boolean(venue) && /permisos de la ciudad de glendale · \d+/i.test(await text()), `City venue package${venue ? ` (${venue})` : ''}`);
 } finally {
   if (created) {
     await page.evaluate(() => document.querySelectorAll('[aria-label]')[1]?.click()); await sleep(1000);

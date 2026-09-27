@@ -51,6 +51,12 @@ try {
   await page.evaluate(() => [...document.querySelectorAll('[role=navigation] [role=tab]')].find(e => e.innerText.includes('Permits'))?.click()); await sleep(1500);
   await fill('What are you planning?', 'new roof'); await sleep(2500);
   step(/Re-?roof|Roof/i.test(await text()), 'permit search finds roofing permits');
+  // Emergency: the evacuate steps put Call 911 first and name the household member who needs help.
+  await page.evaluate(() => document.querySelectorAll('[aria-label]')[0]?.click()); await sleep(1000);
+  await click('Told to evacuate'); await sleep(1200);
+  const emergency = await text();
+  step(/Call 911/.test(emergency) && /Grandpa Joe|Leave now/.test(emergency), 'Emergency → Told to evacuate shows Call 911 and the steps');
+  await page.evaluate(() => document.querySelectorAll('[aria-label]')[0]?.click()); await sleep(1000);
   // Verify the address with the mailed code (the demo mailbox shows it), then sign out and back in.
   await page.evaluate(() => document.querySelectorAll('[aria-label]')[1]?.click()); await sleep(1000);
   await click('Address'); await sleep(1200);
