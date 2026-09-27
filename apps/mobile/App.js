@@ -105,6 +105,7 @@ function App() {
         <Icon name={tab === 'Profile' && !emergency ? 'person' : 'person-outline'} size={20} color={tab === 'Profile' && !emergency ? '#FFF' : color.green} />
       </Pressable>
     </View>
+    {narrow && <Text style={{ backgroundColor: color.goldBg, color: '#7A4A12', fontSize: 11, fontWeight: '800', letterSpacing: 1, textAlign: 'center', paddingVertical: 3 }}>FIREPATH · {business ? t('head.business') : t('head.pilot')}</Text>}
     {offline && <Pressable accessibilityRole="button" onPress={load} style={{ backgroundColor: '#F6E6C8', paddingVertical: 8, paddingHorizontal: 16 }}><Text style={{ color: '#6B4A0E', fontWeight: '700', fontSize: 13 }}>{t('off.banner')}</Text></Pressable>}
     <ScrollView key={emergency ? 'sos' : tab} ref={scroller} role="main" contentContainerStyle={[styles.content, tour !== null && { paddingBottom: 280 }]} keyboardShouldPersistTaps="handled">
       {emergency && <EmergencyNow me={me} onClose={() => setEmergency(false)} />}
