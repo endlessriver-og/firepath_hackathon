@@ -25,6 +25,8 @@ These are known weak spots. Please check them first.
 | Armenian | Drill and emergency steps for pets | "կապեր" for leashes | Is there a more natural word for a dog leash? |
 | Armenian | Earthquake steps and sheet | "Կռացեք, ծածկվեք և ամուր բռնվեք" | Is this the wording used in local drills? |
 | Armenian | Wildfire sheet title | "Պատրաստ, ուշադիր, գնացե՛ք" | Is there an established translation of "Ready, Set, Go!"? |
+| Armenian | Steps that mention what the resident typed | "հանդիպման վայրը՝ …", "ձեր կոնտակտին՝ …"; names as "Ռոզային" or "Rosa-ին" | Places and contacts follow a label and colon so the typed words never need a case ending. Names get -ին/-ն added by a rule. Does this read naturally? |
+| Korean | Same steps | "강아지 2마리를", 을/를 chosen from the last syllable; "을(를)" when the typed text is not Korean | Natural enough? |
 | Spanish | Alerts | "Alerta de Bandera Roja" | The National Weather Service's Spanish name for a Red Flag Warning may differ. |
 | Korean | Wildfire sheet title | "준비, 대비, 대피!" | Is there an established translation of "Ready, Set, Go!"? |
 | All | Hazard names | "Liquefaction", "Debris flow", "Dam inundation" | Are these the terms residents would recognize? |
