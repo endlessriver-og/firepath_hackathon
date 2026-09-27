@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createApi, fetchNwsAlerts } from '../server/api.mjs';
 import { openBlobStore } from '../server/blob-store.mjs';
+import { serveWithStore } from '../server/serve-store.mjs';
 import { createCombinedIndex } from '../server/combined.mjs';
 import { createGeocoder } from '../server/geocode.mjs';
 import { createCityRecords } from '../server/city-records.mjs';
@@ -31,19 +32,5 @@ const api = createApi({
   version: (() => { let v = ''; try { v = readFileSync(resolve(root, 'VERSION'), 'utf8').trim(); } catch {} if (v && !v.startsWith('$Format')) return v; const sha = process.env.VERCEL_GIT_COMMIT_SHA; return sha ? `${sha} (git)` : v ? 'unstamped' : 'unknown'; })(),
 });
 
-export default async function handler(req, res) {
-  origin = `https://${req.headers['x-forwarded-host'] || req.headers.host}`;
-  const url = new URL(req.url, origin);
-  // Public, account-free routes never touch the store, so they skip the Blob read.
-  const stateless = /^\/api\/(public\/|permits(\/search)?$|venues$|health$)/.test(url.pathname);
-  try { if (!stateless) await store.load(); }
-  catch (error) { console.error('store load failed', error); res.writeHead(503, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'FirePath storage is unavailable. Try again in a moment.' })); return; }
-  // Persist any change before the response goes out, so the next request (maybe on another instance) sees it.
-  const end = res.end.bind(res);
-  let finished;
-  res.end = (...args) => { finished = store.flush().catch(error => console.error('store flush failed', error)).then(() => end(...args)); return res; };
-  if (await api(req, res, url)) { await finished; return; }
-  res.end = end;
-  res.writeHead(404, { 'content-type': 'application/json' });
-  res.end(JSON.stringify({ error: 'Not found' }));
-}
+const handler = serveWithStore(store, api, { onRequest: req => { origin = `https://${req.headers['x-forwarded-host'] || req.headers.host}`; return new URL(req.url, origin); } });
+export default handler;

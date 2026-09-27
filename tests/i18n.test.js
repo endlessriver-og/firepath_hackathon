@@ -50,6 +50,9 @@ test('the Emergency call button says 911 in every language', () => {
 test('every error message the API can send has a translation', () => {
   const api = readFileSync(new URL('../server/api.mjs', import.meta.url), 'utf8');
   const sent = [...api.matchAll(/fail\(\d+, (['`])((?:(?!\1).)+)\1/g)].map(m => m[2]).filter(m => !m.includes('${'));
+  // The serverless wrapper answers storage failures itself.
+  const wrapper = readFileSync(new URL('../server/serve-store.mjs', import.meta.url), 'utf8');
+  sent.push(...[...wrapper.matchAll(/error: '((?:[^'\\]|\\.)+)'/g)].map(m => m[1]).filter(m => m !== 'Not found'));
   const known = new Set(Object.entries(dict.en).filter(([k]) => k.startsWith('err.')).map(([, v]) => v));
   assert.deepEqual(sent.filter(m => !known.has(m)), []);
 });

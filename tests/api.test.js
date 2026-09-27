@@ -66,6 +66,10 @@ test('mailed-code verification: wrong codes count down, right code verifies, cod
   assert.equal(ok.body.address.verified, 'mail');
   assert.ok(ok.body.readiness.badges.find(b => b.id === 'verified').earned);
   assert.equal((await call('POST', '/api/me/address/verify', { code }, token)).status, 400);
+  // The code came from the demo mailbox, so the responder brief must not claim a postcard was mailed.
+  const brief = (await call('GET', '/api/me/responder', null, token)).body.brief;
+  assert.match(brief, /pilot demo code; no postcard was mailed/);
+  assert.doesNotMatch(brief, /verified by mailed code/);
 });
 
 test('household facts are bounded, pets personalise steps, and the responder brief states verification and consent', async () => {
@@ -372,6 +376,8 @@ test('tap-to-inspect: bounds check, records keyed by parcel number, and graceful
   assert.equal(ok.body.neighborhood.zoning.code, 'R 3050');
   assert.equal(ok.body.combined.score, 6);
   assert.deepEqual(recordCalls, ['5615017003']); // the City's permit system keys parcels by AIN, no dashes
+  // A crafted language falls back to English instead of crashing the notes lookup.
+  for (const lang of ['__proto__', 'constructor', 'toString']) assert.equal((await get(glendale, `/api/public/point?lat=34.19912&lon=-118.2311&lang=${lang}`)).status, 200);
 
   recordCalls.length = 0;
   const outside = make(async () => ({ apn: '5800-001-001', city: 'LOS ANGELES' }));
@@ -625,4 +631,25 @@ test('password change and deletion share the login lockout, so a stolen session 
   assert.equal((await call('POST', '/api/account/password', { current: 'correct-horse', next: 'battery-staple' }, token)).status, 429, 'locked even with the right password');
   assert.equal((await call('POST', '/api/account/delete', { password: 'correct-horse' }, token)).status, 429);
   assert.equal((await call('POST', '/api/account/login', { email: 'guess@example.test', password: 'correct-horse' })).status, 429, 'login is locked too');
+});
+
+test('address codes are limited to three a day, so guessing cannot restart with fresh codes', async () => {
+  const { call } = setup();
+  const token = await signup(call, 'codes@example.test');
+  await call('POST', '/api/me/address', { address: '1613 Glencoe Way' }, token);
+  for (let i = 0; i < 3; i++) assert.equal((await call('POST', '/api/me/address/mail', null, token)).status, 200);
+  assert.equal((await call('POST', '/api/me/address/mail', null, token)).status, 429);
+});
+
+test('an account hashed the old way still signs in, and the login upgrades its hash', async () => {
+  const { store, call } = setup();
+  await signup(call, 'legacy@example.test');
+  const user = Object.values(store.data.users).find(u => u.email === 'legacy@example.test');
+  const { scryptSync, randomBytes } = await import('node:crypto');
+  const salt = randomBytes(16);
+  user.passwordHash = `scrypt:${salt.toString('hex')}:${scryptSync('correct-horse', salt, 64).toString('hex')}`; // Node's default N=2^14, as before
+  assert.equal((await call('POST', '/api/account/login', { email: 'legacy@example.test', password: 'wrong-horse' })).status, 401);
+  assert.equal((await call('POST', '/api/account/login', { email: 'legacy@example.test', password: 'correct-horse' })).status, 200);
+  assert.match(user.passwordHash, /^scrypt2:/, 'upgraded on login');
+  assert.equal((await call('POST', '/api/account/login', { email: 'legacy@example.test', password: 'correct-horse' })).status, 200, 'the upgraded hash verifies');
 });

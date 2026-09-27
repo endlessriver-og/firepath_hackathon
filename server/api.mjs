@@ -7,7 +7,7 @@ import { buildPlaybook, drillEvents } from '../src/playbooks.js';
 import { planEvent, searchLicenses, searchPermits } from '../src/permit-catalog.js';
 import { eventTemplates, venuePackage, venues } from '../src/venues.js';
 import { hazardNames } from '../src/preparedness.js';
-import { checkPassword, hashPassword, newCode, newToken, tokenKey } from './auth.mjs';
+import { checkPassword, hashPassword, needsRehash, newCode, newToken, tokenKey } from './auth.mjs';
 import { parcelNotes } from './parcels.mjs';
 import { neighborhoodNotes } from './neighborhood.mjs';
 
@@ -46,12 +46,13 @@ function demoHousehold(lang) {
 export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, combinedIndex = () => null, cityRecords = async () => null, parcelAt = async () => null, neighborhoodAt = async () => null, version = 'local', permitCatalog = { permitTypes: [], businessLicenseTypes: [] }, demoMailbox = true, now = () => Date.now(), ipHeaders = process.env.VERCEL ? ['x-vercel-forwarded-for', 'x-real-ip'] : ['cf-connecting-ip', 'x-forwarded-for'] }) {
   const { data } = store;
   const failures = new Map(); // email -> [timestamps] of failed logins, in memory only
+  const timingHash = hashPassword('firepath-timing-only'); // a promise, made once
   // Confirms an account's password for password change and deletion, sharing the login lockout, so a stolen
   // session cannot be used to guess the password from many addresses.
-  function confirmPassword(user, password) {
+  async function confirmPassword(user, password) {
     const recent = (failures.get(user.email) || []).filter(t => t > now() - 10 * 60_000);
     if (recent.length >= 5) fail(429, 'Too many attempts. Wait 10 minutes and try again.');
-    if (typeof password !== 'string' || !checkPassword(password, user.passwordHash)) { failures.set(user.email, [...recent, now()]); fail(403, 'That password is not right.'); }
+    if (typeof password !== 'string' || !(await checkPassword(password, user.passwordHash))) { failures.set(user.email, [...recent, now()]); fail(403, 'That password is not right.'); }
     failures.delete(user.email);
   }
   const alertCache = new Map();
@@ -134,7 +135,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       const businessName = text(body.businessName, 100), businessKind = oneOf(body.businessKind, businessKinds.map(([k]) => k));
       if (isBusiness && (!businessName || !businessKind)) fail(400, 'Enter the business name and choose its type.');
       if (Object.values(data.users).some(u => u.email === email)) fail(409, 'An account with that email already exists. Sign in instead.');
-      const user = { id: randomUUID(), email, name, type: body.type === 'business' ? 'business' : 'resident', passwordHash: hashPassword(body.password), createdAt: new Date(now()).toISOString(), household: {}, business: isBusiness ? { name: businessName, kind: businessKind } : {}, done: {} };
+      const user = { id: randomUUID(), email, name, type: body.type === 'business' ? 'business' : 'resident', passwordHash: await hashPassword(body.password), createdAt: new Date(now()).toISOString(), household: {}, business: isBusiness ? { name: businessName, kind: businessKind } : {}, done: {} };
       data.users[user.id] = user;
       const token = startSession(user);
       store.save();
@@ -170,11 +171,14 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       const recent = (failures.get(email) || []).filter(t => t > now() - 10 * 60_000);
       if (recent.length >= 5) fail(429, 'Too many attempts. Wait 10 minutes and try again.');
       const user = Object.values(data.users).find(u => u.email === email);
-      if (!user || typeof body.password !== 'string' || !checkPassword(body.password, user.passwordHash)) {
+      // An unknown email still costs one password check, so the response time does not reveal which emails have accounts.
+      if (!user) await checkPassword(String(body.password ?? ''), await timingHash);
+      if (!user || typeof body.password !== 'string' || !(await checkPassword(body.password, user.passwordHash))) {
         failures.set(email, [...recent, now()]);
         fail(401, 'Email or password is incorrect.');
       }
       failures.delete(email);
+      if (needsRehash(user.passwordHash)) user.passwordHash = await hashPassword(body.password);
       const token = startSession(user);
       store.save();
       return { body: { token, ...view(user) } };
@@ -192,7 +196,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
     'POST /api/account/delete': async (req, body) => {
       throttle(req, 10, 'delete');
       const user = session(req);
-      if (!user.demo) confirmPassword(user, body.password);
+      if (!user.demo) await confirmPassword(user, body.password);
       for (const [key, row] of Object.entries(data.sessions)) if (row.userId === user.id) delete data.sessions[key];
       delete data.users[user.id];
       store.save();
@@ -204,9 +208,9 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
     'POST /api/account/password': async (req, body) => {
       throttle(req, 10, 'password');
       const user = session(req);
-      confirmPassword(user, body.current);
+      await confirmPassword(user, body.current);
       if (typeof body.next !== 'string' || body.next.length < 8 || body.next.length > 200) fail(400, 'Use a password of at least 8 characters.');
-      user.passwordHash = hashPassword(body.next);
+      user.passwordHash = await hashPassword(body.next);
       const current = tokenKey(/^Bearer (.+)$/.exec(req.headers.authorization)[1]);
       for (const [key, row] of Object.entries(data.sessions)) if (row.userId === user.id && key !== current) delete data.sessions[key];
       store.save();
@@ -299,6 +303,10 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
     'POST /api/me/address/mail': async req => {
       const user = session(req);
       if (!user.address) fail(400, 'Register an address first.');
+      // At most 3 codes a day, so guessing cannot be restarted with fresh codes (and postcards are not free).
+      const requests = (user.codeRequests || []).filter(t => t > now() - DAY);
+      if (requests.length >= 3) fail(429, 'Too many codes requested today. Try again tomorrow.');
+      user.codeRequests = [...requests, now()];
       const code = newCode();
       user.verification = { codeKey: tokenKey(`${user.id}:${code}`), expires: now() + CODE_DAYS * DAY, attempts: 0, sentAt: new Date(now()).toISOString() };
       store.save();
@@ -317,6 +325,8 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
         fail(400, `That code does not match. ${MAX_CODE_ATTEMPTS - pending.attempts} tries left.`);
       }
       user.addressVerified = 'mail';
+      // In the pilot the code is shown in a demo mailbox, not mailed: the responder brief must say so.
+      user.verifiedWithDemoCode = demoMailbox;
       user.verifiedAt = new Date(now()).toISOString();
       user.verification = null;
       store.save();
@@ -352,8 +362,8 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       // The City's permit system is keyed to the same parcel number (AIN = APN without dashes).
       const records = parcel?.apn && parcel.city === 'GLENDALE' ? await cityRecords(parcel.apn.replace(/-/g, '')).catch(() => null) : null;
       // Notes come back in the viewer's language; copies, so the cached English stays intact.
-      const lang = url.searchParams.get('lang');
-      if (lang && lang !== 'en') {
+      const lang = playbookLang(url);
+      if (lang !== 'en') {
         if (parcel) parcel = { ...parcel, notes: parcelNotes(parcel.yearBuilt, parcel.useType === 'Residential', lang) };
         if (neighborhood) neighborhood = { ...neighborhood, notes: neighborhoodNotes(neighborhood, lang) };
       }
@@ -473,7 +483,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       if (user.type === 'business') {
         const b = user.business || {};
         const lines = ['FIREPATH DRAFT - NOT CONNECTED TO DISPATCH OR CAD',
-          `Address status: ${user.addressVerified === 'mail' ? 'verified by mailed code (not proof of occupancy rights)' : user.addressVerified === 'matched' ? 'matched to a City address point; not verified' : 'no address'}`,
+          `Address status: ${user.addressVerified === 'mail' ? (user.verifiedWithDemoCode ? 'confirmed with a pilot demo code; no postcard was mailed (not proof of occupancy rights)' : 'verified by mailed code (not proof of occupancy rights)') : user.addressVerified === 'matched' ? 'matched to a City address point; not verified' : 'no address'}`,
           `Business (self-reported): ${b.name || 'not set'}${b.kind ? ` · ${businessKinds.find(([k]) => k === b.kind)[1]}` : ''}`,
           `Location: ${user.address || 'not set'}`,
           b.employees || b.visitors ? `Typical occupancy (self-reported): ${b.employees || 0} staff, up to ${b.visitors || 0} visitors${b.hours ? `, ${b.hours}` : ''}` : null,
@@ -490,7 +500,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
         return { body: { brief: lines.join('\n'), shareWithResponders: Boolean(b.shareWithResponders), connected: false } };
       }
       const h = user.household || {};
-      const verification = user.addressVerified === 'mail' ? 'verified by mailed code (not proof of ownership)' : user.addressVerified === 'matched' ? 'matched to a City address point; not verified' : 'no address';
+      const verification = user.addressVerified === 'mail' ? (user.verifiedWithDemoCode ? 'confirmed with a pilot demo code; no postcard was mailed (not proof of ownership)' : 'verified by mailed code (not proof of ownership)') : user.addressVerified === 'matched' ? 'matched to a City address point; not verified' : 'no address';
       const brief = buildResponderSummary({ address: user.address }, {
         occupants: h.people ? occupancy(h) : '',
         pets: (h.pets || []).map(p => `${p.count} ${p.kind}${p.where ? ` (${p.where})` : ''}`).join('; '),
