@@ -112,7 +112,8 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
   - No pill selectors remain.
   - "Needs City data" callouts collapse to one line.
   - The tour has five stops.
-- **Tests:** 50 pass. GitHub Actions (`.github/workflows/test.yml`) runs them on every push and pull request.
+- **Tests:** 58 pass. GitHub Actions (`.github/workflows/test.yml`) runs them on every push and pull request. `tests/api.test.js` includes a malformed-input sweep (168 junk bodies across 12 routes must never produce a 500 or store objects).
+- **Production watch:** `.github/workflows/smoke.yml` runs `scripts/smoke.sh` against production every 6 hours and on demand; a failure emails the repo owner. The smoke test also checks the security headers and that `/api/` is `no-store`.
 - **Submission:** Devpost "Jewel City Hacks 5.0", project FirePath.
   - Staged with every field filled; the owner was to tick the terms and press Submit. Submission is unconfirmed: the project page exists, but it is not in the event's public gallery. Check that the Devpost status says Submitted.
   - The video (<https://youtu.be/7uOw3mHqUbE>) is a crossfaded slideshow of real screens; a live screencast glitched.
@@ -121,7 +122,8 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
   - Translated: the public page and address result, sign-up and onboarding, Home, the checklist titles, Plan, Alerts and the drill frame, Map, Permits, Profile and the household form, the "Needs City data" cards, and the guided tour.
   - Household drill and alert-plan steps, including the Emergency weather situations, are translated too (`RESIDENT` in `src/playbooks.js`; the API takes `?lang=`).
   - Business alert plans are translated as well (`BUSINESS` in `src/playbooks.js`).
-  - Still English: official agency and permit names, and the responder card.
+  - Also translated since: business profile and emergency-details forms, the Permits tab (event and venue planners, project guides), printable sheets (`src/printouts.js`, drafts labelled in their footer), both maps' cards, legends and screen-reader labels, and the parcel notes (`/api/public/point?lang=`).
+  - Still English: official agency and permit names, the copyable project summary (for City staff) and the responder brief's contents.
   - Keys live in `apps/mobile/src/i18n.js`; checklist titles are in `taskTitles`.
 - **Deployed:** `17328e4`, 2026-09-26 at 7:15 PM.
   - Production passed all 15 `scripts/smoke.sh` checks.
@@ -131,9 +133,12 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
   - `App.js` keeps the last `/api/me` in `firepath-me-cache` and uses it only when the server is unreachable (status 0), showing an offline banner.
   - Installable: `assets/pwa/` icons and a manifest are added by the build. Check with `npm run check:installable [url]`, which uses Chrome's own installability check.
   - Check with `npm run check:offline [url]` (headless Chrome, network cut). The in-app browser pane cannot register service workers, so test in Chrome.
-- **Accessibility:** `npm run check:a11y [url]` runs axe-core in Chrome across landing, Home, Plan, Alerts, Map, Permits and Emergency. It reported zero violations on production on 2026-09-27. Keep text at or above the muted `#53655E` (4.5:1 on every background).
+- **Accessibility:** `npm run check:a11y [url]` runs axe-core in Chrome across landing, Home, Plan, Alerts, Map, Permits, Emergency, Home in Armenian, and both map pages (`map.html`, and `map3d.html` with a parcel card open). It reported zero violations on production on 2026-09-27. Keep text at or above the muted `#53655E` (4.5:1 on every background).
 - **Translations:** `tests/i18n.test.js` fails if any app or map phrase lacks Spanish, Armenian or Korean, or a `{placeholder}` differs. `npm run check:lang [url] [lang]` walks every main screen in that language and lists English still showing; the expected leftovers are permit-search examples (the City catalog is English), venue names and "brace and bolt". Printable sheets, the parcel notes (`/api/public/point?lang=`) and both maps are translated; permit names, the copyable project summary and the responder brief stay English on purpose.
 - **Checks before calling a deploy done:** `scripts/smoke.sh`, `npm run check:a11y`, `npm run check:offline`, `npm run check:installable`. The Chrome-based checks time out when the machine is overloaded (load average above 100); wait and rerun.
+- **Keyboard and motion:** both maps open their card/breakdown with Enter or Space on the focused map (the lot at the centre). Focus rings are 3px (`#focus-ring` style injected by the build; `:focus-visible` in the map pages). The 3D fly-in is non-essential, so reduced-motion users jump straight to the view.
+- **Load and first paint:** the build injects a static splash into `#root` (title, "Loading…", "In immediate danger, call 911", in the saved language); React replaces it. Nav icons are inline SVG in `apps/mobile/src/icons.js` (paths from the Ionicons font), so the 390 KB icon font no longer ships. Lighthouse mobile on `/app/`: FCP 1.0 s, performance 77, accessibility, best practices and SEO 100.
+- **Headers and previews:** `vercel.json` sets nosniff, a referrer policy, `x-frame-options: SAMEORIGIN` (the app frames its own maps) and a permissions policy. The build adds a meta description, Open Graph and Twitter tags, and `assets/pwa/og.png` (1200×630). `/favicon.ico` is built from the app icon.
 - **Known gaps:**
   - Concurrent Blob writes: fixed and deployed (ETag-conditional write, per-record merge on conflict). Reads return weak ETags (`W/"…"`); conditional writes need the strong form.
   - No physical phone or ESP32 run.
