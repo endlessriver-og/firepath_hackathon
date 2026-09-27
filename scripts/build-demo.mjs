@@ -46,6 +46,8 @@ self.addEventListener('fetch', event => {
   const indexPath = resolve(appDir, 'index.html');
   let html = await readFile(indexPath, 'utf8');
   if (!html.includes('manifest.webmanifest')) html = html.replace('</head>', '<link rel="manifest" href="/app/manifest.webmanifest"><link rel="apple-touch-icon" href="/app/pwa/apple-touch-icon.png"><meta name="theme-color" content="#1D5B4D"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="FirePath"></head>');
+  // A focus ring keyboard users can see (the browser default is a 1px line).
+  if (!html.includes('id="focus-ring"')) html = html.replace('</head>', '<style id="focus-ring">:focus-visible { outline: 3px solid #17372E !important; outline-offset: 2px; }</style></head>');
   if (!html.includes('/app/sw.js')) html = html.replace('</body>', `<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/app/sw.js', { scope: '/app/' }).catch(() => {});</script></body>`);
   await writeFile(indexPath, html);
 }
