@@ -16,10 +16,11 @@ import { HeroIllustration } from './illustration';
 // page and, when signed in, to check places other than your own address.
 // Public City records for an address (Glendale Permits public search), in a collapsible container.
 export function CityRecords({ records, initiallyOpen, loading }) {
+  const { t: tr } = useI18n();
   if (loading) return <Card><Muted>🗂  Loading City permit and inspection records…</Muted></Card>;
   if (!records) return null;
   const t = records.totals;
-  return <Collapsible icon="🗂" initiallyOpen={initiallyOpen} title={`City records · ${t.total}`} summary={`${t.permits} permits · ${t.inspections} inspections${records.parcel ? ` · parcel ${records.parcel}` : ''}`}>
+  return <Collapsible icon="🗂" initiallyOpen={initiallyOpen} title={tr('rec.title', { n: t.total })} summary={`${tr('rec.summary', { p: t.permits, i: t.inspections })}${records.parcel ? ` · parcel ${records.parcel}` : ''}`}>
     {records.recent.length === 0 ? <Muted style={{ marginTop: 10 }}>No permits or inspections found for this exact address.</Muted> : records.recent.slice(0, 5).map(r => <View key={`${r.kind}-${r.number}`} style={{ paddingVertical: 8, borderBottomWidth: 1, borderColor: color.line }}>
       <Text style={{ color: color.ink, fontWeight: '700' }}>{r.type}</Text>
       <Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{r.kind} {r.number} · {r.status || 'status unknown'}{r.date ? ` · ${r.date}` : ''}</Text>
