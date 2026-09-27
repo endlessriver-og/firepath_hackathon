@@ -21,7 +21,7 @@
   .home { width: 18px; height: 18px; border-radius: 50%; background: var(--ink); border: 3px solid #FFF; box-shadow: 0 0 0 6px rgba(232,100,30,.35); }
   @media (max-width: 500px) { #legend .fine { display: none; } #legend { bottom: 10px; } .maplibregl-ctrl-bottom-right { margin-bottom: 0; } }
   #card { display: none; z-index: 5; position: absolute; right: 10px; top: 58px; width: 320px; max-height: calc(100% - 110px); overflow: auto; background: #FFF; border-radius: 16px; padding: 14px 16px; font-size: 13px; line-height: 1.45; box-shadow: 0 6px 24px rgba(0,0,0,.22); }
-  #card h3 { margin: 0 26px 2px 0; font-size: 16px; line-height: 1.25; }
+  #card h2 { margin: 0 26px 2px 0; font-size: 16px; line-height: 1.25; }
   #card .k { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; color: #367363; margin-top: 12px; }
   #card .muted { color: var(--muted); }
   #card .x { position: absolute; right: 8px; top: 6px; border: 0; box-shadow: none; font-size: 20px; padding: 4px 8px; background: none; }
@@ -169,10 +169,10 @@ function closeCard() { card.style.display = 'none'; outline(null); }
 async function inspect(lngLat) {
   document.getElementById('hint').style.opacity = 0;
   card.style.display = 'block';
-  card.innerHTML = `<button class="x" aria-label="${tr('Close')}" onclick="closeCard()">×</button><h3>${tr('Looking this up…')}</h3><div class="muted">${tr('Parcel, hazard maps and City records.')}</div>`;
+  card.innerHTML = `<button class="x" aria-label="${tr('Close')}" onclick="closeCard()">×</button><h2>${tr('Looking this up…')}</h2><div class="muted">${tr('Parcel, hazard maps and City records.')}</div>`;
   let d;
   try { const r = await fetch(`${base}/api/public/point?lat=${lngLat.lat.toFixed(6)}&lon=${lngLat.lng.toFixed(6)}${TX[params.get('lang')] ? `&lang=${params.get('lang')}` : ''}`); d = await r.json(); if (!r.ok) throw new Error(d.error || r.status); }
-  catch (e) { card.innerHTML = `<button class="x" aria-label="${tr('Close')}" onclick="closeCard()">×</button><h3>${tr('Could not look this up')}</h3><div class="muted">${esc(e.message)}</div>`; return; }
+  catch (e) { card.innerHTML = `<button class="x" aria-label="${tr('Close')}" onclick="closeCard()">×</button><h2>${tr('Could not look this up')}</h2><div class="muted">${esc(e.message)}</div>`; return; }
   const p = d.parcel, n = d.neighborhood;
   const dist = m => m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1)} km`;
   outline(p?.outline || null);
@@ -182,7 +182,7 @@ async function inspect(lngLat) {
   const mapped = (d.layers || []).filter(l => !/^(Not mapped|Minimal|Outside)/i.test(l.label || ''));
   const rec = d.records;
   card.innerHTML = `<button class="x" aria-label="${tr('Close')}" onclick="closeCard()">×</button>
-    <h3>${esc(p?.address ? title(p.address.replace(/\s+GLENDALE CA \d{5}$/, '')) : p ? trv('Parcel {apn}', { apn: p.apn }) : tr('No parcel here'))}</h3>
+    <h2>${esc(p?.address ? title(p.address.replace(/\s+GLENDALE CA \d{5}$/, '')) : p ? trv('Parcel {apn}', { apn: p.apn }) : tr('No parcel here'))}</h2>
     <div class="muted">${p ? `APN ${esc(p.apn)}${facts ? ' · ' + esc(facts) : ''}` : tr('This spot is a street or outside the parcel map.')}</div>
     ${!d.inCity ? `<div class="note">${tr('Outside Glendale pilot coverage: hazard layers are not checked here.')}</div>` : ''}
     ${c ? `<div class="k">${tr('COMBINED PLANNING INDEX')}</div><div style="margin-top:4px"><span class="score" style="background:${scoreColor}">${trv('{score} of {max}', { score: c.score, max: c.max })}</span>${c.parts.length ? c.parts.map(x => esc(tr(x.label)) + ' +' + x.points).join(', ') : tr('No mapped layer here. That is not the same as no risk.')}</div>` : ''}
