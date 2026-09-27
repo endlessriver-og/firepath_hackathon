@@ -13,7 +13,7 @@ export const Muted = ({ children, style, ...rest }) => <Text {...rest} style={[s
 export const Caption = ({ children, style, ...rest }) => <Text {...rest} style={[s.caption, style]}>{children}</Text>;
 // Alert.alert is a no-op in react-native-web, so the browser gets window.alert instead.
 export const showAlert = (title, message) => Platform.OS === 'web' ? window.alert(message ? `${title}\n\n${message}` : title) : Alert.alert(title, message);
-export const Tag = ({ children, tone }) => <Text style={[s.tag, tone === 'warm' && { color: color.warm }, tone === 'gold' && { color: color.gold }]}>{[].concat(children).join('').toUpperCase()}</Text>;
+export const Tag = ({ children, tone, ...rest }) => <Text {...rest} style={[s.tag, tone === 'warm' && { color: color.warm }, tone === 'gold' && { color: color.gold }]}>{[].concat(children).join('').toUpperCase()}</Text>;
 export const Card = ({ children, style }) => <View style={[s.card, style]}>{children}</View>;
 export function Step({ n, of, label }) {
   const { t } = useI18n();

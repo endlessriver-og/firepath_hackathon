@@ -305,7 +305,7 @@ function EventPlanner({ me }) {
     <Button busy={busy} disabled={where === 'other' && location.trim().length < 5} onPress={() => build()}>{t('pz.getList')}</Button>
     {plan && <View style={{ marginTop: 14 }}>
       <Caption style={{ marginTop: 0 }}>{t('pz.location', { place: plan.location })}</Caption>
-      <Tag>{t('pz.likely', { n: plan.items.length })}</Tag><FeeGuide />
+      <Tag accessibilityLiveRegion="polite" aria-live="polite">{t('pz.likely', { n: plan.items.length })}</Tag><FeeGuide />
       {plan.items.map(i => <View key={`${i.type}-${i.workClass}`} style={{ paddingVertical: 8, borderTopWidth: 1, borderColor: color.line }}>
         <Text style={{ color: color.ink, fontWeight: '700' }}>{i.type}{i.workClass && !i.type.includes(i.workClass) ? ` · ${i.workClass}` : ''}</Text><PermitPrice />
         <Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{i.why}</Text>
@@ -355,7 +355,7 @@ function VenuePlanner({ me }) {
     </>}
     {pkg && <View style={{ marginTop: 16 }}>
       <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{form.name || tr('pz.yourEvent')} · {pkg.venue.name}</Text>
-      <Tag>{tr('pz.cityPermits', { n: pkg.items.length })}</Tag><FeeGuide />
+      <Tag accessibilityLiveRegion="polite" aria-live="polite">{tr('pz.cityPermits', { n: pkg.items.length })}</Tag><FeeGuide />
       {pkg.items.map(i => <View key={`${i.type}-${i.workClass}`} style={{ paddingVertical: 8, borderTopWidth: 1, borderColor: color.line }}>
         <Text style={{ color: color.ink, fontWeight: '700' }}>{i.type}{i.workClass && !i.type.includes(i.workClass) ? ` · ${i.workClass}` : ''}</Text><PermitPrice />
         <Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{i.why}</Text>
@@ -386,7 +386,7 @@ export function Permits({ me, top, sub, setSub }) {
   if (guide) return <>
     <Link style={{ marginTop: 0 }} onPress={() => { setGuide(null); top?.(); }}>{t('pz.allProjects')}</Link>
     <Title style={{ marginTop: 10 }}>{projectTitle(type, guide.title)}</Title>
-    <Card><Tag>{t('pz.likelyPermit')}</Tag><Text style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{guide.permit}</Text><PermitPrice /></Card>
+    <Card><Tag>{t('pz.likelyPermit')}</Tag><Text accessibilityLiveRegion="polite" aria-live="polite" style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{guide.permit}</Text><PermitPrice /></Card>
     <FeeGuide />
     {guide.notes.length > 0 && <Card style={{ borderColor: color.warmLine, backgroundColor: color.warmBg }}><Tag tone="warm">{t('pz.forAddress')}</Tag>{guide.notes.map(n => <Text key={n} style={{ color: color.ink, lineHeight: 20, marginTop: 6 }}>• {n}</Text>)}</Card>}
     <Card><Tag>{t('pz.needs')}</Tag>{guide.needs.map(n => <Text key={n} style={{ color: color.ink, lineHeight: 22 }}>☐ {n}</Text>)}</Card>
