@@ -25,7 +25,7 @@ export function CityRecords({ records, initiallyOpen, loading }) {
       <Text style={{ color: color.ink, fontWeight: '700' }}>{r.type}</Text>
       <Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{r.kind} {r.number} · {r.status || 'status unknown'}{r.date ? ` · ${r.date}` : ''}</Text>
     </View>)}
-    <Link onPress={() => Linking.openURL(records.searchUrl)}>See every record in Glendale Permits ↗</Link>
+    <Link onPress={() => Linking.openURL(records.searchUrl)}>{tr('lp.allRecords')}</Link>
     <Caption>{tr('mx.recordsNote')}</Caption>
   </Collapsible>;
 }

@@ -29,7 +29,7 @@ const ALLOWED = new Set([
 ]);
 // Data and content modules that hold English source text by design (translated elsewhere or English on purpose).
 const SKIP = /^(i18n|printouts|playbooks|readiness|preparedness|permit-catalog|venues|resources|city-data|icons|responder|model|walkthrough)\.js$|^sample/;
-const PATTERN = />\s*([A-Z][A-Za-z ,.'’!?-]{5,})\s*<|(?:accessibilityLabel|label|placeholder|title|hint|summary|caption)="([^"]*[A-Za-z]{3,} [A-Za-z]{3,}[^"]*)"|['`]([A-Z][a-z]+(?: [a-z]+){1,}[.!?]?)['`]/g;
+const PATTERN = />\s*[←→↗↓]?\s*([A-Z][A-Za-z ,.'’!?-]{5,})\s*[←→↗↓]?\s*<|(?:accessibilityLabel|label|placeholder|title|hint|summary|caption)="([^"]*[A-Za-z]{3,} [A-Za-z]{3,}[^"]*)"|['`]([A-Z][a-z]+(?: [a-z]+){1,}[.!?]?)['`]/g;
 
 test('screens contain no untranslated English beyond the allowlist', () => {
   const dir = new URL('../apps/mobile/src/', import.meta.url);

@@ -92,9 +92,9 @@ export function Home({ me, onChange, go }) {
     <Section>{t(me.user.type === 'business' ? 'home.yourSite' : 'home.yourHome')}</Section>
     {!me.address ? <Card><Muted>{t('home.noAddress')}</Muted><Link onPress={() => go('Profile', null, 'address')}>{t('home.addAddress')}</Link></Card> : <>
       <Collapsible icon="🗺" title={t('home.maps')} summary={place.mapped.length ? place.mapped.map(i => { const sev = hazardSeverity(i.key, me.hazards[i.key]); return `⚠ ${t(`hz.${i.key}`)}${typeof sev.level === 'number' ? ` ${t(`lvl.${sev.label}`) === `lvl.${sev.label}` ? sev.label : t(`lvl.${sev.label}`)}` : ''}`; }).join('   ') : t('home.noZone')}>
-        <Caption>{me.address.text} · {me.address.verified === 'mail' ? 'verified' : 'not yet verified'}</Caption>
+        <Caption>{me.address.text} · {t(me.address.verified === 'mail' ? 'home.verified' : 'home.notVerified')}</Caption>
         {place.mapped.map(item => <View key={item.key} style={{ flexDirection: 'row', gap: 12, backgroundColor: color.warmBg, borderWidth: 1, borderColor: color.warmLine, borderRadius: 14, padding: 14, marginTop: 8 }}>
-          <Text style={{ color: color.warm }}>●</Text><View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{item.name} · {hazardSeverity(item.key, me.hazards[item.key]).label}</Text><Muted>{item.label}</Muted><Link style={{ marginTop: 6 }} onPress={() => go('Map', [item.key])}>See zones on the map →</Link></View></View>)}
+          <Text style={{ color: color.warm }}>●</Text><View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{t(`hz.${item.key}`)} · {(l => t(`lvl.${l}`) === `lvl.${l}` ? l : t(`lvl.${l}`))(hazardSeverity(item.key, me.hazards[item.key]).label)}</Text><Link style={{ marginTop: 6 }} onPress={() => go('Map', [item.key])}>{t('home.seeZones')}</Link></View></View>)}
         <Caption>{t('mx.outsideNote')}</Caption>
       </Collapsible>
       <HomeRecords me={me} />
