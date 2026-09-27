@@ -28,7 +28,7 @@ export default function Root() {
 }
 
 function App() {
-  const { t, scale } = useI18n();
+  const { t, scale, lang } = useI18n();
   // Large text on a small phone leaves under ~275 px: drop the wordmark so Emergency and Profile stay on screen.
   const narrow = useWindowDimensions().width / scale < 275;
   const [me, setMe] = useState(undefined); // undefined = loading, null = signed out
@@ -49,7 +49,7 @@ function App() {
     setDemoError('');
     if (!me) {
       setDemoBusy(true);
-      try { const result = await api('POST', '/api/demo/start'); await saveSession(result.token); setMe(result); setStep(0); setHub(false); }
+      try { const result = await api('POST', '/api/demo/start', { lang }); await saveSession(result.token); setMe(result); setStep(0); setHub(false); }
       catch (e) { setDemoError(e.message); setDemoBusy(false); return; }
       setDemoBusy(false);
     }

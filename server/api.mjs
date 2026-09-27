@@ -30,6 +30,19 @@ function occupancy(h) {
 const playbookFor = (user, event, lang = 'en') => buildPlaybook(event, { type: user.type, household: user.household || {}, business: user.business || {}, hazards: user.hazards, done: user.done || {}, lang });
 const playbookLang = url => oneOf(url.searchParams.get('lang'), ['en', 'es', 'hy', 'ko']) || 'en';
 
+
+// The demo household's typed details, written the way a resident using that language would type them.
+const DEMO_TEXT = {
+  en: { kind: 'dogs', where: 'backyard', assistance: 'Rosa uses a walker; needs a step-free exit', access: 'Side gate on the left', utilities: 'Gas meter on the east wall', meetNear: 'Corner mailbox', meetFar: 'Montrose library', contact: 'Aunt Lucia in Fresno' },
+  es: { kind: 'perros', where: 'patio trasero', assistance: 'Rosa usa andadera; necesita una salida sin escalones', access: 'Portón lateral a la izquierda', utilities: 'Medidor de gas en la pared este', meetNear: 'El buzón de la esquina', meetFar: 'La biblioteca de Montrose', contact: 'Tía Lucía en Fresno' },
+  hy: { kind: 'շուն', where: 'բակում', assistance: 'Ռոզան քայլակով է քայլում, պետք է առանց աստիճանների ելք', access: 'Կողային դարպասը ձախ կողմում', utilities: 'Գազի հաշվիչը արևելյան պատին', meetNear: 'Անկյունի փոստարկղը', meetFar: 'Մոնտրոզի գրադարանը', contact: 'Լյուսիա մորաքույրը Ֆրեզնոյում' },
+  ko: { kind: '강아지', where: '뒷마당', assistance: '로사는 보행기를 사용합니다. 계단 없는 출구가 필요합니다', access: '왼쪽 옆문', utilities: '동쪽 벽 가스 계량기', meetNear: '모퉁이 우체통', meetFar: '몬트로즈 도서관', contact: '프레즈노에 사는 루시아 이모' },
+};
+function demoHousehold(lang) {
+  const d = DEMO_TEXT[lang] || DEMO_TEXT.en;
+  return { pets: [{ kind: d.kind, count: 2, where: d.where }], assistance: d.assistance, access: d.access, utilities: d.utilities, meetNear: d.meetNear, meetFar: d.meetFar, contact: d.contact };
+}
+
 export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, combinedIndex = () => null, cityRecords = async () => null, parcelAt = async () => null, neighborhoodAt = async () => null, version = 'local', permitCatalog = { permitTypes: [], businessLicenseTypes: [] }, demoMailbox = true, now = () => Date.now(), ipHeaders = process.env.VERCEL ? ['x-vercel-forwarded-for', 'x-real-ip'] : ['cf-connecting-ip', 'x-forwarded-for'] }) {
   const { data } = store;
   const failures = new Map(); // email -> [timestamps] of failed logins, in memory only
@@ -122,7 +135,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
 
     // Walkthrough: a fresh, clearly fictional demo household at a public address, so a demo never needs
     // a real sign-up. Each call creates its own account; nothing real is stored.
-    'POST /api/demo/start': async req => {
+    'POST /api/demo/start': async (req, body) => {
       throttle(req, 60, 'demo');
       pruneDemos();
       const id = randomUUID();
@@ -134,8 +147,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
         address: '1613 GLENCOE WAY, GLENDALE, CA, 91208', lat: 34.199055, lon: -118.230606, addressScore: 100, addressVerified: 'mail',
         hazards: lookup.hazards, hazardsCheckedAt: new Date(now()).toISOString(), business: {},
         household: { housing: 'own', homeType: 'house', members: [{ name: 'Mia', ageGroup: 'child', needsHelp: false }, { name: 'Rosa', ageGroup: 'senior', needsHelp: true }], people: 3,
-          pets: [{ kind: 'dogs', count: 2, where: 'backyard' }], assistance: 'Rosa uses a walker; needs a step-free exit', access: 'Side gate on the left', utilities: 'Gas meter on the east wall',
-          meetNear: 'Corner mailbox', meetFar: 'Montrose library', contact: 'Aunt Lucia in Fresno', shareWithResponders: true, updatedAt: new Date(now()).toISOString() },
+          ...demoHousehold(body?.lang), shareWithResponders: true, updatedAt: new Date(now()).toISOString() },
         done: { alerts: true, kit: true },
       };
       data.users[id] = user;

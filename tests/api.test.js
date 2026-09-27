@@ -594,3 +594,11 @@ test('City-venue packages come back in the requested language; venue, agency and
   assert.equal(ko.summary, en.summary, 'the summary for City staff stays English');
   assert.ok([...ko.outside.map(o => o.why), ...ko.notes, ...ko.timeline.flatMap(t => [t.when, t.what])].every(x => /[가-힯]/.test(x)), 'all guidance is in Korean');
 });
+
+test('the demo household is written in the language the viewer picked, English by default', async () => {
+  const { store, call } = setup();
+  for (const body of [{ lang: 'ko' }, undefined, { lang: 'xx' }]) assert.equal((await call('POST', '/api/demo/start', body)).status, 201);
+  const demos = Object.values(store.data.users).filter(u => u.demo);
+  assert.deepEqual(demos.map(u => u.household.meetNear).sort(), ['Corner mailbox', 'Corner mailbox', '모퉁이 우체통']);
+  assert.deepEqual(demos.map(u => u.household.pets[0].count), [2, 2, 2]);
+});
