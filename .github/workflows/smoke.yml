@@ -28,6 +28,8 @@ jobs:
       - run: CHROME=$(command -v google-chrome) node scripts/a11y-check.mjs https://firepath-ruddy.vercel.app
       # Emergency steps and the saved plan still open with the network cut; the app is installable.
       - run: CHROME=$(command -v google-chrome) node scripts/offline-check.mjs https://firepath-ruddy.vercel.app
+      # The same with the app in Armenian: translated Emergency steps must load with no signal too.
+      - run: CHROME=$(command -v google-chrome) node scripts/offline-check.mjs https://firepath-ruddy.vercel.app hy
       # Checklist ticks made with the API cut off are kept and sent once it is back.
       - run: CHROME=$(command -v google-chrome) node scripts/offline-ticks-check.mjs https://firepath-ruddy.vercel.app
       - run: CHROME=$(command -v google-chrome) node scripts/installable-check.mjs https://firepath-ruddy.vercel.app
