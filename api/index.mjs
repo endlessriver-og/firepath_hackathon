@@ -27,7 +27,8 @@ const api = createApi({
   cityRecords: createCityRecords(), parcelAt: createParcels(), neighborhoodAt: createNeighborhood({ layerRoot: resolve(root, 'data/map-layers') }),
   permitCatalog: JSON.parse(readFileSync(resolve(root, 'src/glendale-permits.json'), 'utf8')),
   demoMailbox: process.env.FIREPATH_DEMO_MAILBOX !== '0',
-  version: (() => { try { const v = readFileSync(resolve(root, 'VERSION'), 'utf8').trim(); return v.startsWith('$Format') ? 'unstamped' : v; } catch { return 'unknown'; } })(),
+  // A git-archive deploy stamps VERSION; a Git-integration build does not, but Vercel exposes the commit.
+  version: (() => { let v = ''; try { v = readFileSync(resolve(root, 'VERSION'), 'utf8').trim(); } catch {} if (v && !v.startsWith('$Format')) return v; const sha = process.env.VERCEL_GIT_COMMIT_SHA; return sha ? `${sha} (git)` : v ? 'unstamped' : 'unknown'; })(),
 });
 
 export default async function handler(req, res) {
