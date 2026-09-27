@@ -1,9 +1,10 @@
-// Walks every main screen in a translated language and lists English phrases still showing (text,
-// placeholders and screen-reader labels). Usage: node scripts/lang-sweep.mjs [base-url] [lang]
+// Walks every main screen (collapsed sections opened, Profile included) in a translated language and lists English still showing (text,
+// placeholders and screen-reader labels). Usage: node scripts/lang-sweep.mjs [base-url] [lang] [business]
 // Use it for hy or ko: it flags Latin-script words, so for Spanish every phrase shows up and the output means nothing.
 // Expected leftovers: permit-search examples (the City catalog is English), venue names, "brace and bolt".
 import puppeteer from 'puppeteer-core';
 import { readFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 const b = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, protocolTimeout: 240000 });
 const p = await b.newPage(); p.setDefaultTimeout(180000); await p.setViewport({ width: 390, height: 844 });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -21,7 +22,14 @@ await p.evaluate(l => { localStorage.clear(); localStorage.setItem('firepath-lan
 await p.reload({ waitUntil: 'networkidle2' }); await sleep(2000);
 await report('landing');
 // Demo household, every tab and its sub-tabs
-const token = await p.evaluate(async () => (await (await fetch('/api/demo/start', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).json()).token);
+// Demo household by default. With "business" as the third argument, signs up a throwaway example.test business
+// (generated password, City Hall's address), sweeps as that business and deletes the account at the end.
+const BUSINESS = process.argv[4] === 'business', password = randomBytes(9).toString('hex');
+const api = (path, body, token) => p.evaluate(async (path, body, token) => (await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body) })).json(), path, body, token);
+const token = BUSINESS
+  ? (await api('/api/account/signup', { type: 'business', email: `lang-sweep-${Date.now()}@example.test`, password, name: 'Sweep Test', businessName: 'Sweep Test Cafe', businessKind: 'restaurant' })).token
+  : (await api('/api/demo/start', {})).token;
+if (BUSINESS) await api('/api/me/address', { address: '613 E Broadway, Glendale, CA 91206' }, token);
 await p.evaluate(t => localStorage.setItem('firepath-session', t), token);
 await p.reload({ waitUntil: 'networkidle2' }); await sleep(2500);
 for (let i = 0; i < 5; i++) {
@@ -40,4 +48,5 @@ const psubs = await p.evaluate(() => [...document.querySelectorAll('main [role=t
 for (let j = 1; j < psubs; j++) { await p.evaluate(j => [...document.querySelectorAll('main [role=tab]')][j]?.click(), j); await sleep(1500); await report(`  sub ${j}`); }
 await p.evaluate(() => document.querySelectorAll('[aria-label]')[0].click()); await sleep(1200);
 await report('emergency');
+if (BUSINESS) console.log('delete test account:', (await api('/api/account/delete', { password }, token)).ok ? 'ok' : 'FAILED');
 await b.close();
