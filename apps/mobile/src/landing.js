@@ -62,7 +62,7 @@ export function AddressCheck({ onResult, onRegister, showPreview = false, label 
     {result && <>
       <Card style={{ backgroundColor: color.green, borderColor: color.green }}>
         <Text style={{ color: '#CFE3DA', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>{result.address}</Text>
-        <Text style={{ color: '#FFF', fontSize: 22, fontWeight: '800', marginTop: 6 }}>{mapped.length ? t('res.zones', { n: mapped.length }) : t('res.none')}</Text>
+        <Text accessibilityLiveRegion="polite" aria-live="polite" style={{ color: '#FFF', fontSize: 22, fontWeight: '800', marginTop: 6 }}>{mapped.length ? t('res.zones', { n: mapped.length }) : t('res.none')}</Text>
         {unavailable > 0 && <Text style={{ color: '#CFE3DA', marginTop: 4 }}>{t('res.unavailable', { n: unavailable })}</Text>}
         <Text style={{ color: '#CFE3DA', marginTop: 6 }}>{t('res.notSafe')}</Text>
       </Card>
