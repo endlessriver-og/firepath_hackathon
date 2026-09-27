@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Smoke-test a FirePath deployment end to end: static app and maps, the Python GIS function, the
+# address check and its separate City records call, tap-to-inspect, and an account that must
+# persist across requests (the Blob store). Usage: scripts/smoke.sh [base-url]
+set -uo pipefail
+BASE="${1:-https://firepath-ruddy.vercel.app}"
+fail=0
+ok() { printf '  ok    %s\n' "$1"; }
+bad() { printf '  FAIL  %s\n' "$1"; fail=1; }
+code() { curl -s -o /dev/null -w '%{http_code}' -m 30 "$@"; }
+
+echo "Smoke test: $BASE"
+for p in /app/ /map.html /map3d.html /map-layers/combined.json /map-layers/zoning.geojson; do
+  [ "$(code "$BASE$p")" = 200 ] && ok "GET $p" || bad "GET $p"
+done
+
+# /api/gis is the Vercel Python function; a local server runs the lookup as a Python process instead.
+if [[ "$BASE" != *localhost* && "$BASE" != *127.0.0.1* ]]; then
+  gis=$(curl -s -m 60 -X POST "$BASE/api/gis" -H 'content-type: application/json' -d '{"lat":34.199055,"lon":-118.230606}')
+  echo "$gis" | grep -q '"in_city": true' && ok "GIS lookup (Python function)" || bad "GIS lookup: ${gis:0:120}"
+fi
+
+check=$(curl -s -m 60 -X POST "$BASE/api/public/check" -H 'content-type: application/json' -d '{"address":"1613 Glencoe Way"}')
+echo "$check" | grep -q '"layers"' && ok "address check returns hazard layers" || bad "address check: ${check:0:120}"
+echo "$check" | grep -q '"records"' && bad "address check still waits on City records" || ok "address check does not wait on City records"
+
+records=$(curl -s -m 60 "$BASE/api/public/records?address=1613%20GLENCOE%20WAY")
+echo "$records" | grep -q '"totals"' && ok "City records route" || bad "City records: ${records:0:120}"
+
+point=$(curl -s -m 60 "$BASE/api/public/point?lat=34.19912&lon=-118.2311")
+echo "$point" | grep -q '"apn"' && ok "tap-to-inspect parcel" || bad "tap-to-inspect: ${point:0:120}"
+echo "$point" | grep -q '"zoning"' && ok "tap-to-inspect neighborhood" || bad "tap-to-inspect neighborhood missing"
+
+token=$(curl -s -m 60 -X POST "$BASE/api/demo/start" -H 'content-type: application/json' -d '{}' | python3 -c 'import json,sys; print(json.load(sys.stdin).get("token",""))' 2>/dev/null)
+if [ -n "$token" ]; then
+  ok "demo household created"
+  for i in 1 2 3; do
+    name=$(curl -s -m 30 "$BASE/api/me" -H "authorization: Bearer $token" | python3 -c 'import json,sys; print(json.load(sys.stdin)["user"]["name"])' 2>/dev/null)
+    [ "$name" = "Dana Rivera" ] && ok "account persists (read $i)" || bad "account read $i: '$name'"
+  done
+else
+  bad "demo household could not be created"
+fi
+
+[ $fail = 0 ] && echo "All checks passed." || echo "Some checks FAILED."
+exit $fail
