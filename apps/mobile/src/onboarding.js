@@ -28,7 +28,7 @@ export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'reside
     <Muted>{t(mode === 'signup' ? 'au.createSub' : 'au.loginSub')}</Muted>
     {mode === 'signup' && <Select label={t('au.settingUp')} value={form.type} options={[['resident', t('au.myHome')], ['business', t('au.aBusiness')]]} onChange={type => set({ type })} />}
     {mode === 'signup' && form.type === 'business' && <>
-      <Field label={t('au.bizName')} value={form.businessName} onChangeText={businessName => set({ businessName })} placeholder="e.g., Glencoe Bakery" maxLength={100} />
+      <Field label={t('au.bizName')} value={form.businessName} onChangeText={businessName => set({ businessName })} placeholder={t('bz.namePh')} maxLength={100} />
       <Select label={t('au.bizType')} value={form.businessKind} options={businessKinds.map(([k]) => [k, t(`bk.${k}`)])} placeholder={t('au.chooseOne')} onChange={businessKind => set({ businessKind })} />
     </>}
     {mode === 'signup' && <Field label={t(form.type === 'business' ? 'au.nameKey' : 'au.name')} value={form.name} onChangeText={name => set({ name })} placeholder={t('au.namePh')} autoComplete="name" maxLength={80} />}

@@ -14,7 +14,7 @@ import { printHtml } from './print';
 import { taskTitles, useI18n } from './i18n';
 import { connect as connectDevice, sendToDevice, subscribe as subscribeDevice } from './device';
 import { AddressCheck, CityRecords } from './landing';
-import { eventTemplates, venues, VENUE_NOTE } from './venues';
+import { eventTemplates, venues } from './venues';
 import { AddressPanel, AddressSearch, BusinessDetails, BusinessProfile, HouseholdForm } from './onboarding';
 import { Toggle } from './ui';
 import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, Collapsible, LanguageSettings, ProgressRing, Section, SubTabs, Segment, Select, SeverityBadge, Tag, Title, color, s } from './ui';
@@ -219,15 +219,16 @@ const withPermitPricing = (summary, outside = false) => `${summary}\n\nPermit pr
 
 // The public catalog has permit names and work classes, not a final fee for every project.
 function PermitPrice({ otherAgency = false }) {
+  const { t } = useI18n();
   return <Text style={{ color: color.gold, fontSize: 12, fontWeight: '700', marginTop: 5 }}>
-    {otherAgency ? 'Price: check with the issuing agency' : 'City permit fee: quote required for this project'}
+    {t(otherAgency ? 'pz.priceAgency' : 'pz.priceCity')}
   </Text>;
 }
 function FeeGuide() {
   const { t } = useI18n();
   return <Collapsible icon="💲" title={t('pm.cost')} summary={t('pm.costSub')}>
-    <Muted style={{ marginTop: 8 }}>Fees depend on your project's scope. Expect a City quote, and possibly plan review, inspection or other-agency charges. FirePath does not calculate or collect fees.</Muted>
-    <Link onPress={() => Linking.openURL(CITY_FEE_SCHEDULE)}>Glendale fee schedule ↗</Link>
+    <Muted style={{ marginTop: 8 }}>{t('pz.feeText')}</Muted>
+    <Link onPress={() => Linking.openURL(CITY_FEE_SCHEDULE)}>{t('pz.feeLink')}</Link>
   </Collapsible>;
 }
 
@@ -242,23 +243,24 @@ function PermitSearch({ me }) {
     return () => clearTimeout(timer);
   }, [q]);
   return <>
-    <Field label={t('pm.planning')} value={q} onChangeText={setQ} placeholder={audience === 'business' ? 'e.g., outdoor dining, block party, sign, propane' : 'e.g., new roof, ADU, solar, remove an oak tree'} autoCapitalize="none" />
+    <Field label={t('pm.planning')} hint={t('pz.searchHint')} value={q} onChangeText={setQ} placeholder={audience === 'business' ? 'e.g., outdoor dining, block party, sign, propane' : 'e.g., new roof, ADU, solar, remove an oak tree'} autoCapitalize="none" />
     {result && <View>
       <FeeGuide />
       {result.permits.length === 0 ? <Caption>{t('mx.noPermit')}</Caption> : result.permits.slice(0, 5).map(p => <Card key={p.name} style={{ marginTop: 8, padding: 14 }}>
         <Text style={{ color: color.ink, fontSize: 15, fontWeight: '800' }}>{p.name}</Text><PermitPrice />
-        {p.matched.length > 0 && <Text style={{ color: color.muted, fontSize: 13, marginTop: 4 }}>Work class: {p.matched.slice(0, 3).join(' · ')}</Text>}
-        {p.hazards.includes('wildfire') && me.hazards && describeHazard('wildfire', me.hazards.wildfire).tone === 'mapped' && <Text style={{ color: color.warm, fontSize: 12, marginTop: 4 }}>Your address is in a mapped fire zone; ask about wildfire-related rules.</Text>}
+        {p.matched.length > 0 && <Text style={{ color: color.muted, fontSize: 13, marginTop: 4 }}>{t('pz.workClass', { list: p.matched.slice(0, 3).join(' · ') })}</Text>}
+        {p.hazards.includes('wildfire') && me.hazards && describeHazard('wildfire', me.hazards.wildfire).tone === 'mapped' && <Text style={{ color: color.warm, fontSize: 12, marginTop: 4 }}>{t('pz.fireZone')}</Text>}
       </Card>)}
-      {result.licenses.length > 0 && <><Caption>Matching business license types: {result.licenses.join(', ')}</Caption><PermitPrice /></>}
-      <Caption>Official names from the City's permit catalog (Glendale Permits, crawled {result.crawledAt?.slice(0, 10)}). Search for them when you apply.</Caption>
-      <Link onPress={() => Linking.openURL(PERMIT_PORTAL)}>Open Glendale Permits ↗</Link>
+      {result.licenses.length > 0 && <><Caption>{t('pz.licenses', { list: result.licenses.join(', ') })}</Caption><PermitPrice /></>}
+      <Caption>{t('pz.official', { date: result.crawledAt?.slice(0, 10) })}</Caption>
+      <Link onPress={() => Linking.openURL(PERMIT_PORTAL)}>{t('pz.openPortal')}</Link>
     </View>}
   </>;
 }
 
 // Event planner: a few yes/no questions -> the City permits an event likely needs, with fire-zone notes.
 function EventPlanner({ me }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false), [name, setName] = useState(''), [attendees, setAttendees] = useState(''), [answers, setAnswers] = useState({});
   const [plan, setPlan] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false);
   const [where, setWhere] = useState('mine'), [location, setLocation] = useState(''), [locationKey, setLocationKey] = useState(null);
@@ -267,31 +269,31 @@ function EventPlanner({ me }) {
     try { setPlan(await api('POST', '/api/me/permits/event', { name, attendees: Number(attendees) || 0, answers, ...(where === 'other' ? { location, magicKey: locationKey } : {}) })); } catch (e) { setError(e.message); } finally { setBusy(false); }
   }
   if (!open) return <Card style={{ borderColor: color.green, borderWidth: 1.5 }}>
-    <Tag>New</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '800' }}>Plan an event</Text>
-    <Muted style={{ marginTop: 4 }}>{me.user.type === 'business' ? 'Hosting a sidewalk sale, tasting, festival or filming?' : 'Block party, fair or big gathering?'} Six questions, then the permits you likely need.</Muted>
-    <Button kind="outline" onPress={() => setOpen(true)}>Start</Button>
+    <Tag>{t('pz.new')}</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '800' }}>{t('pz.planEvent')}</Text>
+    <Muted style={{ marginTop: 4 }}>{t(me.user.type === 'business' ? 'pz.introBiz' : 'pz.introHome')}</Muted>
+    <Button kind="outline" onPress={() => setOpen(true)}>{t('pz.start')}</Button>
   </Card>;
   return <Card style={{ borderColor: color.green, borderWidth: 1.5 }}>
-    <Text style={{ color: color.ink, fontSize: 17, fontWeight: '800' }}>Plan an event</Text>
-    <Field label="Event name" value={name} onChangeText={setName} placeholder="e.g., Harvest fair" maxLength={100} />
-    <Select label="Where?" value={where} options={[['mine', me.user.type === 'business' ? 'At my business' : 'At my home'], ['other', 'Another location']]} onChange={v => { setPlan(null); setWhere(v); }} />
-    {where === 'other' && <AddressSearch label="Event address" value={location} onChangeText={t => { setLocation(t); setLocationKey(null); setPlan(null); }} onPick={(t, key) => { setLocation(t); setLocationKey(key); }} onSubmit={() => {}} suggestPath="/api/public/suggest" />}
-    <Field label="Expected attendance" value={attendees} onChangeText={t => setAttendees(t.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="e.g., 250" maxLength={7} />
-    {eventQuestions.map(([key, label]) => <Toggle key={key} label={label} value={Boolean(answers[key])} onChange={v => { setPlan(null); setAnswers(current => ({ ...current, [key]: v })); }} />)}
+    <Text style={{ color: color.ink, fontSize: 17, fontWeight: '800' }}>{t('pz.planEvent')}</Text>
+    <Field label={t('pz.eventName')} value={name} onChangeText={setName} placeholder={t('pz.eventNamePh')} maxLength={100} />
+    <Select label={t('pz.where')} value={where} options={[['mine', t(me.user.type === 'business' ? 'pz.atBiz' : 'pz.atHome')], ['other', t('pz.other')]]} onChange={v => { setPlan(null); setWhere(v); }} />
+    {where === 'other' && <AddressSearch label={t('pz.eventAddr')} value={location} onChangeText={t => { setLocation(t); setLocationKey(null); setPlan(null); }} onPick={(t, key) => { setLocation(t); setLocationKey(key); }} onSubmit={() => {}} suggestPath="/api/public/suggest" />}
+    <Field label={t('pz.attendance')} value={attendees} onChangeText={t => setAttendees(t.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="250" maxLength={7} />
+    {eventQuestions.map(([key, label]) => <Toggle key={key} label={t(`eq.${key}`)} value={Boolean(answers[key])} onChange={v => { setPlan(null); setAnswers(current => ({ ...current, [key]: v })); }} />)}
     <ErrorText>{error}</ErrorText>
-    <Button busy={busy} onPress={build}>Get my permit list</Button>
+    <Button busy={busy} onPress={build}>{t('pz.getList')}</Button>
     {plan && <View style={{ marginTop: 14 }}>
-      <Caption style={{ marginTop: 0 }}>Location: {plan.location}</Caption>
-      <Tag>{`Likely City permits · ${plan.items.length}`}</Tag><FeeGuide />
+      <Caption style={{ marginTop: 0 }}>{t('pz.location', { place: plan.location })}</Caption>
+      <Tag>{t('pz.likely', { n: plan.items.length })}</Tag><FeeGuide />
       {plan.items.map(i => <View key={`${i.type}-${i.workClass}`} style={{ paddingVertical: 8, borderTopWidth: 1, borderColor: color.line }}>
         <Text style={{ color: color.ink, fontWeight: '700' }}>{i.type}{i.workClass && !i.type.includes(i.workClass) ? ` · ${i.workClass}` : ''}</Text><PermitPrice />
         <Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{i.why}</Text>
       </View>)}
       {plan.notes.map(n => <Text key={n} style={{ color: /CAL FIRE/.test(n) ? color.warm : color.ink, lineHeight: 20, marginTop: 8 }}>• {n}</Text>)}
-      <Button kind="outline" onPress={async () => { await Clipboard.setStringAsync(withPermitPricing(plan.summary)); setCopied(true); }}>{copied ? 'Copied ✓' : 'Copy summary'}</Button>
-      <Button onPress={() => Linking.openURL(plan.portal)}>Apply in Glendale Permits ↗</Button>
+      <Button kind="outline" onPress={async () => { await Clipboard.setStringAsync(withPermitPricing(plan.summary)); setCopied(true); }}>{copied ? t('pz.copied') : t('pz.copy')}</Button>
+      <Button onPress={() => Linking.openURL(plan.portal)}>{t('pz.apply')}</Button>
     </View>}
-    <Link onPress={() => { setOpen(false); setPlan(null); }}>Close</Link>
+    <Link onPress={() => { setOpen(false); setPlan(null); }}>{t('pz.close')}</Link>
   </Card>;
 }
 
@@ -300,6 +302,7 @@ const VENUE_QUESTIONS = [['commercial', 'Ticketed or run by a business'], ['tent
 const HOURS = Array.from({ length: 36 }, (_, i) => { const h = 6 + Math.floor(i / 2), m = i % 2 ? '30' : '00'; const v = `${String(h).padStart(2, '0')}:${m}`; return [v, `${((h + 11) % 12) + 1}:${m} ${h < 12 ? 'AM' : 'PM'}`]; });
 
 function VenuePlanner({ me }) {
+  const { t: tr } = useI18n();
   const [venueId, setVenueId] = useState(null), [templateId, setTemplateId] = useState(null);
   const [form, setForm] = useState({ name: '', date: '', start: '17:00', end: '21:00', attendees: '', answers: {} });
   const [pkg, setPkg] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false);
@@ -311,41 +314,41 @@ function VenuePlanner({ me }) {
     try { setPkg(await api('POST', '/api/me/venues/package', { venueId, ...form, attendees: Number(form.attendees) || 0 })); } catch (e) { setError(e.message); } finally { setBusy(false); }
   }
   return <Card style={{ borderColor: '#2E5A88', borderWidth: 1.5 }}>
-    <Tag>City event venues · example</Tag>
-    <Text style={{ color: color.ink, fontSize: 17, fontWeight: '800' }}>Host at a City venue</Text>
-    <Muted style={{ marginTop: 4 }}>Pick a venue and event type for a ready permit package.</Muted>
-    <Select label="Venue" value={venueId} placeholder="Choose a venue" options={venues.map(v => [v.id, v.name])} onChange={id => { setVenueId(id); setPkg(null); }} />
+    <Tag>{tr('pz.venueTag')}</Tag>
+    <Text style={{ color: color.ink, fontSize: 17, fontWeight: '800' }}>{tr('pz.venueTitle')}</Text>
+    <Muted style={{ marginTop: 4 }}>{tr('pz.venueIntro')}</Muted>
+    <Select label={tr('pz.venue')} value={venueId} placeholder={tr('pz.chooseVenue')} options={venues.map(v => [v.id, v.name])} onChange={id => { setVenueId(id); setPkg(null); }} />
     {venue && <Caption>{venue.where}. {venue.about}</Caption>}
     {venue && <>
-      <Select label="Type of event" value={templateId} placeholder="Choose a starting point" options={eventTemplates.map(t => [t.id, t.name])} onChange={useTemplate} />
-      <Field label="Event name" value={form.name} onChangeText={name => set({ name })} placeholder="e.g., Artsakh Night Market" maxLength={100} />
-      <Field label="Date" hint="YYYY-MM-DD" value={form.date} onChangeText={date => set({ date: date.replace(/[^\d-]/g, '') })} placeholder="2026-10-17" maxLength={10} />
+      <Select label={tr('pz.eventType')} value={templateId} placeholder={tr('pz.chooseStart')} options={eventTemplates.map(t => [t.id, t.name])} onChange={useTemplate} />
+      <Field label={tr('pz.eventName')} value={form.name} onChangeText={name => set({ name })} placeholder={tr('pz.venueNamePh')} maxLength={100} />
+      <Field label={tr('pz.date')} hint="YYYY-MM-DD" value={form.date} onChangeText={date => set({ date: date.replace(/[^\d-]/g, '') })} placeholder="2026-10-17" maxLength={10} />
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        <View style={{ flex: 1 }}><Select label="Starts" value={form.start} options={HOURS} onChange={start => set({ start })} /></View>
-        <View style={{ flex: 1 }}><Select label="Ends" value={form.end} options={HOURS} onChange={end => set({ end })} /></View>
+        <View style={{ flex: 1 }}><Select label={tr('pz.starts')} value={form.start} options={HOURS} onChange={start => set({ start })} /></View>
+        <View style={{ flex: 1 }}><Select label={tr('pz.ends')} value={form.end} options={HOURS} onChange={end => set({ end })} /></View>
       </View>
-      <Field label="Expected attendance" value={form.attendees} onChangeText={t => set({ attendees: t.replace(/\D/g, '') })} keyboardType="number-pad" placeholder="e.g., 800" maxLength={7} />
-      {VENUE_QUESTIONS.map(([key, label]) => <Toggle key={key} label={label} value={Boolean(form.answers[key])} onChange={v => set({ answers: { ...form.answers, [key]: v } })} />)}
+      <Field label={tr('pz.attendance')} value={form.attendees} onChangeText={t => set({ attendees: t.replace(/\D/g, '') })} keyboardType="number-pad" placeholder="800" maxLength={7} />
+      {VENUE_QUESTIONS.map(([key]) => <Toggle key={key} label={tr(`vq.${key}`)} value={Boolean(form.answers[key])} onChange={v => set({ answers: { ...form.answers, [key]: v } })} />)}
       <ErrorText>{error}</ErrorText>
-      <Button busy={busy} onPress={build}>Build my package</Button>
+      <Button busy={busy} onPress={build}>{tr('pz.buildPkg')}</Button>
     </>}
     {pkg && <View style={{ marginTop: 16 }}>
-      <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{form.name || 'Your event'} · {pkg.venue.name}</Text>
-      <Tag>{`City of Glendale permits · ${pkg.items.length}`}</Tag><FeeGuide />
+      <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{form.name || tr('pz.yourEvent')} · {pkg.venue.name}</Text>
+      <Tag>{tr('pz.cityPermits', { n: pkg.items.length })}</Tag><FeeGuide />
       {pkg.items.map(i => <View key={`${i.type}-${i.workClass}`} style={{ paddingVertical: 8, borderTopWidth: 1, borderColor: color.line }}>
         <Text style={{ color: color.ink, fontWeight: '700' }}>{i.type}{i.workClass && !i.type.includes(i.workClass) ? ` · ${i.workClass}` : ''}</Text><PermitPrice />
         <Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{i.why}</Text>
       </View>)}
-      {pkg.outside.length > 0 && <><Text style={[s.tag, { marginTop: 14 }]}>OTHER AGENCIES</Text>
+      {pkg.outside.length > 0 && <><Text style={[s.tag, { marginTop: 14 }]}>{tr('pz.otherAgencies')}</Text>
         {pkg.outside.map(o => <Pressable key={o.name} accessibilityRole="link" onPress={() => Linking.openURL(o.url)} style={{ paddingVertical: 8, borderTopWidth: 1, borderColor: color.line }}>
           <Text style={{ color: '#086B56', fontWeight: '700' }}>{o.name} ↗</Text><PermitPrice otherAgency /><Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{o.who}. {o.why}</Text>
         </Pressable>)}</>}
-      <Text style={[s.tag, { marginTop: 14 }]}>TIMELINE</Text>
+      <Text style={[s.tag, { marginTop: 14 }]}>{tr('pz.timeline')}</Text>
       {pkg.timeline.map(t => <View key={t.when + t.what} style={{ flexDirection: 'row', gap: 10, paddingVertical: 6 }}><Text style={{ width: 110, color: color.green, fontWeight: '800', fontSize: 12 }}>{t.when}</Text><Text style={{ flex: 1, color: color.ink }}>{t.what}</Text></View>)}
       {pkg.notes.map(n => <Text key={n} style={{ color: /CAL FIRE/.test(n) ? color.warm : color.ink, lineHeight: 20, marginTop: 8 }}>• {n}</Text>)}
-      <View style={s.callout}><Text style={s.calloutTag}>EXAMPLE PACKAGE</Text><Text style={s.calloutText}>{VENUE_NOTE}</Text></View>
-      <Button kind="outline" onPress={async () => { await Clipboard.setStringAsync(withPermitPricing(pkg.summary, pkg.outside.length > 0)); setCopied(true); }}>{copied ? 'Copied ✓' : 'Copy package summary'}</Button>
-      <Button onPress={() => Linking.openURL(pkg.portal)}>Apply in Glendale Permits ↗</Button>
+      <View style={s.callout}><Text style={s.calloutTag}>{tr('pz.examplePkg')}</Text><Text style={s.calloutText}>{tr('pz.venueNote')}</Text></View>
+      <Button kind="outline" onPress={async () => { await Clipboard.setStringAsync(withPermitPricing(pkg.summary, pkg.outside.length > 0)); setCopied(true); }}>{copied ? tr('pz.copied') : tr('pz.copyPkg')}</Button>
+      <Button onPress={() => Linking.openURL(pkg.portal)}>{tr('pz.apply')}</Button>
     </View>}
   </Card>;
 }
@@ -353,24 +356,25 @@ function VenuePlanner({ me }) {
 export function Permits({ me, top, sub, setSub }) {
   const { t } = useI18n();
   const [type, setType] = useState(null), [description, setDescription] = useState('');
+  const projectTitle = (id, fallback) => { const k = `${me.user.type === 'business' ? 'ptb' : 'ptr'}.${id}`; return t(k) === k ? fallback : t(k); };
   const [guide, setGuide] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false);
   async function build() {
     setBusy(true); setError(''); setCopied(false);
     try { setGuide(await api('POST', '/api/me/permits/guide', { type, description })); top?.(); } catch (e) { setError(e.message); } finally { setBusy(false); }
   }
   if (guide) return <>
-    <Link style={{ marginTop: 0 }} onPress={() => { setGuide(null); top?.(); }}>← All projects</Link>
-    <Title style={{ marginTop: 10 }}>{guide.title}</Title>
-    <Card><Tag>Likely permit</Tag><Text style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{guide.permit}</Text><PermitPrice /></Card>
+    <Link style={{ marginTop: 0 }} onPress={() => { setGuide(null); top?.(); }}>{t('pz.allProjects')}</Link>
+    <Title style={{ marginTop: 10 }}>{projectTitle(type, guide.title)}</Title>
+    <Card><Tag>{t('pz.likelyPermit')}</Tag><Text style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{guide.permit}</Text><PermitPrice /></Card>
     <FeeGuide />
-    {guide.notes.length > 0 && <Card style={{ borderColor: color.warmLine, backgroundColor: color.warmBg }}><Tag tone="warm">For your address</Tag>{guide.notes.map(n => <Text key={n} style={{ color: color.ink, lineHeight: 20, marginTop: 6 }}>• {n}</Text>)}</Card>}
-    <Card><Tag>What you'll usually need</Tag>{guide.needs.map(n => <Text key={n} style={{ color: color.ink, lineHeight: 22 }}>☐ {n}</Text>)}</Card>
-    <Card><Tag>Your project summary</Tag><Text selectable style={{ color: color.ink, fontFamily: 'Courier', fontSize: 12, lineHeight: 18 }}>{withPermitPricing(guide.summary)}</Text>
-      <Button kind="outline" onPress={async () => { await Clipboard.setStringAsync(withPermitPricing(guide.summary)); setCopied(true); }}>{copied ? 'Copied ✓' : 'Copy summary'}</Button></Card>
-    <Button onPress={() => Linking.openURL(PERMIT_PORTAL)}>Open Glendale Permits portal ↗</Button>
-    {guide.url !== PERMIT_PORTAL && <Link onPress={() => Linking.openURL(guide.url)}>City guidance for this project ↗</Link>}
+    {guide.notes.length > 0 && <Card style={{ borderColor: color.warmLine, backgroundColor: color.warmBg }}><Tag tone="warm">{t('pz.forAddress')}</Tag>{guide.notes.map(n => <Text key={n} style={{ color: color.ink, lineHeight: 20, marginTop: 6 }}>• {n}</Text>)}</Card>}
+    <Card><Tag>{t('pz.needs')}</Tag>{guide.needs.map(n => <Text key={n} style={{ color: color.ink, lineHeight: 22 }}>☐ {n}</Text>)}</Card>
+    <Card><Tag>{t('pz.summary')}</Tag>{t('pz.summaryNote') ? <Caption style={{ marginTop: 0 }}>{t('pz.summaryNote')}</Caption> : null}<Text selectable style={{ color: color.ink, fontFamily: 'Courier', fontSize: 12, lineHeight: 18 }}>{withPermitPricing(guide.summary)}</Text>
+      <Button kind="outline" onPress={async () => { await Clipboard.setStringAsync(withPermitPricing(guide.summary)); setCopied(true); }}>{copied ? t('pz.copied') : t('pz.copy')}</Button></Card>
+    <Button onPress={() => Linking.openURL(PERMIT_PORTAL)}>{t('pz.openPortal2')}</Button>
+    {guide.url !== PERMIT_PORTAL && <Link onPress={() => Linking.openURL(guide.url)}>{t('pz.guidance')}</Link>}
     <CityDataCallout id="permitZones" />
-    <Caption>FirePath does not submit permits or guarantee requirements. The City of Glendale decides what your project needs.</Caption>
+    <Caption>{t('pz.disclaimer')}</Caption>
   </>;
   return <>
     <Title>{t('pm.title')}</Title>
@@ -379,10 +383,10 @@ export function Permits({ me, top, sub, setSub }) {
     {sub === 'events' && <><VenuePlanner me={me} /><EventPlanner me={me} /></>}
     {sub === 'projects' && <>
     <Muted style={{ marginTop: 12 }}>{t('pm.pick')}</Muted>
-    <Select label={t('pm.project')} value={type} placeholder={t('pm.choose')} options={(me.user.type === 'business' ? businessPermitTypes : permitTypes).map(p => [p.id, p.title])} onChange={v => { setType(v); setGuide(null); }} />
+    <Select label={t('pm.project')} value={type} placeholder={t('pm.choose')} options={(me.user.type === 'business' ? businessPermitTypes : permitTypes).map(p => [p.id, projectTitle(p.id, p.title)])} onChange={v => { setType(v); setGuide(null); }} />
     {type && <>
       <Card><Text style={{ color: color.ink, fontWeight: '700' }}>{(me.user.type === 'business' ? businessPermitTypes : permitTypes).find(t => t.id === type)?.permit}</Text><PermitPrice /></Card>
-      <Field label="Describe the project (optional)" value={description} onChangeText={setDescription} placeholder="e.g., add a 200 sq ft bedroom at the back" multiline maxLength={500} />
+      <Field label={t('pz.describe')} value={description} onChangeText={setDescription} placeholder={t('pz.describePh')} multiline maxLength={500} />
       <ErrorText>{error}</ErrorText>
       <Button busy={busy} onPress={build}>{t('pm.checklist')}</Button>
     </>}
@@ -416,8 +420,8 @@ export function Profile({ me, onChange, onSignOut, sub, setSub }) {
     {tab === 'address' && <View style={{ marginTop: 8 }}><AddressPanel me={me} onChange={onChange} /></View>}
     {tab === 'responders' && <>
       <Muted style={{ marginTop: 12 }}>{t(brief?.shareWithResponders ? 'pr.shareOn' : 'pr.shareOff')}</Muted>
-      {brief && <Card><Tag>{t('pr.preview')}</Tag><Caption style={{ marginTop: 0 }}>Draft · resident reported · not connected to dispatch</Caption>{briefRows(brief.brief).map(([label, value], i) => <View key={i} style={{ flexDirection: 'row', gap: 10, paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: color.line }}>
-        <Text style={{ width: 104, color: color.muted, fontSize: 13, fontWeight: '700' }}>{label}</Text><Text selectable style={{ flex: 1, color: color.ink, fontSize: 14, lineHeight: 20 }}>{value}</Text>
+      {brief && <Card><Tag>{t('pr.preview')}</Tag><Caption style={{ marginTop: 0 }}>{t('pz.briefDraft')}</Caption>{briefRows(brief.brief).map(([label, value], i) => <View key={i} style={{ flexDirection: 'row', gap: 10, paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: color.line }}>
+        <Text style={{ width: 104, color: color.muted, fontSize: 13, fontWeight: '700' }}>{t(`br.${label}`) === `br.${label}` ? label : t(`br.${label}`)}</Text><Text selectable style={{ flex: 1, color: color.ink, fontSize: 14, lineHeight: 20 }}>{value}</Text>
       </View>)}</Card>}
       <CityDataCallout id="cad" />
     </>}

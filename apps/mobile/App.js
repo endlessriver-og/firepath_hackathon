@@ -96,7 +96,7 @@ function App() {
 
   return <SafeAreaView style={styles.safe}><StatusBar style="dark" />
     <View role="banner" style={styles.header}>
-      <Text style={styles.brand}>FIREPATH</Text><Text style={styles.pill}>{business ? t('head.business') : t('head.pilot')}</Text>
+      <View style={{ alignItems: 'flex-start', gap: 3 }}><Text style={styles.brand}>FIREPATH</Text><Text numberOfLines={1} style={styles.pill}>{business ? t('head.business') : t('head.pilot')}</Text></View>
       <View style={{ flex: 1 }} />
       <Pressable accessibilityRole="button" accessibilityLabel={t('a11y.emergency')} onPress={() => setEmergency(!emergency)} style={styles.sos}><Text style={styles.sosText}>{emergency ? t('head.close') : t('head.emergency')}</Text></Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={t('a11y.profile')} accessibilityState={{ selected: tab === 'Profile' }} onPress={() => { setEmergency(false); setTab('Profile'); }} style={[styles.avatar, tab === 'Profile' && !emergency && styles.avatarOn]}>
