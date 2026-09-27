@@ -17,6 +17,9 @@ const heading = () => page.evaluate(() => document.querySelector('[role=heading]
 const click = t => page.evaluate(t => { const e = [...document.querySelectorAll('[role=button],[role=link],[role=tab]')].reverse().find(e => e.innerText.replace(/\s+/g, ' ').trim() === t || e.innerText.includes(t)); e?.click(); return !!e; }, t);
 const fill = async (label, value) => { const ok = await page.evaluate(label => { const i = [...document.querySelectorAll('input')].find(i => i.getAttribute('aria-label') === label); i?.focus(); return !!i; }, label); if (ok) await page.keyboard.type(value); return ok; };
 const choose = (value) => page.evaluate(value => { const s = [...document.querySelectorAll('select')].find(s => [...s.options].some(o => o.value === value)); if (!s) return false; s.value = value; s.dispatchEvent(new Event('change', { bubbles: true })); return true; }, value);
+// Waits for text instead of a fixed pause: the event and venue answers look up hazards, which is slower on a
+// cold server or a CI runner.
+const appears = re => page.waitForFunction(src => new RegExp(src, 'i').test(document.body.innerText), { timeout: 30000 }, re.source).then(() => true, () => false);
 const email = `business-check-${Date.now()}@example.test`, password = randomBytes(9).toString('hex');
 let created = false;
 try {
@@ -42,11 +45,11 @@ try {
   step(/permiso probable/i.test(await text()), 'project guide: a new sign gives a likely permit');
   await click('← Todos los proyectos'); await sleep(1000);
   await click('Eventos'); await sleep(1000);
-  await click('Empezar'); await sleep(800); await fill('Nombre del evento', 'Feria de prueba'); await click('Ver mi lista de permisos'); await sleep(3500);
-  step(/permisos probables de la ciudad · \d+/i.test(await text()), 'event planner lists likely City permits');
+  await click('Empezar'); await sleep(800); await fill('Nombre del evento', 'Feria de prueba'); await click('Ver mi lista de permisos');
+  step(await appears(/permisos probables de la ciudad · \d+/i), 'event planner lists likely City permits');
   const venue = await page.evaluate(() => { const s = [...document.querySelectorAll('select')].find(s => [...s.options].some(o => /Elija un lugar/.test(o.text))); const opt = s && [...s.options].find(o => o.value && !/Elija/.test(o.text)); if (!opt) return null; s.value = opt.value; s.dispatchEvent(new Event('change', { bubbles: true })); return opt.text; }); await sleep(800);
-  if (venue) { await click('Armar mi paquete'); await sleep(3500); }
-  step(Boolean(venue) && /permisos de la ciudad de glendale · \d+/i.test(await text()), `City venue package${venue ? ` (${venue})` : ''}`);
+  if (venue) await click('Armar mi paquete');
+  step(Boolean(venue) && await appears(/permisos de la ciudad de glendale · \d+/i), `City venue package${venue ? ` (${venue})` : ''}`);
 } finally {
   if (created) {
     await page.evaluate(() => document.querySelectorAll('[aria-label]')[1]?.click()); await sleep(1000);
