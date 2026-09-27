@@ -23,10 +23,7 @@ export function WalkthroughHub({ onStart, onClose, busy, error, closing }) {
       <Section>How FirePath meets the judging criteria</Section>
       {criteria.map(c => <Criterion key={c.name} c={c} />)}
       <Section>{partnership.heading}</Section>
-      <Muted>{partnership.lede}</Muted>
-      {partnership.asks.map(([title, body]) => <View key={title} style={{ backgroundColor: '#EAF1F8', borderLeftWidth: 4, borderLeftColor: '#2E5A88', borderRadius: 12, padding: 14, marginTop: 10 }}>
-        <Text style={{ color: '#23405F', fontWeight: '800' }}>{title}</Text><Text style={{ color: '#23405F', marginTop: 4, lineHeight: 20 }}>{body}</Text>
-      </View>)}
+      {partnership.asks.map(([title, body]) => <Ask key={title} title={title} body={body} />)}
     </> : null}
     <Caption style={{ marginTop: 20 }}>FirePath is a Glendale pilot prototype, not a City of Glendale service.</Caption>
   </>;
@@ -52,8 +49,16 @@ export function TourOverlay({ steps = TOUR_STEPS, index, onBack, onNext, onExit 
 
 
 // One judging criterion: weight, the judges' question, a direct answer, and expandable evidence.
+function Ask({ title, body }) {
+  const [open, setOpen] = useState(false);
+  return <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={() => setOpen(!open)} style={{ backgroundColor: '#EAF1F8', borderLeftWidth: 4, borderLeftColor: '#2E5A88', borderRadius: 12, padding: 14, marginTop: 10 }}>
+    <Text style={{ color: '#23405F', fontWeight: '800' }}>{title}  {open ? '−' : '+'}</Text>
+    {open && <Text style={{ color: '#23405F', marginTop: 4, lineHeight: 20 }}>{body}</Text>}
+  </Pressable>;
+}
+
 function Criterion({ c }) {
-  const [open, setOpen] = useState(c.weight >= 40);
+  const [open, setOpen] = useState(false);
   return <View style={{ backgroundColor: '#FFF', borderWidth: 1, borderColor: color.line, borderRadius: 16, padding: 16, marginTop: 12 }}>
     <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={() => setOpen(!open)}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -61,7 +66,7 @@ function Criterion({ c }) {
         <Text style={{ flex: 1, color: color.ink, fontSize: 17, fontWeight: '800' }}>{c.name}</Text>
         <Text style={{ color: color.green, fontSize: 18, fontWeight: '900' }}>{open ? '−' : '+'}</Text>
       </View>
-      <Text style={{ color: color.muted, fontStyle: 'italic', marginTop: 8 }}>{c.question}</Text>
+      {open && <Text style={{ color: color.muted, fontStyle: 'italic', marginTop: 8 }}>{c.question}</Text>}
       <Text style={{ color: color.ink, fontSize: 15, lineHeight: 22, marginTop: 6, fontWeight: '600' }}>{c.answer}</Text>
     </Pressable>
     {open && c.evidence.map(e => <Text key={e} style={{ color: color.ink, lineHeight: 20, marginTop: 6 }}>✓ {e}</Text>)}

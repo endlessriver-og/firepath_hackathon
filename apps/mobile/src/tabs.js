@@ -5,7 +5,7 @@ import * as Notifications from 'expo-notifications';
 import { api, apiBase } from './api';
 import MapFrame from './MapFrame';
 import { describeHazard, hazardNames, nextSteps, summarizePlace } from './preparedness';
-import { PERMIT_PORTAL, businessPermitTypes, categories, hazardSeverity, permitTypes, queryRecommendations } from './readiness';
+import { PERMIT_PORTAL, businessPermitTypes, hazardSeverity, permitTypes } from './readiness';
 import { drillEvents } from './playbooks';
 import { eventQuestions } from './permit-catalog';
 import { hazardViewers, resourceGroups, RESOURCES_CHECKED } from './resources';
@@ -46,18 +46,13 @@ const shortTaskTitles = {
   hmbp: 'Check hazardous materials filing',
 };
 
-export function TaskCard({ task, number, done, busy, onToggle, compact }) {
-  const [open, setOpen] = useState(!compact);
-  return <View style={[s.card, { flexDirection: 'row', gap: 14 }, compact && { paddingVertical: 12 }, done && { opacity: 0.62 }]}>
-    <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: done, busy }} accessibilityLabel={task.title} onPress={() => onToggle(task.id)} style={{ width: 30, height: 30, borderRadius: 9, borderWidth: 2, borderColor: color.green, backgroundColor: done ? color.green : 'transparent', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+export function TaskCard({ task, number, done, busy, onToggle }) {
+  return <View style={[s.card, { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }, done && { opacity: 0.62 }]}>
+    <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: done, busy }} accessibilityLabel={task.title} onPress={() => onToggle(task.id)} style={{ width: 30, height: 30, borderRadius: 9, borderWidth: 2, borderColor: color.green, backgroundColor: done ? color.green : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ color: '#FFF', fontWeight: '900' }}>{busy ? '…' : done ? '✓' : ''}</Text>
     </Pressable>
-    <View style={{ flex: 1 }}>
-      <Tag tone={task.tag.startsWith('Mapped') ? 'warm' : undefined}>{number ? `${number} · ${task.tag}` : task.tag}</Tag>
-      <Text onPress={compact ? () => setOpen(!open) : undefined} style={{ color: color.ink, fontSize: 16, fontWeight: '700', marginBottom: 3, textDecorationLine: done ? 'line-through' : 'none' }}>{shortTaskTitles[task.id] || task.title}{compact ? <Text style={{ color: color.green }}>{open ? '  −' : '  +'}</Text> : null}</Text>
-      {!done && open && <Muted>{task.description}</Muted>}
-      {!done && open && task.url && <Link onPress={() => Linking.openURL(task.url)}>{task.link || 'Read guidance'} ↗</Link>}
-    </View>
+    <Text style={{ flex: 1, color: color.ink, fontSize: 16, fontWeight: '700', textDecorationLine: done ? 'line-through' : 'none' }}>{number ? `${number}. ` : ''}{shortTaskTitles[task.id] || task.title}</Text>
+    {task.url ? <Pressable accessibilityRole="link" accessibilityLabel={`${task.link || 'Official guidance'} for ${task.title}`} onPress={() => Linking.openURL(task.url)} hitSlop={10}><Text style={{ color: color.green, fontSize: 18, fontWeight: '800' }}>↗</Text></Pressable> : null}
   </View>;
 }
 
@@ -82,12 +77,12 @@ export function Home({ me, onChange, go }) {
       <View style={{ flex: 1 }}>
         <Text style={{ color: '#CFE3DA', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>{t('home.checklist')}</Text>
         <Text style={{ color: '#FFF', fontSize: 20, fontWeight: '800', marginTop: 2 }}>{t('home.done', { done, total })}</Text>
-        <Text style={{ color: '#CFE3DA', fontSize: 13, marginTop: 4 }}>{done === total ? 'All done. Review your plan in a few months.' : 'Start with the steps below.'}</Text>
+        <Text style={{ color: '#CFE3DA', fontSize: 13, marginTop: 4 }}>{done === total ? 'All done. Review your plan in a few months.' : 'Check off a step when it is done.'}</Text>
       </View>
     </Card>
 
     <Section>{t('home.next')}</Section>
-    {next.map(task => <TaskCard key={task.id} compact task={task} number={ordered.indexOf(task) + 1} done={false} busy={busy === task.id} onToggle={toggle} />)}
+    {next.map((task, i) => <TaskCard key={task.id} task={task} number={i + 1} done={false} busy={busy === task.id} onToggle={toggle} />)}
     <Link onPress={() => go('Plan')}>{t('home.seeAll', { total })}</Link>
 
     <Section>{me.user.type === 'business' ? 'Your site' : 'Your home'}</Section>
@@ -110,31 +105,15 @@ export function Home({ me, onChange, go }) {
 }
 
 export function Actions({ me, onChange, sub, setSub }) {
-  const [q, setQ] = useState(''), [category, setCategory] = useState('all'), [status, setStatus] = useState('open');
-  const [showAll, setShowAll] = useState(false);
   const [busy, toggle] = useToggle(me, onChange);
   const ordered = checklist(me);
-  const results = ordered.filter(t => queryRecommendations([t], { q, category, status, done: me.done }).length);
-  const filtered = Boolean(q.trim()) || category !== 'all' || status !== 'open';
-  const visible = showAll || filtered ? results : results.slice(0, 4);
   const complete = ordered.filter(r => me.done[r.id]).length;
+  const steps = [...ordered.filter(t => !me.done[t.id]), ...ordered.filter(t => me.done[t.id])];
   return <>
     <Title style={{ marginBottom: 2 }}>Your plan</Title>
-    <Muted>{complete} of {ordered.length} steps done. Tap a step for details.</Muted>
+    <Muted>{complete} of {ordered.length} done</Muted>
     <SubTabs value={sub || 'todo'} options={[['todo', 'Steps'], ['print', 'Print & post']]} onChange={setSub} />
-    {sub === 'print' ? <PrintSheets me={me} /> : <>
-    <Collapsible title="Find a step" summary="Search and filters">
-      <Field label="Search" value={q} onChangeText={setQ} placeholder="Pets, roof, water…" autoCapitalize="none" />
-      <View style={{ flexDirection: 'row', gap: 8 }}>
-        <View style={{ flex: 1 }}><Select label="Topic" value={category} options={categories} onChange={v => setCategory(v || 'all')} /></View>
-        <View style={{ flex: 1 }}><Select label="Show" value={status} options={[['open', 'To do'], ['done', 'Done'], ['all', 'All']]} onChange={v => setStatus(v || 'open')} /></View>
-      </View>
-    </Collapsible>
-    {visible.length ? visible.map(task => <TaskCard key={task.id} compact task={task} number={ordered.indexOf(task) + 1} done={Boolean(me.done[task.id])} busy={busy === task.id} onToggle={toggle} />)
-      : <Card><Muted>No steps match. Try another search.</Muted></Card>}
-    {!filtered && results.length > 4 && <Link onPress={() => setShowAll(!showAll)}>{showAll ? 'Show fewer steps' : `See all ${results.length} to do`}</Link>}
-    <Collapsible title="Future City connections" summary="What additional records could add"><CityDataCallout id="permitHistory" />{me.hazards && describeHazard('wildfire', me.hazards.wildfire).tone === 'mapped' && <CityDataCallout id="brushClearance" />}</Collapsible>
-    </>}
+    {sub === 'print' ? <PrintSheets me={me} /> : steps.map((task, i) => <TaskCard key={task.id} task={task} number={me.done[task.id] ? null : i + 1} done={Boolean(me.done[task.id])} busy={busy === task.id} onToggle={toggle} />)}
   </>;
 }
 

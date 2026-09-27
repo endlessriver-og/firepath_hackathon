@@ -66,8 +66,9 @@ export const partnership = {
 // Jewel City Hacks 5.0 judging criteria, answered explicitly on the closing page.
 export const criteria = [
   { name: 'Technical execution', weight: 40, question: 'Does the prototype function as intended?',
-    answer: 'The demo combines public maps and City records with a fictional household, working drills and clearly labelled prototype integrations.',
+    answer: 'Yes: real City and state data, working accounts, drills and a 3D parcel map.',
     evidence: [
+      'The demo combines public maps and City records with a fictional household, working drills and clearly labelled prototype integrations.',
       'Any Glendale address resolves through the City\'s own geocoder and is checked against 7 state and federal hazard maps.',
       'Permits, inspections and parcel numbers come live from the City\'s public permit portal; all 75 City permit types were crawled.',
       'Tap any building on the 3D map: the LA County parcel, the City\'s zoning, fire station district, nearby schools and permit history for that exact lot.',
@@ -76,29 +77,33 @@ export const criteria = [
       '43 automated tests. Not yet tested on a physical phone or a real ESP32 board.',
     ] },
   { name: 'Social and local impact', weight: 20, question: 'How does this solution benefit the local community?',
-    answer: 'It can help Glendale households and businesses act on local data. A responder brief is ready to evaluate with the City; it is not delivered to dispatch today.',
+    answer: 'A plan for each Glendale home and business, built from its own address and people.',
     evidence: [
+      'It can help Glendale households and businesses act on local data. A responder brief is ready to evaluate with the City; it is not delivered to dispatch today.',
       'People who need help leaving, kids and pets are named in every alert plan and emergency step.',
       'Built for Glendale: the City\'s address list, permit catalog, parcel numbers, Everbridge and evacuation-zone links.',
       'Local businesses get their own plan, hazardous-materials guidance and plain-language permits, down to a night market on Artsakh Paseo.',
       'Printable plans work without power; the in-home device is a bench prototype, not an active warning system.',
     ] },
   { name: 'Presentation', weight: 15, question: 'Is there clarity in storytelling and visual design?',
-    answer: 'One story: an address, the people there, and what to do. A five-stop judge path starts instantly with a fictional household; the full tour is optional.',
+    answer: 'One story: an address, the people there, and what to do. Five stops.',
     evidence: [
+      'One story: an address, the people there, and what to do. A five-stop judge path starts instantly with a fictional household; the full tour is optional.',
       'A numbered checklist, a graded hazard map, and an Emergency button always one tap away.',
       'Everything is honestly labelled: Live, Prototype or Needs City.',
     ] },
   { name: 'Creativity', weight: 10, question: 'Is the idea original or novel?',
-    answer: 'Preparedness keyed to the parcel, and two-way with consent. The City already links its departments by parcel; FirePath puts residents and businesses on that same key.',
+    answer: 'Preparedness keyed to the parcel, the same key the City already uses.',
     evidence: [
+      'Preparedness keyed to the parcel, and two-way with consent. The City already links its departments by parcel; FirePath puts residents and businesses on that same key.',
       'Alerts become steps for specific people, not a generic push.',
       'A clearly labelled FirePath planning index combines mapped layers, with a tap-to-explain breakdown in 2D or 3D.',
       '"Pre-permitted places": the permit office as a catalog residents and businesses can order from.',
     ] },
   { name: 'Feasibility', weight: 15, question: 'Could this idea realistically be implemented, if funded?',
-    answer: 'Yes. It is built on public data and systems the City already runs (the geocoder, Glendale Permits, Everbridge, Genasys), so no new City infrastructure is needed to start.',
+    answer: 'Yes. Built on public data and systems the City already runs.',
     evidence: [
+      'Yes. It is built on public data and systems the City already runs (the geocoder, Glendale Permits, Everbridge, Genasys), so no new City infrastructure is needed to start.',
       'The hazard layers already run on HackerFund\'s open Glendale GIS project (GlendaleGisMcp), so the data foundation exists and is shared.',
       'Phase 1 needs no City integration: hosting, a security review and a standard identity provider for the working resident and business app.',
       'Phase 2: data agreements for evacuation zones and the City alert feed.',
