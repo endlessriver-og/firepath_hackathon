@@ -5,7 +5,7 @@ import puppeteer from 'puppeteer-core';
 const B = process.argv[2] || 'https://firepath-ruddy.vercel.app';
 let failed = false; const check = (ok, label) => { console.log(`${ok ? 'ok  ' : 'FAIL'}  ${label}`); if (!ok) failed = true; };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const b = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, protocolTimeout: 240000 });
+const b = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, protocolTimeout: 240000 });
 const ctx = await b.createBrowserContext(); const p = await ctx.newPage(); await p.setViewport({ width: 390, height: 844 });
 let offline = false;
 await p.setRequestInterception(true);

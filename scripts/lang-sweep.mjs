@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-const b = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, protocolTimeout: 240000 });
+const b = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, protocolTimeout: 240000 });
 const p = await b.newPage(); p.setDefaultTimeout(180000); await p.setViewport({ width: 390, height: 844 });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const B = process.argv[2] || 'https://firepath-ruddy.vercel.app', LANG = process.argv[3] || 'hy', JSON_OUT = process.argv.includes('--json');
