@@ -4,6 +4,7 @@ import { api, saveSession } from './api';
 import { summarizePlace } from './preparedness';
 import { businessKinds, hazmatKinds } from './readiness';
 import MapPanel from './MapPanel';
+import { useI18n } from './i18n';
 import { Button, Caption, Card, CityDataCallout, Collapsible, ErrorText, Field, Link, Muted, Section, Segment, Select, Step, Tag, Title, Toggle, color, s } from './ui';
 
 export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'resident' }) {
@@ -128,6 +129,7 @@ export function AddressPanel({ me, onChange, onDone, onboarding, initialAddress 
 
 // Household facts a future responder connection could use. Nothing here leaves the FirePath server.
 export function HouseholdForm({ me, onSaved, onboarding }) {
+  const { t } = useI18n();
   const h = me.household || {};
   const [form, setForm] = useState({ pets: h.pets || [], assistance: h.assistance || '', access: h.access || '', utilities: h.utilities || '', meetNear: h.meetNear || '', meetFar: h.meetFar || '', contact: h.contact || '', shareWithResponders: Boolean(h.shareWithResponders) });
   const [pet, setPet] = useState({ kind: '', count: '1', where: '' });
@@ -139,39 +141,39 @@ export function HouseholdForm({ me, onSaved, onboarding }) {
     try { onSaved(await api('PUT', '/api/me/household', { ...h, ...form })); setSaved(true); } catch (e) { setError(e.message); } finally { setBusy(false); }
   }
   return <>
-    {onboarding && <Step n={3} of={3} label="Details for emergencies" />}
-    {onboarding ? <Title>What should responders know?</Title> : <Section>Household details</Section>}
-    <Muted>Only what a responder should know. No diagnoses or door codes.</Muted>
+    {onboarding && <Step n={3} of={3} label={t('hh.step')} />}
+    {onboarding ? <Title>{t('hh.titleOnb')}</Title> : <Section>{t('hh.title')}</Section>}
+    <Muted>{t('hh.intro')}</Muted>
 
-    <Collapsible icon="🐾" initiallyOpen={onboarding} title="Pets and animals" summary={form.pets.length ? form.pets.map(p => `${p.count} ${p.kind}`).join(', ') : 'None added'}>
+    <Collapsible icon="🐾" initiallyOpen={onboarding} title={t('hh.pets')} summary={form.pets.length ? form.pets.map(p => `${p.count} ${p.kind}`).join(', ') : t('hh.none')}>
     {form.pets.map((p, i) => <View key={`${p.kind}-${i}`} style={[s.toggleRow, { marginTop: 8 }]}>
       <Text style={{ flex: 1, color: color.ink }}>{p.count} {p.kind}{p.where ? ` · ${p.where}` : ''}</Text>
-      <Link style={{ marginTop: 0 }} onPress={() => set({ pets: form.pets.filter((_, j) => j !== i) })}>Remove</Link>
+      <Link style={{ marginTop: 0 }} onPress={() => set({ pets: form.pets.filter((_, j) => j !== i) })}>{t('hh.remove')}</Link>
     </View>)}
     <View style={{ flexDirection: 'row', gap: 8 }}>
-      <Field style={{ flex: 2 }} label="Animal" value={pet.kind} onChangeText={kind => setPet({ ...pet, kind })} placeholder="dog, cat…" maxLength={40} />
-      <Field style={{ flex: 1 }} label="How many" value={pet.count} onChangeText={count => setPet({ ...pet, count: count.replace(/\D/g, '') })} keyboardType="number-pad" maxLength={2} />
+      <Field style={{ flex: 2 }} label={t('hh.animal')} value={pet.kind} onChangeText={kind => setPet({ ...pet, kind })} placeholder={t('hh.animalPh')} maxLength={40} />
+      <Field style={{ flex: 1 }} label={t('hh.count')} value={pet.count} onChangeText={count => setPet({ ...pet, count: count.replace(/\D/g, '') })} keyboardType="number-pad" maxLength={2} />
     </View>
-    <Field label="Where they usually are" value={pet.where} onChangeText={where => setPet({ ...pet, where })} placeholder="e.g., backyard, upstairs bedroom" maxLength={80} />
-    <Button kind="outline" disabled={!pet.kind.trim()} onPress={addPet}>+ Add animal</Button>
+    <Field label={t('hh.where')} value={pet.where} onChangeText={where => setPet({ ...pet, where })} placeholder={t('hh.wherePh')} maxLength={80} />
+    <Button kind="outline" disabled={!pet.kind.trim()} onPress={addPet}>{t('hh.addAnimal')}</Button>
     </Collapsible>
 
-    <Collapsible icon="🧑‍🦽" initiallyOpen={onboarding} title="Help, access and shutoffs" summary={[form.assistance && 'help noted', form.access && 'access noted', form.utilities && 'shutoffs noted'].filter(Boolean).join(' · ') || 'Nothing added yet'}>
-    <Field label="Anyone who may need help leaving" hint="Describe the help, not a diagnosis." value={form.assistance} onChangeText={assistance => set({ assistance })} placeholder="e.g., uses a wheelchair; needs a step-free exit" maxLength={120} />
-    <Field label="Access note" hint="General access only. Never lock codes." value={form.access} onChangeText={access => set({ access })} placeholder="e.g., side gate on the left, dog in yard" maxLength={140} />
-    <Field label="Utility shutoffs" value={form.utilities} onChangeText={utilities => set({ utilities })} placeholder="e.g., gas meter on the east wall" maxLength={120} />
+    <Collapsible icon="🧑‍🦽" initiallyOpen={onboarding} title={t('hh.help')} summary={[form.assistance && t('hh.helpNoted'), form.access && t('hh.accessNoted'), form.utilities && t('hh.shutoffsNoted')].filter(Boolean).join(' · ') || t('hh.nothing')}>
+    <Field label={t('hh.needsHelp')} hint={t('hh.needsHelpHint')} value={form.assistance} onChangeText={assistance => set({ assistance })} placeholder={t('hh.needsHelpPh')} maxLength={120} />
+    <Field label={t('hh.access')} hint={t('hh.accessHint')} value={form.access} onChangeText={access => set({ access })} placeholder={t('hh.accessPh')} maxLength={140} />
+    <Field label={t('hh.shutoffs')} value={form.utilities} onChangeText={utilities => set({ utilities })} placeholder={t('hh.shutoffsPh')} maxLength={120} />
     </Collapsible>
 
-    <Collapsible icon="📍" initiallyOpen={onboarding} title="Meeting places and contact" summary={[form.meetNear, form.meetFar].filter(Boolean).join(' · ') || 'Not set yet'}>
-    <Field label="Meeting place near home" value={form.meetNear} onChangeText={meetNear => set({ meetNear })} placeholder="e.g., the corner mailbox" maxLength={80} />
-    <Field label="Meeting place outside the neighborhood" value={form.meetFar} onChangeText={meetFar => set({ meetFar })} placeholder="e.g., Montrose library" maxLength={80} />
-    <Field label="Out-of-area contact" value={form.contact} onChangeText={contact => set({ contact })} placeholder="e.g., Aunt Rosa in Fresno" maxLength={80} />
+    <Collapsible icon="📍" initiallyOpen={onboarding} title={t('hh.meet')} summary={[form.meetNear, form.meetFar].filter(Boolean).join(' · ') || t('hh.notSet')}>
+    <Field label={t('hh.meetNear')} value={form.meetNear} onChangeText={meetNear => set({ meetNear })} placeholder={t('hh.meetNearPh')} maxLength={80} />
+    <Field label={t('hh.meetFar')} value={form.meetFar} onChangeText={meetFar => set({ meetFar })} placeholder={t('hh.meetFarPh')} maxLength={80} />
+    <Field label={t('hh.contact')} value={form.contact} onChangeText={contact => set({ contact })} placeholder={t('hh.contactPh')} maxLength={80} />
     </Collapsible>
 
-    <Toggle label="Share with responders when the City connects" detail="Not connected to 911 or the City yet. You can turn this off any time." value={form.shareWithResponders} onChange={shareWithResponders => set({ shareWithResponders })} />
+    <Toggle label={t('hh.share')} detail={t('hh.shareSub')} value={form.shareWithResponders} onChange={shareWithResponders => set({ shareWithResponders })} />
     <ErrorText>{error}</ErrorText>
-    <Button busy={busy} onPress={save}>{onboarding ? 'Finish setup' : 'Save details'}</Button>
-    {saved && !onboarding && <Caption>Saved.</Caption>}
+    <Button busy={busy} onPress={save}>{t(onboarding ? 'hh.finish' : 'hh.save')}</Button>
+    {saved && !onboarding && <Caption>{t('hh.saved')}</Caption>}
   </>;
 }
 
