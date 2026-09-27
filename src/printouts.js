@@ -5,12 +5,12 @@
 // translated sheet says so in its footer.
 import { describeHazard, hazardNames } from './preparedness.js';
 import { hazardSeverity, hazmatKinds } from './readiness.js';
+import { formatDate } from './dates.js';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const blank = (value, width = '100%') => value ? esc(value) : `<span class="line" style="width:${width}"></span>`;
 const list = items => `<ul>${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
-const LOCALE = { en: 'en-US', es: 'es-US', hy: 'hy-AM', ko: 'ko-KR' };
-const today = lang => new Date().toLocaleDateString(LOCALE[lang] || 'en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+const today = lang => formatDate(new Date(), lang, { long: true });
 
 const P = {
   en: {

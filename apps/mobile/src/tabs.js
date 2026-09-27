@@ -9,6 +9,7 @@ import { PERMIT_PORTAL, businessPermitTypes, hazardSeverity, permitTypes } from 
 import { drillEvents } from './playbooks';
 import { eventQuestions } from './permit-catalog';
 import { hazardViewers, resourceGroups, RESOURCES_CHECKED } from './resources';
+import { formatDate } from './dates';
 import { businessPosterPrintout, businessPosterTitle, householdPlanPrintout, printoutTitle, standardPrintout, standardPrintouts } from './printouts';
 import { printHtml } from './print';
 import { taskTitles, translateError, useI18n } from './i18n';
@@ -186,7 +187,7 @@ export function Alerts({ me, onChange, sub, setSub }) {
       await Notifications.scheduleNotificationAsync({ content: { title: 'FirePath test', body: 'This is a local test, not an emergency alert.', data: { demo: true } }, trigger: null });
     } catch (e) { Alert.alert(t('al.notifUnavailable'), String(e?.message || e)); }
   }
-  const time = iso => iso ? new Date(iso).toLocaleString({ en: 'en-US', es: 'es-US', hy: 'hy-AM', ko: 'ko-KR' }[lang] || [], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+  const time = iso => iso ? formatDate(iso, lang, { time: true }) : '';
   return <>
     <Title>{t('al.title')}</Title>
     <SubTabs value={sub || 'live'} options={[['live', t('al.live')], ['drill', t('al.drill')], ['devices', t('al.devices')]]} onChange={setSub} />
