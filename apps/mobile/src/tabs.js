@@ -462,7 +462,7 @@ function ChangePassword() {
     <Field label={t('pw.current')} value={current} onChangeText={setCurrent} secureTextEntry autoComplete="current-password" />
     <Field label={t('pw.next')} hint={t('pw.hint')} value={next} onChangeText={setNext} secureTextEntry autoComplete="new-password" />
     <ErrorText>{error}</ErrorText>
-    {done && <Muted style={{ color: color.green, fontWeight: '700' }}>{t('pw.done')}</Muted>}
+    {done && <Text accessibilityLiveRegion="polite" aria-live="polite" style={{ color: color.green, fontWeight: '700', marginTop: 6 }}>{t('pw.done')}</Text>}
     <Button busy={busy} disabled={current.length < 8 || next.length < 8} onPress={save}>{t('pw.btn')}</Button>
   </Collapsible>;
 }
