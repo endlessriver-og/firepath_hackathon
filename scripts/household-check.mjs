@@ -37,6 +37,20 @@ try {
   step(/responders/i.test(await heading()), `step 3: "${await heading()}"`);
   await click('Finish'); await sleep(3000);
   step(/Hi Sam/.test(await text()) && /of \d+ done/.test(await text()), 'Home greets Sam and shows the checklist');
+  // Everyday use: tick a checklist item, run a drill to the end, search the permit catalog.
+  const doneCount = async () => Number(((await text()).match(/(\d+) of \d+ done/) || [])[1]);
+  const before = await doneCount();
+  await page.evaluate(() => document.querySelector('main [role=checkbox][aria-checked=false]')?.click()); await sleep(2500);
+  step(await doneCount() === before + 1, `tick a checklist item (${before} → ${await doneCount()} done)`);
+  await page.evaluate(() => [...document.querySelectorAll('[role=navigation] [role=tab]')].find(e => e.innerText.includes('Alerts'))?.click()); await sleep(1500);
+  await click('Drill'); await sleep(1000);
+  await page.evaluate(() => { const s = [...document.querySelectorAll('select')].find(s => [...s.options].some(o => o.value === 'Red Flag Warning')); s.value = 'Red Flag Warning'; s.dispatchEvent(new Event('change', { bubbles: true })); }); await sleep(3500);
+  const practice = await page.evaluate(() => { const boxes = [...document.querySelectorAll('main [role=checkbox]')]; boxes.forEach(b => b.click()); return boxes.length; }); await sleep(800);
+  step(practice > 0 && new RegExp(`${practice} of ${practice} practiced`).test(await text()), `practice all ${practice} drill actions`);
+  step(await click('Finish practice'), 'finish the drill'); await sleep(2500);
+  await page.evaluate(() => [...document.querySelectorAll('[role=navigation] [role=tab]')].find(e => e.innerText.includes('Permits'))?.click()); await sleep(1500);
+  await fill('What are you planning?', 'new roof'); await sleep(2500);
+  step(/Re-?roof|Roof/i.test(await text()), 'permit search finds roofing permits');
   // Verify the address with the mailed code (the demo mailbox shows it), then sign out and back in.
   await page.evaluate(() => document.querySelectorAll('[aria-label]')[1]?.click()); await sleep(1000);
   await click('Address'); await sleep(1200);
