@@ -58,12 +58,21 @@
         {
           "key": "permissions-policy",
           "value": "camera=(), microphone=(), payment=(), usb=()"
+        },
+        {
+          "key": "content-security-policy-report-only",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tiles.openfreemap.org https://s3.amazonaws.com; font-src 'self' data: https://tiles.openfreemap.org; connect-src 'self' https://tiles.openfreemap.org https://s3.amazonaws.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' https://www.openstreetmap.org; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
         }
       ]
     },
     {
       "source": "/app/_expo/static/(.*)",
-      "headers": [{ "key": "cache-control", "value": "public, max-age=31536000, immutable" }]
+      "headers": [
+        {
+          "key": "cache-control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     },
     {
       "source": "/map-layers/(.*)",
