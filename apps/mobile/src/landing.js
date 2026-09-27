@@ -105,7 +105,7 @@ export function Landing({ onSignedIn, onEmergency, onWalkthrough }) {
       <Pressable accessibilityRole="button" accessibilityLabel="Language and text size" onPress={() => setLanguageOpen(!languageOpen)}><Text style={{ color: color.green, fontSize: 20, padding: 5 }}>🌐</Text></Pressable>
       <Text accessibilityRole="button" onPress={onEmergency} style={{ backgroundColor: '#B3261A', color: '#FFF', fontWeight: '800', fontSize: 12, borderRadius: 10, paddingHorizontal: 11, paddingVertical: 8, overflow: 'hidden' }}>{t('head.emergency')}</Text></View>
     {languageOpen && <LanguageBar />}
-    <Text style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 22 }}>{t('land.title')}</Text>
+    <Text role="heading" aria-level={1} style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 22 }}>{t('land.title')}</Text>
     <Muted style={{ marginTop: 8, fontSize: 16 }}>{t('land.sub')}</Muted>
     <HeroIllustration height={112} />
     <AddressCheck onResult={setResult} onRegister={type => setSignup({ type, mode: 'signup' })} />

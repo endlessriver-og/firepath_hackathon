@@ -49,11 +49,11 @@ const shortTaskTitles = {
 export function TaskCard({ task, number, done, busy, onToggle }) {
   const { lang } = useI18n();
   const title = taskTitles[lang]?.[task.id] || shortTaskTitles[task.id] || task.title;
-  return <View style={[s.card, { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }, done && { opacity: 0.62 }]}>
-    <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: done, busy }} accessibilityLabel={task.title} onPress={() => onToggle(task.id)} style={{ width: 30, height: 30, borderRadius: 9, borderWidth: 2, borderColor: color.green, backgroundColor: done ? color.green : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+  return <View style={[s.card, { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }]}>
+    <Pressable accessibilityRole="checkbox" aria-checked={Boolean(done)} accessibilityState={{ checked: done, busy }} accessibilityLabel={task.title} onPress={() => onToggle(task.id)} style={{ width: 30, height: 30, borderRadius: 9, borderWidth: 2, borderColor: color.green, backgroundColor: done ? color.green : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ color: '#FFF', fontWeight: '900' }}>{busy ? '…' : done ? '✓' : ''}</Text>
     </Pressable>
-    <Text style={{ flex: 1, color: color.ink, fontSize: 16, fontWeight: '700', textDecorationLine: done ? 'line-through' : 'none' }}>{number ? `${number}. ` : ''}{title}</Text>
+    <Text style={{ flex: 1, color: done ? color.muted : color.ink, fontSize: 16, fontWeight: done ? '600' : '700', textDecorationLine: done ? 'line-through' : 'none' }}>{number ? `${number}. ` : ''}{title}</Text>
     {task.url ? <Pressable accessibilityRole="link" accessibilityLabel={`${task.link || 'Official guidance'} for ${task.title}`} onPress={() => Linking.openURL(task.url)} hitSlop={10}><Text style={{ color: color.green, fontSize: 18, fontWeight: '800' }}>↗</Text></Pressable> : null}
   </View>;
 }
@@ -73,7 +73,7 @@ export function Home({ me, onChange, go }) {
   const next = ordered.filter(t => !me.done[t.id]).slice(0, 3);
   const done = ordered.length - ordered.filter(t => !me.done[t.id]).length, total = ordered.length;
   return <>
-    <Text style={s.muted}>{me.user.type === 'business' ? me.business?.name || 'Your business' : t('home.hi', { name: me.user.name.split(' ')[0] })}</Text>
+    <Text role="heading" aria-level={1} style={s.muted}>{me.user.type === 'business' ? me.business?.name || 'Your business' : t('home.hi', { name: me.user.name.split(' ')[0] })}</Text>
     <Card style={{ marginTop: 8, backgroundColor: color.green, borderColor: color.green, flexDirection: 'row', alignItems: 'center', gap: 18 }}>
       <ProgressRing percent={r.score} track="#3E7667" fill="#F2C46D" textColor="#FFF" />
       <View style={{ flex: 1 }}>
@@ -129,7 +129,7 @@ function Playbook({ playbook, drill }) {
     {playbook.groups.map(group => <View key={group.label} style={{ marginTop: 12 }}>
       <Tag tone={group.label === 'Do now' ? 'warm' : undefined}>{group.title || group.label}</Tag>
       {group.steps.map(step => { const key = `${group.label}:${step.text}`; const on = Boolean(checked[key]); return (
-        <Pressable key={key} accessibilityRole="checkbox" accessibilityState={{ checked: on }} onPress={() => setChecked(current => ({ ...current, [key]: !current[key] }))} style={{ flexDirection: 'row', gap: 10, paddingVertical: 8, borderTopWidth: 1, borderColor: color.line }}>
+        <Pressable key={key} accessibilityRole="checkbox" aria-checked={Boolean(on)} accessibilityState={{ checked: on }} onPress={() => setChecked(current => ({ ...current, [key]: !current[key] }))} style={{ flexDirection: 'row', gap: 10, paddingVertical: 8, borderTopWidth: 1, borderColor: color.line }}>
           <Text style={{ width: 22, color: color.green, fontWeight: '900', fontSize: 16 }}>{on ? '☑' : '☐'}</Text>
           <View style={{ flex: 1 }}><Text style={{ color: color.ink, lineHeight: 20, textDecorationLine: on ? 'line-through' : 'none' }}>{step.text}</Text></View>
         </Pressable>); })}
@@ -160,7 +160,7 @@ function Drill({ me, onChange }) {
       <Text style={{ alignSelf: 'flex-start', backgroundColor: color.goldBg, color: color.gold, fontWeight: '900', fontSize: 11, letterSpacing: 1, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>{t('dr.badge')}</Text>
       <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{t('dr.imagine', { event })}</Text>
       <Muted style={{ marginTop: 6 }}>{t('dr.practice', { n: practiceSteps.length })}</Muted>
-      {practiceSteps.map((step, i) => <Pressable key={`${i}-${step.text}`} accessibilityRole="checkbox" accessibilityState={{ checked: Boolean(practiced[i]) }} onPress={() => setPracticed(current => ({ ...current, [i]: !current[i] }))} style={{ flexDirection: 'row', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderColor: color.line }}>
+      {practiceSteps.map((step, i) => <Pressable key={`${i}-${step.text}`} accessibilityRole="checkbox" aria-checked={Boolean(Boolean(practiced[i]))} accessibilityState={{ checked: Boolean(practiced[i]) }} onPress={() => setPracticed(current => ({ ...current, [i]: !current[i] }))} style={{ flexDirection: 'row', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderColor: color.line }}>
         <Text style={{ width: 26, fontSize: 18, color: color.green, fontWeight: '900' }}>{practiced[i] ? '☑' : '☐'}</Text><Text style={{ flex: 1, color: color.ink, lineHeight: 21 }}>{step.text}</Text>
       </Pressable>)}
       <Caption>{t('dr.count', { done: practicedCount, total: practiceSteps.length })}</Caption>

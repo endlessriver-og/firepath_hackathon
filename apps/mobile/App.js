@@ -95,7 +95,7 @@ function App() {
   if (step === 3) return <Shell>{business ? <BusinessDetails me={me} onSaved={next => { setMe(next); finish(); }} onboarding /> : <HouseholdForm me={me} onSaved={next => { setMe(next); finish(); }} onboarding />}</Shell>;
 
   return <SafeAreaView style={styles.safe}><StatusBar style="dark" />
-    <View style={styles.header}>
+    <View role="banner" style={styles.header}>
       <Text style={styles.brand}>FIREPATH</Text><Text style={styles.pill}>{business ? t('head.business') : t('head.pilot')}</Text>
       <View style={{ flex: 1 }} />
       <Pressable accessibilityRole="button" accessibilityLabel={t('a11y.emergency')} onPress={() => setEmergency(!emergency)} style={styles.sos}><Text style={styles.sosText}>{emergency ? t('head.close') : t('head.emergency')}</Text></Pressable>
@@ -104,7 +104,7 @@ function App() {
       </Pressable>
     </View>
     {offline && <Pressable accessibilityRole="button" onPress={load} style={{ backgroundColor: '#F6E6C8', paddingVertical: 8, paddingHorizontal: 16 }}><Text style={{ color: '#6B4A0E', fontWeight: '700', fontSize: 13 }}>{t('off.banner')}</Text></Pressable>}
-    <ScrollView key={emergency ? 'sos' : tab} ref={scroller} contentContainerStyle={[styles.content, tour !== null && { paddingBottom: 280 }]} keyboardShouldPersistTaps="handled">
+    <ScrollView key={emergency ? 'sos' : tab} ref={scroller} role="main" contentContainerStyle={[styles.content, tour !== null && { paddingBottom: 280 }]} keyboardShouldPersistTaps="handled">
       {emergency && <EmergencyNow me={me} onClose={() => setEmergency(false)} />}
       {!emergency && tab === 'Home' && <Home me={me} onChange={setMe} go={go} />}
       {!emergency && tab === 'Systems' && <Systems go={go} />}
@@ -116,7 +116,7 @@ function App() {
       {!emergency && tab === 'Profile' && <Profile me={me} onChange={setMe} onSignOut={signOut} sub={sub} setSub={setSub} />}
     </ScrollView>
     {tour !== null && <TourOverlay steps={tourSteps} index={tour} onBack={() => goTour(Math.max(tour - 1, 0))} onNext={() => goTour(Math.min(tour + 1, tourSteps.length - 1))} onExit={() => { setTour(null); setEmergency(false); setTab('Home'); }} />}
-    <View style={styles.nav}>{TABS.map(([item, icon, key]) => {
+    <View role="navigation"><View accessibilityRole="tablist" style={styles.nav}>{TABS.map(([item, icon, key]) => {
       const on = tab === item && !emergency;
       const go = () => { setEmergency(false); setTab(item); };
       if (item === 'Home') return <Pressable key={item} accessibilityRole="tab" accessibilityLabel={t('nav.home')} accessibilityState={{ selected: on }} onPress={go} style={styles.homeWrap}>
@@ -126,12 +126,12 @@ function App() {
         <Ionicons name={on ? icon : `${icon}-outline`} size={24} color={on ? color.green : '#56655F'} />
         <Text numberOfLines={1} style={[styles.navText, on && { color: color.green }]}>{t(key)}</Text>
       </Pressable>;
-    })}</View>
+    })}</View></View>
   </SafeAreaView>;
 }
 
 function Shell({ children }) {
-  return <SafeAreaView style={styles.safe}><StatusBar style="dark" /><ScrollView contentContainerStyle={styles.onboard} keyboardShouldPersistTaps="handled">{children}</ScrollView></SafeAreaView>;
+  return <SafeAreaView style={styles.safe}><StatusBar style="dark" /><ScrollView role="main" contentContainerStyle={styles.onboard} keyboardShouldPersistTaps="handled">{children}</ScrollView></SafeAreaView>;
 }
 
 const styles = StyleSheet.create({

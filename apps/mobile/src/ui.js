@@ -7,7 +7,7 @@ import { LANGS, useI18n } from './i18n';
 
 export const color = { bg: '#F5F6F1', ink: '#17372E', green: '#1D5B4D', muted: '#53655E', line: '#E2E8E1', soft: '#E6EFE9', warm: '#B4502B', warmBg: '#FFF9F5', warmLine: '#E9C2AE', gold: '#8A5A12', goldBg: '#F6E6C8', blue: '#2E5A88', blueBg: '#EAF1F8' };
 
-export const Title = ({ children, style }) => <Text style={[s.title, style]}>{children}</Text>;
+export const Title = ({ children, style }) => <Text role="heading" aria-level={1} style={[s.title, style]}>{children}</Text>;
 export const Section = ({ children }) => <Text style={s.section}>{children}</Text>;
 export const Muted = ({ children, style }) => <Text style={[s.muted, style]}>{children}</Text>;
 export const Caption = ({ children, style }) => <Text style={[s.caption, style]}>{children}</Text>;
@@ -118,7 +118,7 @@ export function ProgressRing({ percent, size = 96, stroke = 10, track = '#DDE4DC
 export function SubTabs({ value, options, onChange }) {
   return <View accessibilityRole="tablist" style={{ flexDirection: 'row', borderBottomWidth: 1, borderColor: '#D5DDD5', marginTop: 6, marginBottom: 4 }}>
     {options.map(([key, label]) => { const on = value === key; return <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: on }} onPress={() => onChange(key)} style={{ flex: 1, alignItems: 'center', paddingVertical: 11, borderBottomWidth: 3, borderColor: on ? color.green : 'transparent', marginBottom: -1 }}>
-      <Text style={{ fontWeight: '800', fontSize: 14, color: on ? color.green : '#7A8A83' }}>{label}</Text>
+      <Text style={{ fontWeight: '800', fontSize: 14, color: on ? color.green : color.muted }}>{label}</Text>
     </Pressable>; })}
   </View>;
 }
@@ -131,7 +131,7 @@ export const s = StyleSheet.create({
   title: { fontSize: 27, lineHeight: 33, fontWeight: '800', color: color.ink, marginBottom: 8 },
   section: { fontSize: 20, fontWeight: '800', color: color.ink, marginTop: 26, marginBottom: 8 },
   muted: { color: color.muted, lineHeight: 21, fontSize: 14 },
-  caption: { color: '#64756E', fontSize: 12, lineHeight: 18, marginTop: 10 },
+  caption: { color: color.muted, fontSize: 12, lineHeight: 18, marginTop: 10 },
   tag: { color: '#367363', fontSize: 10, fontWeight: '800', letterSpacing: 1, marginBottom: 6 },
   step: { color: '#367363', fontSize: 11, fontWeight: '800', letterSpacing: 1, marginBottom: 6 },
   card: { backgroundColor: '#FFF', borderRadius: 17, padding: 18, marginTop: 12, borderWidth: 1, borderColor: color.line },
@@ -142,14 +142,14 @@ export const s = StyleSheet.create({
   buttonText: { color: '#FFF', fontWeight: '800', fontSize: 16 },
   field: { marginTop: 16 },
   fieldLabel: { color: color.ink, fontWeight: '700', marginBottom: 6 },
-  hint: { color: '#64756E', fontSize: 12, lineHeight: 17, marginBottom: 6 },
+  hint: { color: color.muted, fontSize: 12, lineHeight: 17, marginBottom: 6 },
   input: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#D5DDD5', borderRadius: 12, padding: 13, fontSize: 15, color: color.ink },
   select: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#D5DDD5', borderRadius: 12, overflow: 'hidden' },
   picker: { height: 48, borderWidth: 0, backgroundColor: 'transparent', color: color.ink, fontSize: 15, paddingHorizontal: 10 },
   segment: { flexDirection: 'row', backgroundColor: '#E4E9E2', borderRadius: 12, padding: 3 },
   segmentItem: { flex: 1, paddingVertical: 11, alignItems: 'center', borderRadius: 10 },
   segmentOn: { backgroundColor: '#FFF' },
-  segmentText: { color: '#60706B', fontWeight: '700' },
+  segmentText: { color: color.muted, fontWeight: '700' },
   toggleRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: color.line },
   toggleLabel: { color: color.ink, fontWeight: '600' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },

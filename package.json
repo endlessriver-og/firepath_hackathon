@@ -14,12 +14,14 @@
     "map:build": ".venv/bin/python scripts/build-map-layers.py",
     "public": "bash scripts/public.sh",
     "check:offline": "node scripts/offline-check.mjs",
-    "check:installable": "node scripts/installable-check.mjs"
+    "check:installable": "node scripts/installable-check.mjs",
+    "check:a11y": "node scripts/a11y-check.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0"
   },
   "devDependencies": {
+    "axe-core": "^4.13.0",
     "puppeteer-core": "^25.12.0"
   }
 }

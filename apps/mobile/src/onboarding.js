@@ -229,7 +229,7 @@ export function BusinessDetails({ me, onSaved, onboarding }) {
     <Muted>Short, factual notes. Never alarm or lock codes.</Muted>
     <Text style={[s.fieldLabel, { marginTop: 20 }]}>Hazardous materials on site</Text>
     <Caption style={{ marginTop: 0 }}>Select any you store or use. This drives your hazardous-materials steps.</Caption>
-    {hazmatKinds.map(([key, label]) => <Pressable key={key} accessibilityRole="checkbox" accessibilityState={{ checked: form.hazmat.includes(key) }} onPress={() => toggleHazmat(key)} style={[s.toggleRow, { marginTop: 8 }]}>
+    {hazmatKinds.map(([key, label]) => <Pressable key={key} accessibilityRole="checkbox" aria-checked={Boolean(form.hazmat.includes(key))} accessibilityState={{ checked: form.hazmat.includes(key) }} onPress={() => toggleHazmat(key)} style={[s.toggleRow, { marginTop: 8 }]}>
       <Text style={{ width: 24, fontWeight: '900', color: color.green }}>{form.hazmat.includes(key) ? '☑' : '☐'}</Text><Text style={{ flex: 1, color: color.ink }}>{label}</Text>
     </Pressable>)}
     {form.hazmat.length > 0 && <Field label="Where they are stored" value={form.hazmatNote} onChangeText={hazmatNote => set({ hazmatNote })} placeholder="e.g., propane cage behind the kitchen" maxLength={140} />}
