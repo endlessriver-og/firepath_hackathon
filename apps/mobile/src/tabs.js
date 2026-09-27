@@ -381,6 +381,17 @@ export function Permits({ me, top, sub, setSub }) {
   </>;
 }
 
+// The responder brief as label/value rows for reading. The brief text itself is unchanged.
+const BRIEF_LABELS = [[/^Address status/, 'Address'], [/^Location/, 'Location'], [/^Parcel/, 'Parcel'], [/^Usual occupants/, 'People'], [/^Animals/, 'Animals'], [/^Assistance/, 'Needs help'], [/^Access/, 'Access'], [/^Utility/, 'Shutoffs'], [/wildfire zone/i, 'Wildfire map'], [/permit fire zone/i, 'Fire-code zone'], [/updated/i, 'Updated']];
+function briefRows(text) {
+  return String(text || '').split(/\n+/).filter(line => line.includes(': ')).map(line => {
+    const [raw, ...rest] = line.split(': ');
+    let value = rest.join(': ');
+    if (/^\d{4}-\d{2}-\d{2}T/.test(value)) value = new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return [(BRIEF_LABELS.find(([re]) => re.test(raw)) || [null, raw.replace(/\s*\(.*?\)\s*/g, '')])[1], value];
+  });
+}
+
 export function Profile({ me, onChange, onSignOut, sub, setSub }) {
   const [brief, setBrief] = useState(null);
   useEffect(() => { api('GET', '/api/me/responder').then(setBrief).catch(() => setBrief(null)); }, [me]);
@@ -393,8 +404,10 @@ export function Profile({ me, onChange, onSignOut, sub, setSub }) {
     {tab === 'household' && (me.user.type === 'business' ? <><BusinessProfile me={me} onSaved={onChange} /><BusinessDetails me={me} onSaved={onChange} /></> : <HouseholdForm me={me} onSaved={onChange} />)}
     {tab === 'address' && <View style={{ marginTop: 8 }}><AddressPanel me={me} onChange={onChange} /></View>}
     {tab === 'responders' && <>
-      <Muted style={{ marginTop: 12 }}>{brief?.shareWithResponders ? 'You have consented to sharing this once a City connection exists. Nothing is sent today.' : 'Sharing is off. Nothing is sent today either way.'}</Muted>
-      {brief && <Card><Tag>Responder preview</Tag>{String(brief.brief || '').split(/\n+/).filter(Boolean).map((line, i) => <Text key={i} selectable style={{ color: color.ink, fontSize: 13, lineHeight: 21, marginTop: 10 }}>{line}</Text>)}</Card>}
+      <Muted style={{ marginTop: 12 }}>{brief?.shareWithResponders ? 'Sharing is on for when the City connects. Nothing is sent today.' : 'Sharing is off. Nothing is sent today.'}</Muted>
+      {brief && <Card><Tag>What a responder would see</Tag><Caption style={{ marginTop: 0 }}>Draft · resident reported · not connected to dispatch</Caption>{briefRows(brief.brief).map(([label, value], i) => <View key={i} style={{ flexDirection: 'row', gap: 10, paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: color.line }}>
+        <Text style={{ width: 104, color: color.muted, fontSize: 13, fontWeight: '700' }}>{label}</Text><Text selectable style={{ flex: 1, color: color.ink, fontSize: 14, lineHeight: 20 }}>{value}</Text>
+      </View>)}</Card>}
       <CityDataCallout id="cad" />
     </>}
     <Button kind="outline" onPress={onSignOut} style={{ marginTop: 28 }}>Sign out</Button>
