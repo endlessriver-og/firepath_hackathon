@@ -209,7 +209,7 @@ export function Alerts({ me, onChange, sub, setSub }) {
     {sub === 'drill' && <Drill me={me} onChange={onChange} />}
     {sub === 'devices' && <>
       <DeviceCard initiallyOpen />
-      <Card><Tag>Phone notification · local test</Tag><Muted>Sends a notification from this device to itself. It is not an emergency alert.</Muted><Button kind="outline" onPress={testNotification}>Send test notification</Button></Card>
+      <Card><Tag>{t('nt.tag')}</Tag><Muted>{t('nt.sub')}</Muted><Button kind="outline" onPress={testNotification}>{t('nt.btn')}</Button></Card>
     </>}
   </>;
 }
@@ -517,15 +517,16 @@ export function useDevice() {
 }
 
 export function DeviceCard({ initiallyOpen }) {
+  const { t } = useI18n();
   const device = useDevice();
   const [error, setError] = useState('');
   const run = async fn => { setError(''); try { await fn(); } catch (e) { if (e?.name !== 'NotFoundError') setError(e.message); } };
   const last = device.events[0];
-  return <Collapsible icon="📟" initiallyOpen={initiallyOpen} title="In-home alert device" summary={device.connected ? `Connected${last ? ` · last: ${last.type}${last.kind ? ` (${last.kind})` : ''}` : ''}` : device.supported ? 'Not connected · USB prototype' : 'Prototype · connect from desktop Chrome'}>
-    <Muted style={{ marginTop: 10 }}>An ESP32 speaker for people who might miss a phone alert. It sounds for drills and tests you send, and reports its own smoke-sensor readings. It is not a certified alarm; keep your smoke and CO alarms.</Muted>
-    {!device.connected ? <Button kind="outline" disabled={!device.supported} onPress={() => run(connectDevice)}>Connect USB device</Button>
-      : <Button kind="outline" onPress={() => run(() => sendToDevice({ kind: 'test', text: 'FirePath test. Not an emergency.' }))}>Send a test sound</Button>}
-    {device.events.length > 0 && <View style={{ marginTop: 10 }}>{device.events.map((e, i) => <Text key={i} style={{ color: color.muted, fontSize: 12 }}>{e.at} · {e.type === 'ack' ? 'device confirmed it sounded' : e.type === 'ready' ? 'device ready' : e.type === 'sensor' ? `smoke sensor ${e.active ? 'triggered' : 'clear'} (${e.value})` : e.type === 'sent' ? `sent ${e.kind}` : e.type}</Text>)}</View>}
+  return <Collapsible icon="📟" initiallyOpen={initiallyOpen} title={t('dv.title')} summary={device.connected ? `${t('dv.connected')}${last ? ` · last: ${last.type}${last.kind ? ` (${last.kind})` : ''}` : ''}` : t(device.supported ? 'dv.notConnected' : 'dv.unsupported')}>
+    <Muted style={{ marginTop: 10 }}>{t('dv.intro')}</Muted>
+    {!device.connected ? <Button kind="outline" disabled={!device.supported} onPress={() => run(connectDevice)}>{t('dv.connect')}</Button>
+      : <Button kind="outline" onPress={() => run(() => sendToDevice({ kind: 'test', text: 'FirePath test. Not an emergency.' }))}>{t('dv.test')}</Button>}
+    {device.events.length > 0 && <View style={{ marginTop: 10 }}>{device.events.map((e, i) => <Text key={i} style={{ color: color.muted, fontSize: 12 }}>{e.at} · {e.type === 'ack' ? t('dv.ack') : e.type === 'ready' ? t('dv.ready') : e.type === 'sensor' ? t(e.active ? 'dv.smokeOn' : 'dv.smokeOff', { value: e.value }) : e.type === 'sent' ? t('dv.sent', { kind: e.kind }) : e.type}</Text>)}</View>}
     <ErrorText>{error}</ErrorText>
   </Collapsible>;
 }
