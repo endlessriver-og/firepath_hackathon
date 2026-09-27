@@ -25,7 +25,7 @@ FirePath is an independent Glendale pilot prototype, not a City of Glendale serv
 | Status | What |
 | --- | --- |
 | **Live** | City of Glendale address geocoder and public permit/inspection search (Tyler EnerGov). Seven hazard maps: CAL FIRE wildfire severity, FEMA flood, CGS fault, liquefaction and landslide, DWR dam inundation, USGS debris flow (a dated planning snapshot, not live incidents). National Weather Service alerts. LA County Assessor parcels. City zoning, fire station districts, historic districts and schools. |
-| **Prototype** | Accounts (scrypt-hashed passwords, hashed bearer sessions) and mailed-code address verification (the code shows in a labelled demo mailbox). The responder brief: residents consent and preview it, but nothing is sent to 911, dispatch or the City. The ESP32 in-home alert: firmware compiles and its protocol is tested; it has not yet run on a physical board. City venue packages are labelled examples. |
+| **Prototype** | Accounts (scrypt-hashed passwords, hashed bearer sessions) and mailed-code address verification (the code shows in a labelled demo mailbox). A plain-language "What FirePath keeps" note on sign-up and in Settings, and account deletion (Profile → Settings). The responder brief: residents consent and preview it, but nothing is sent to 911, dispatch or the City. The ESP32 in-home alert: firmware compiles and its protocol is tested; it has not yet run on a physical board. City venue packages are labelled examples. |
 | **Needs the City** | Evacuation zones and the City alert feed, a dispatch (CAD) test connection, parcel ownership records. The app shows each as a "Needs City data" card naming the dataset and what it would unlock (`src/city-data.js`). |
 
 A point outside a mapped zone is labelled "Outside", never "safe". Weather alerts are not City evacuation orders. FirePath never chooses an evacuation route.
@@ -39,6 +39,12 @@ A point outside a mapped zone is labelled "Outside", never "safe". Weather alert
 - **Permits:** `scripts/crawl-permits.mjs` read the City's public permit catalog (75 permit types, 195 work classes, 1,652 business license types) into `src/glendale-permits.json` for plain-language search. FirePath never submits to the City portal and never invents a fee.
 - **Languages:** English, Spanish, Armenian and Korean (`apps/mobile/src/i18n.js`, plus phrase tables in `src/playbooks.js`, `src/printouts.js`, the two map pages and the parcel notes). `tests/i18n.test.js` fails if any phrase is missing a language; `npm run check:lang` walks the live screens for leftover English. City permit names, the copyable project summary and the responder brief stay English on purpose.
 - **Parcels and neighborhood:** `server/parcels.mjs` (LA County Assessor; assessed values are deliberately not requested) and `server/neighborhood.mjs` (City zoning, historic districts, fire districts, school zones).
+
+## How it is checked
+
+- **On every push:** 66 tests (`npm test`) run in GitHub Actions and again inside the Vercel build, so a failing push never replaces production. They cover the API, including a sweep of malformed input that must never cause a server error, the translations in every language, the printable sheets and the privacy promises.
+- **Every 6 hours, against production:** the API smoke test, the guided tour walked in Chrome, an axe accessibility audit (main screens, Armenian, both maps), and checks that the Emergency steps open offline and the app is installable.
+- **By hand after UI changes:** `npm run check:layout` walks every screen in all four languages at 320 and 390 px, at normal and large text sizes.
 
 ## Run it locally
 
