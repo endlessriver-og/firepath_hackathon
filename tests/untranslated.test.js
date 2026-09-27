@@ -24,12 +24,16 @@ const ALLOWED = new Set([
   'Permit matcher and event packages', 'Out to people and devices', 'Phone and web app', 'Printed sheets on the fridge or break room',
   'Custom plans that work with no power or signal', 'Responder brief',
   'One address-keyed record links public data, your household and your devices, so every alert turns into steps for the people actually there.',
+  'FirePath in the middle',
+  // Default text in the USB command to the ESP32 device. Its firmware has no display and never shows it
+  // (examples/esp32_preparedness only acknowledges and sounds).
+  'FirePath test',
   // The judging walkthrough: pitch material, English by design.
   'How FirePath meets the judging criteria', 'Exit walkthrough',
 ]);
 // Data and content modules that hold English source text by design (translated elsewhere or English on purpose).
 const SKIP = /^(i18n|printouts|playbooks|readiness|preparedness|permit-catalog|venues|resources|city-data|icons|responder|model|walkthrough)\.js$|^sample/;
-const PATTERN = />\s*[←→↗↓]?\s*([A-Z][A-Za-z ,.'’!?-]{5,})\s*[←→↗↓]?\s*<|(?:accessibilityLabel|label|placeholder|title|hint|summary|caption)="([^"]*[A-Za-z]{3,} [A-Za-z]{3,}[^"]*)"|['`]([A-Z][a-z]+(?: [a-z]+){1,}[.!?]?)['`]/g;
+const PATTERN = />\s*[←→↗↓]?\s*([A-Z][A-Za-z ,.'’!?-]{5,})\s*[←→↗↓]?\s*<|(?:accessibilityLabel|label|placeholder|title|hint|summary|caption)="([^"]*[A-Za-z]{3,} [A-Za-z]{3,}[^"]*)"|['`]([A-Z][A-Za-z]+(?: [a-z]+){1,}[.!?]?)['`]/g;
 
 test('screens contain no untranslated English beyond the allowlist', () => {
   const dir = new URL('../apps/mobile/src/', import.meta.url);
