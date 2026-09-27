@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Icon } from './src/icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setupNotifications } from './src/notify';
-import { api, loadSession, saveSession } from './src/api';
+import { api, loadSession, onSessionExpired, saveSession } from './src/api';
 import { ME_CACHE, clearOffline, flushTasks, onQueueChange, withPending } from './src/offline';
 import { AboutYou, AddressPanel, BusinessDetails, BusinessProfile, HouseholdForm } from './src/onboarding';
 import { Actions, Alerts, Home, MapTab, Permits, Profile, Systems } from './src/tabs';
@@ -57,6 +57,7 @@ function App() {
   const go = (next, withLayers, sub) => { if (withLayers) setLayers(withLayers); if (sub) setSubs(current => ({ ...current, [next]: sub })); setTab(next); };
   const [error, setError] = useState('');
   const [offline, setOffline] = useState(false);
+  const meRef = useRef(me); meRef.current = me;
   const [queued, setQueued] = useState(0); // checklist changes kept on this device, not yet sent
   useEffect(() => onQueueChange(setQueued), []);
   const scroller = useRef(null);
@@ -77,12 +78,15 @@ function App() {
       setStep(current.user.demo ? 0 : Number(await AsyncStorage.getItem(stepKey(current.user)).catch(() => 0)) || 0);
     } catch (e) {
       if (e.status === 401) { await saveSession(null); await clearOffline(); setMe(null); return; }
-      // No network: fall back to the saved plan rather than a dead end.
-      const cached = e.status === 0 ? await AsyncStorage.getItem(ME_CACHE).catch(() => null) : null;
-      if (cached) { setMe(JSON.parse(cached)); setOffline(true); } else setError(e.message);
+      // No network, a server error or a timeout: keep showing a plan rather than a dead end. Prefer the saved
+      // copy; if it is missing or unreadable, keep what is already on screen; only a first load with nothing
+      // saved shows the error.
+      const saved = await AsyncStorage.getItem(ME_CACHE).then(JSON.parse).catch(() => null);
+      if (saved?.user) { setMe(saved); setOffline(true); } else if (meRef.current) setOffline(true); else setError(e.message);
     }
   }
   useEffect(() => { load(); }, []);
+  useEffect(() => onSessionExpired(async () => { await saveSession(null); await clearOffline(); setMe(null); setTab('Home'); }), []);
   // Back online in a browser, or the app back in front on a phone: reload, which also sends any ticks made offline.
   useEffect(() => { if (typeof window === 'undefined' || !window.addEventListener) return; const back = () => load(); window.addEventListener('online', back); return () => window.removeEventListener('online', back); }, []);
   useEffect(() => { if (Platform.OS === 'web') return; const sub = AppState.addEventListener('change', state => { if (state === 'active') load(); }); return () => sub.remove(); }, []);

@@ -109,7 +109,7 @@ export function AddressPanel({ me, onChange, onDone, onboarding, initialAddress 
       <Card>
         <Tag>{t(a.verified !== 'mail' ? 'ad.matched' : a.demoCode ? 'ad.verifiedDemo' : 'ad.verified')}</Tag>
         <Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>{a.text}</Text>
-        {place && <Muted style={{ marginTop: 6 }}>{place.mapped.length ? place.mapped.map(i => `⚠ ${t(`hz.${i.key}`)}`).join('   ') : t('ad.noZone')}</Muted>}
+        {place && <Muted style={{ marginTop: 6 }}>{place.mapped.length ? place.mapped.map(i => `⚠ ${t(`hz.${i.key}`)}`).join('   ') : place.unknown.length ? t('res.unavailable', { n: place.unknown.length }) : t('ad.noZone')}</Muted>}
         <Link onPress={() => setEditing(true)}>{t('ad.different')}</Link>
       </Card>
       <MapPanel style={{ height: 180, borderRadius: 17, marginTop: 12 }} point={{ latitude: a.lat, longitude: a.lon }} title={t('mx.registered')} />

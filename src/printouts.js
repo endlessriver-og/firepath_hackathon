@@ -17,7 +17,7 @@ const P = {
   en: {
     footer: date => `Prepared with FirePath (Glendale pilot prototype) on ${date}. Not a City of Glendale document. In an emergency call 911 and follow official instructions. City alerts: glendaleca.gov/Everbridge · Your evacuation zone: protect.genasys.com`,
     draft: '',
-    mapped: 'Mapped at this address:', planning: 'Planning maps, not live alerts.',
+    mapped: 'Mapped at this address:', planning: 'Planning maps, not live alerts.', unchecked: n => `${n} of the hazard maps could not be checked when this was printed; check them in FirePath.`,
     titles: { earthquake: 'Earthquake: Drop, Cover, Hold On', wildfire: 'Wildfire: Ready, Set, Go!', gobag: 'Go-bag checklist', shutoffs: 'Utility shutoffs' },
     eq: {
       start: 'When the shaking starts',
@@ -63,7 +63,7 @@ const P = {
   es: {
     footer: date => `Preparado con FirePath (prototipo piloto de Glendale) el ${date}. No es un documento de la Ciudad de Glendale. En una emergencia llame al 911 y siga las instrucciones oficiales. Alertas de la Ciudad: glendaleca.gov/Everbridge · Su zona de evacuación: protect.genasys.com`,
     draft: 'Traducción preliminar, aún no revisada por un hablante nativo.',
-    mapped: 'Mapeado en esta dirección:', planning: 'Mapas de planificación, no alertas en curso.',
+    mapped: 'Mapeado en esta dirección:', planning: 'Mapas de planificación, no alertas en curso.', unchecked: n => `${n} de los mapas de riesgo no se pudieron consultar al imprimir; consúltelos en FirePath.`,
     titles: { earthquake: 'Terremoto: Agáchese, cúbrase y sujétese', wildfire: 'Incendio forestal: ¡Listo, Prepárese, Váyase!', gobag: 'Lista de la mochila de emergencia', shutoffs: 'Cierres de servicios' },
     eq: {
       start: 'Cuando empiece a temblar',
@@ -109,7 +109,7 @@ const P = {
   hy: {
     footer: date => `Պատրաստված է FirePath-ով (Գլենդեյլի փորձնական նախատիպ)՝ ${date}։ Սա Գլենդեյլ քաղաքի փաստաթուղթ չէ։ Արտակարգ իրավիճակում զանգեք 911 և հետևեք պաշտոնական ցուցումներին։ Քաղաքի ծանուցումներ՝ glendaleca.gov/Everbridge · Ձեր տարհանման գոտին՝ protect.genasys.com`,
     draft: 'Նախնական թարգմանություն, դեռ չի ստուգվել մայրենի խոսողի կողմից։',
-    mapped: 'Քարտեզագրված է այս հասցեում՝', planning: 'Պլանավորման քարտեզներ, ոչ թե ընթացիկ ծանուցումներ։',
+    mapped: 'Քարտեզագրված է այս հասցեում՝', planning: 'Պլանավորման քարտեզներ, ոչ թե ընթացիկ ծանուցումներ։', unchecked: n => `Տպելիս վտանգի քարտեզներից ${n}-ը հնարավոր չեղավ ստուգել․ ստուգեք դրանք FirePath-ում։`,
     titles: { earthquake: 'Երկրաշարժ՝ կռացեք, ծածկվեք և ամուր բռնվեք', wildfire: 'Անտառային հրդեհ՝ Պատրաստ, ուշադիր, գնացե՛ք', gobag: 'Արտակարգ պայուսակի ցուցակ', shutoffs: 'Կոմունալ անջատիչներ' },
     eq: {
       start: 'Երբ ցնցումները սկսվում են',
@@ -155,7 +155,7 @@ const P = {
   ko: {
     footer: date => `FirePath(글렌데일 시범 시제품)로 ${date}에 작성. 글렌데일 시 공식 문서가 아닙니다. 비상시 911에 전화하고 공식 지시를 따르세요. 시 경보: glendaleca.gov/Everbridge · 대피 구역: protect.genasys.com`,
     draft: '초안 번역이며 아직 원어민 검토를 거치지 않았습니다.',
-    mapped: '이 주소가 포함된 지도:', planning: '계획용 지도이며 실시간 경보가 아닙니다.',
+    mapped: '이 주소가 포함된 지도:', planning: '계획용 지도이며 실시간 경보가 아닙니다.', unchecked: n => `인쇄할 때 위험 지도 ${n}개를 확인하지 못했습니다. FirePath에서 확인하세요.`,
     titles: { earthquake: '지진: 엎드리고, 머리를 감싸고, 꼭 붙잡으세요', wildfire: '산불: 준비, 대비, 대피!', gobag: '비상 가방 체크리스트', shutoffs: '가스·전기·수도 차단' },
     eq: {
       start: '흔들림이 시작되면',
@@ -244,7 +244,9 @@ const mappedLine = (hazards, lang, t) => {
     const v = t(`lvl.${sev.label}`); return v === `lvl.${sev.label}` ? sev.label : v;
   };
   const mapped = Object.keys(hazardNames).filter(k => hazards[k] && describeHazard(k, hazards[k]).tone === 'mapped').map(k => `${name(k)} (${level(k)})`);
-  return mapped.length ? `<div class="warn"><b>${P[lang].mapped}</b> ${esc(mapped.join('; '))}. ${P[lang].planning}</div>` : '';
+  // A map that could not be checked must not read as a clear map.
+  const unchecked = Object.keys(hazardNames).filter(k => !hazards[k] || describeHazard(k, hazards[k]).tone === 'unknown').length;
+  return (mapped.length ? `<div class="warn"><b>${P[lang].mapped}</b> ${esc(mapped.join('; '))}. ${P[lang].planning}</div>` : '') + (unchecked ? `<div class="warn">${P[lang].unchecked(unchecked)}</div>` : '');
 };
 
 export const standardPrintouts = [

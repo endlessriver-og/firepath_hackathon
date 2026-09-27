@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, Share, Text, View, useWindowDimensions } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { showTestNotification } from './notify';
@@ -98,7 +98,7 @@ export function Home({ me, onChange, go }) {
 
     <Section>{t(me.user.type === 'business' ? 'home.yourSite' : 'home.yourHome')}</Section>
     {!me.address ? <Card><Muted>{t('home.noAddress')}</Muted><Link onPress={() => go('Profile', null, 'address')}>{t('home.addAddress')}</Link></Card> : <>
-      <Collapsible icon="🗺" title={t('home.maps')} summary={place.mapped.length ? place.mapped.map(i => { const sev = hazardSeverity(i.key, me.hazards[i.key]); return `⚠ ${t(`hz.${i.key}`)}${typeof sev.level === 'number' ? ` ${t(`lvl.${sev.label}`) === `lvl.${sev.label}` ? sev.label : t(`lvl.${sev.label}`)}` : ''}`; }).join('   ') : t('home.noZone')}>
+      <Collapsible icon="🗺" title={t('home.maps')} summary={place.mapped.length ? place.mapped.map(i => { const sev = hazardSeverity(i.key, me.hazards[i.key]); return `⚠ ${t(`hz.${i.key}`)}${typeof sev.level === 'number' ? ` ${t(`lvl.${sev.label}`) === `lvl.${sev.label}` ? sev.label : t(`lvl.${sev.label}`)}` : ''}`; }).join('   ') : place.unknown.length ? t('res.unavailable', { n: place.unknown.length }) : t('home.noZone')}>
         <Caption>{me.address.text} · {t(me.address.verified !== 'mail' ? 'home.notVerified' : me.address.demoCode ? 'home.verifiedDemo' : 'home.verified')}</Caption>
         {place.mapped.map(item => <View key={item.key} style={{ flexDirection: 'row', gap: 12, backgroundColor: color.warmBg, borderWidth: 1, borderColor: color.warmLine, borderRadius: 14, padding: 14, marginTop: 8 }}>
           <Text style={{ color: color.warm }}>●</Text><View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{t(`hz.${item.key}`)} · {(l => t(`lvl.${l}`) === `lvl.${l}` ? l : t(`lvl.${l}`))(hazardSeverity(item.key, me.hazards[item.key]).label)}</Text><Link style={{ marginTop: 6 }} onPress={() => go('Map', [item.key])}>{t('home.seeZones')}</Link></View></View>)}
@@ -152,7 +152,9 @@ function Drill({ me, onChange }) {
   const device = useDevice();
   const [event, setEvent] = useState(null), [playbook, setPlaybook] = useState(null), [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const [practiced, setPracticed] = useState({});
-  const open = e => { setEvent(e); setPlaybook(null); setPracticed({}); setError(''); if (e) api('GET', `/api/me/playbook?event=${encodeURIComponent(e)}&lang=${lang}`).then(setPlaybook).catch(err => setError(err.message)); };
+  // Only the latest pick may fill the card: an older answer that arrives late is dropped.
+  const latest = useRef(0);
+  const open = e => { const id = ++latest.current; setEvent(e); setPlaybook(null); setPracticed({}); setError(''); if (e) api('GET', `/api/me/playbook?event=${encodeURIComponent(e)}&lang=${lang}`).then(pb => id === latest.current && setPlaybook(pb)).catch(err => id === latest.current && setError(err.message)); };
   const practiceSteps = playbook ? [
     ...(playbook.groups.find(g => g.label === 'Do now')?.steps.slice(0, 2) || []),
     ...(playbook.groups.find(g => g.label === 'Check on')?.steps.slice(0, 1) || []),
@@ -191,7 +193,8 @@ export function Alerts({ me, onChange, sub, setSub }) {
   const { t } = useI18n();
   const [feed, setFeed] = useState(null), [error, setError] = useState('');
   const { lang } = useI18n();
-  const load = () => { setError(''); setFeed(null); api('GET', `/api/me/alerts?lang=${lang}`).then(setFeed).catch(e => setError(e.message)); };
+  const latest = useRef(0); // only the newest request (after a language switch, say) may fill the feed
+  const load = () => { const id = ++latest.current; setError(''); setFeed(null); api('GET', `/api/me/alerts?lang=${lang}`).then(f => id === latest.current && setFeed(f)).catch(e => id === latest.current && setError(e.message)); };
   useEffect(load, [me.address?.lat, lang]);
   async function testNotification() {
     try {
@@ -207,14 +210,14 @@ export function Alerts({ me, onChange, sub, setSub }) {
         : error ? <ErrorText>{error}</ErrorText>
         : !feed ? <Muted style={{ marginTop: 12 }}>{t('al.checking')}</Muted>
         : feed.unavailable ? <Card><Muted>{t('mx.nwsDown')}</Muted><Link onPress={load}>{t('mx.retry')}</Link></Card>
-        : feed.alerts.length === 0 ? <Card><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>{t('al.none')}</Text><Caption>{t('al.checked', { time: time(feed.checkedAt) })}</Caption><Link onPress={load}>{t('al.refresh')}</Link></Card>
+        : feed.alerts.length === 0 ? <Card><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>{t('al.none')}</Text>{feed.checkedAt ? <Caption>{t('al.checked', { time: time(feed.checkedAt) })}</Caption> : null}<Link onPress={load}>{t('al.refresh')}</Link></Card>
         : feed.alerts.map(a => <Card key={a.id} style={{ borderColor: color.warmLine, backgroundColor: color.warmBg }}>
-            <Tag tone="warm">{t(`sev.${a.severity}`) === `sev.${a.severity}` ? a.severity : t(`sev.${a.severity}`)} · {a.sender}</Tag>
+            {(a.severity || a.sender) ? <Tag tone="warm">{[a.severity && (t(`sev.${a.severity}`) === `sev.${a.severity}` ? a.severity : t(`sev.${a.severity}`)), a.sender].filter(Boolean).join(' · ')}</Tag> : null}
             <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{t(`ev.${a.event}`) === `ev.${a.event}` ? a.event : t(`ev.${a.event}`)}</Text>
             {lang !== 'en' && <Caption>{t('al.nwsEnglish')}</Caption>}
             <Muted style={{ marginTop: 4 }}>{a.headline}</Muted>
             {a.instruction ? <Text style={{ color: color.ink, marginTop: 8, lineHeight: 20 }}>{a.instruction}</Text> : null}
-            <Caption>{t('al.until', { time: time(a.expires) })}</Caption>
+            {a.expires ? <Caption>{t('al.until', { time: time(a.expires) })}</Caption> : null}
             {a.playbook && <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: color.warmLine }}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>{t('mx.alertPlan')}</Text><Playbook playbook={a.playbook} /></View>}
           </Card>)}
       <Card><Tag>{t('al.official')}</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>{t('al.cityOrders')}</Text><Muted>{t('al.cityOrdersSub')}</Muted><Link onPress={() => Linking.openURL(EVERBRIDGE)}>{t('al.signup')}</Link><Link onPress={() => Linking.openURL(KNOW_YOUR_ZONE)}>{t('al.zone')}</Link></Card>
@@ -250,15 +253,16 @@ function FeeGuide() {
 // Plain-language search across the City of Glendale's full permit catalog (crawled from Glendale Permits).
 function PermitSearch({ me }) {
   const { t } = useI18n();
-  const [q, setQ] = useState(''), [result, setResult] = useState(null);
+  const [q, setQ] = useState(''), [result, setResult] = useState(null), [error, setError] = useState('');
   const audience = me.user.type === 'business' ? 'business' : 'resident';
   useEffect(() => {
-    if (q.trim().length < 3) { setResult(null); return; }
-    const timer = setTimeout(() => api('GET', `/api/permits/search?q=${encodeURIComponent(q)}&audience=${audience}`).then(setResult).catch(() => setResult(null)), 250);
+    if (q.trim().length < 3) { setResult(null); setError(''); return; }
+    const timer = setTimeout(() => api('GET', `/api/permits/search?q=${encodeURIComponent(q)}&audience=${audience}`).then(r => { setResult(r); setError(''); }).catch(e => { setResult(null); setError(e.message); }), 250);
     return () => clearTimeout(timer);
   }, [q]);
   return <>
     <Field label={t('pm.planning')} hint={t('pz.searchHint')} value={q} onChangeText={setQ} placeholder={t(audience === 'business' ? 'pz.exBiz' : 'pz.exHome')} autoCapitalize="none" />
+    <ErrorText>{error}</ErrorText>
     {result && <View>
       <FeeGuide />
       {result.permits.length === 0 ? <Caption>{t('mx.noPermit')}</Caption> : result.permits.slice(0, 5).map(p => <Card key={p.name} style={{ marginTop: 8, padding: 14 }}>
@@ -278,10 +282,11 @@ function EventPlanner({ me }) {
   const { t, lang } = useI18n();
   const [open, setOpen] = useState(false), [name, setName] = useState(''), [attendees, setAttendees] = useState(''), [answers, setAnswers] = useState({});
   const [plan, setPlan] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false);
-  const [where, setWhere] = useState('mine'), [location, setLocation] = useState(''), [locationKey, setLocationKey] = useState(null);
-  async function build() {
-    setBusy(true); setError(''); setCopied(false);
-    try { setPlan(await api('POST', '/api/me/permits/event', { name, lang, attendees: Number(attendees) || 0, answers, ...(where === 'other' ? { location, magicKey: locationKey } : {}) })); } catch (e) { setError(e.message); } finally { setBusy(false); }
+  const [where, setWhere] = useState('mine'), [location, setLocation] = useState(''), [locationKey, setLocationKey] = useState(null), [candidates, setCandidates] = useState([]);
+  async function build(at = location, key = locationKey) {
+    setBusy(true); setError(''); setCopied(false); setCandidates([]);
+    try { setPlan(await api('POST', '/api/me/permits/event', { name, lang, attendees: Number(attendees) || 0, answers, ...(where === 'other' ? { location: at, magicKey: key } : {}) })); }
+    catch (e) { setError(e.message); setCandidates(e.data?.candidates || []); } finally { setBusy(false); }
   }
   if (!open) return <Card style={{ borderColor: color.green, borderWidth: 1.5 }}>
     <Tag>{t('pz.new')}</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '800' }}>{t('pz.planEvent')}</Text>
@@ -296,7 +301,8 @@ function EventPlanner({ me }) {
     <Field label={t('pz.attendance')} value={attendees} onChangeText={t => setAttendees(t.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="250" maxLength={7} />
     {eventQuestions.map(([key, label]) => <Toggle key={key} label={t(`eq.${key}`)} value={Boolean(answers[key])} onChange={v => { setPlan(null); setAnswers(current => ({ ...current, [key]: v })); }} />)}
     <ErrorText>{error}</ErrorText>
-    <Button busy={busy} onPress={build}>{t('pz.getList')}</Button>
+    {candidates.length > 0 && <View>{candidates.map(c => <Button key={c} kind="outline" style={{ marginTop: 8 }} onPress={() => { setLocation(c); setLocationKey(null); build(c, null); }}>{c}</Button>)}</View>}
+    <Button busy={busy} disabled={where === 'other' && location.trim().length < 5} onPress={() => build()}>{t('pz.getList')}</Button>
     {plan && <View style={{ marginTop: 14 }}>
       <Caption style={{ marginTop: 0 }}>{t('pz.location', { place: plan.location })}</Caption>
       <Tag>{t('pz.likely', { n: plan.items.length })}</Tag><FeeGuide />
@@ -481,7 +487,10 @@ function DeleteAccount({ me, onDeleted }) {
 export function Profile({ me, onChange, onSignOut, sub, setSub }) {
   const { t } = useI18n();
   const [brief, setBrief] = useState(null);
-  useEffect(() => { api('GET', '/api/me/responder').then(setBrief).catch(() => setBrief(null)); }, [me]);
+  const [briefError, setBriefError] = useState('');
+  useEffect(() => { setBriefError(''); api('GET', '/api/me/responder').then(setBrief).catch(e => { setBrief(null); setBriefError(e.message); }); }, [me]);
+  // The sharing choice comes from the account itself, so a failed preview never reads as "sharing is off".
+  const sharing = Boolean((me.user.type === 'business' ? me.business : me.household)?.shareWithResponders);
   const tab = sub || 'household';
   return <>
     <Title>{me.user.name}</Title>
@@ -491,7 +500,8 @@ export function Profile({ me, onChange, onSignOut, sub, setSub }) {
     {tab === 'household' && (me.user.type === 'business' ? <><BusinessProfile me={me} onSaved={onChange} /><BusinessDetails me={me} onSaved={onChange} /></> : <HouseholdForm me={me} onSaved={onChange} />)}
     {tab === 'address' && <View style={{ marginTop: 8 }}><AddressPanel me={me} onChange={onChange} /></View>}
     {tab === 'responders' && <>
-      <Muted style={{ marginTop: 12 }}>{t(brief?.shareWithResponders ? 'pr.shareOn' : 'pr.shareOff')}</Muted>
+      <Muted style={{ marginTop: 12 }}>{t(sharing ? 'pr.shareOn' : 'pr.shareOff')}</Muted>
+      <ErrorText>{briefError}</ErrorText>
       {brief && <Card><Tag>{t('pr.preview')}</Tag><Caption style={{ marginTop: 0 }}>{t('pz.briefDraft')}</Caption>{briefRows(brief.brief).map(([label, value], i) => <View key={i} style={{ flexDirection: 'row', gap: 10, paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: color.line }}>
         <Text style={{ width: 104, color: color.muted, fontSize: 13, fontWeight: '700' }}>{t(`br.${label}`) === `br.${label}` ? label : t(`br.${label}`)}</Text><Text selectable style={{ flex: 1, color: color.ink, fontSize: 14, lineHeight: 20 }}>{value}</Text>
       </View>)}</Card>}

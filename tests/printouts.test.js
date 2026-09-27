@@ -85,3 +85,10 @@ test('Armenian endings attach to Armenian-script names, and typed places are nev
   assert.doesNotMatch(text, /փոստարկղը-ում|գրադարանը-ում|մորաքույրը-ին/);
   assert.match(text, /Ռոզային/);
 });
+
+test('a hazard map that could not be checked is never printed as a clear map', () => {
+  const hazards = { wildfire: { status: 'unavailable' }, flood: { status: 'unavailable' } };
+  const sheet = householdPlanPrintout({ name: 'T', address: '1 Main', hazards, household: {} });
+  assert.match(sheet, /could not be checked/);
+  assert.match(householdPlanPrintout({ name: 'T', address: '1 Main', hazards, household: {} }, { lang: 'ko' }), /확인하지 못했습니다/);
+});
