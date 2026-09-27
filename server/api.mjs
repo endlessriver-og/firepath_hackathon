@@ -191,6 +191,20 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       return { body: { ok: true } };
     },
 
+    // Change the password with the current one. Every other session ends, so a password someone else
+    // knew stops working on their device at once; this device stays signed in.
+    'POST /api/account/password': async (req, body) => {
+      throttle(req, 10, 'password');
+      const user = session(req);
+      if (typeof body.current !== 'string' || !checkPassword(body.current, user.passwordHash)) fail(403, 'That password is not right.');
+      if (typeof body.next !== 'string' || body.next.length < 8 || body.next.length > 200) fail(400, 'Use a password of at least 8 characters.');
+      user.passwordHash = hashPassword(body.next);
+      const current = tokenKey(/^Bearer (.+)$/.exec(req.headers.authorization)[1]);
+      for (const [key, row] of Object.entries(data.sessions)) if (row.userId === user.id && key !== current) delete data.sessions[key];
+      store.save();
+      return { body: { ok: true } };
+    },
+
     'GET /api/me': async req => ({ body: view(session(req)) }),
 
     'PUT /api/me/profile': async (req, body) => {

@@ -602,3 +602,18 @@ test('the demo household is written in the language the viewer picked, English b
   assert.deepEqual(demos.map(u => u.household.meetNear).sort(), ['Corner mailbox', 'Corner mailbox', '모퉁이 우체통']);
   assert.deepEqual(demos.map(u => u.household.pets[0].count), [2, 2, 2]);
 });
+
+test('password change needs the current password, signs out other devices and keeps this one', async () => {
+  const { call } = setup();
+  const here = await signup(call, 'change@example.test');
+  const other = (await call('POST', '/api/account/login', { email: 'change@example.test', password: 'correct-horse' })).body.token;
+  assert.equal((await call('POST', '/api/account/password', { current: 'wrong-horse', next: 'battery-staple' }, here)).status, 403);
+  assert.equal((await call('POST', '/api/account/password', { current: 'correct-horse', next: 'short' }, here)).status, 400);
+  assert.equal((await call('POST', '/api/account/password', { current: 'correct-horse', next: 'battery-staple' }, here)).status, 200);
+  assert.equal((await call('GET', '/api/me', null, here)).status, 200, 'this device stays signed in');
+  assert.equal((await call('GET', '/api/me', null, other)).status, 401, 'the other device is signed out');
+  assert.equal((await call('POST', '/api/account/login', { email: 'change@example.test', password: 'correct-horse' })).status, 401);
+  assert.equal((await call('POST', '/api/account/login', { email: 'change@example.test', password: 'battery-staple' })).status, 200);
+  const demo = (await call('POST', '/api/demo/start')).body.token;
+  assert.equal((await call('POST', '/api/account/password', { current: 'demo:no-login', next: 'battery-staple' }, demo)).status, 403, 'the demo household has no password');
+});

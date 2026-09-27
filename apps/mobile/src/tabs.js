@@ -422,6 +422,23 @@ function briefRows(text) {
 }
 
 // Delete the account for good. Real accounts confirm with their password; a confirm dialog comes first.
+// Signed-in password change. Other devices are signed out by the server.
+function ChangePassword() {
+  const { t } = useI18n();
+  const [current, setCurrent] = useState(''), [next, setNext] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState(''), [done, setDone] = useState(false);
+  async function save() {
+    setError(''); setDone(false); setBusy(true);
+    try { await api('POST', '/api/account/password', { current, next }); setCurrent(''); setNext(''); setDone(true); } catch (e) { setError(e.message); } finally { setBusy(false); }
+  }
+  return <Collapsible icon="🔑" title={t('pw.title')} summary={t('pw.sub')}>
+    <Field label={t('pw.current')} value={current} onChangeText={setCurrent} secureTextEntry autoComplete="current-password" />
+    <Field label={t('pw.next')} hint={t('pw.hint')} value={next} onChangeText={setNext} secureTextEntry autoComplete="new-password" />
+    <ErrorText>{error}</ErrorText>
+    {done && <Muted style={{ color: color.green, fontWeight: '700' }}>{t('pw.done')}</Muted>}
+    <Button busy={busy} disabled={current.length < 8 || next.length < 8} onPress={save}>{t('pw.btn')}</Button>
+  </Collapsible>;
+}
+
 function DeleteAccount({ me, onDeleted }) {
   const { t } = useI18n();
   const [password, setPassword] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState('');
@@ -448,7 +465,7 @@ export function Profile({ me, onChange, onSignOut, sub, setSub }) {
     <Title>{me.user.name}</Title>
     <Muted>{me.user.demo ? t('pr.demo') : me.user.email}</Muted>
     <SubTabs value={tab} options={[['household', t(me.user.type === 'business' ? 'pr.business' : 'pr.household')], ['address', t('pr.address')], ['responders', t('pr.responders')], ['settings', t('pr.settings')]]} onChange={setSub} />
-    {tab === 'settings' && <><LanguageSettings /><Caption>{t('pr.langNote')}</Caption><PrivacyNote /><DeleteAccount me={me} onDeleted={onSignOut} /></>}
+    {tab === 'settings' && <><LanguageSettings /><Caption>{t('pr.langNote')}</Caption><PrivacyNote />{!me.user.demo && <ChangePassword />}<DeleteAccount me={me} onDeleted={onSignOut} /></>}
     {tab === 'household' && (me.user.type === 'business' ? <><BusinessProfile me={me} onSaved={onChange} /><BusinessDetails me={me} onSaved={onChange} /></> : <HouseholdForm me={me} onSaved={onChange} />)}
     {tab === 'address' && <View style={{ marginTop: 8 }}><AddressPanel me={me} onChange={onChange} /></View>}
     {tab === 'responders' && <>
