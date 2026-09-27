@@ -112,7 +112,8 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
   - No pill selectors remain.
   - "Needs City data" callouts collapse to one line.
   - The tour has five stops.
-- **Tests:** `npm test` (66 on 2026-09-27). GitHub Actions (`.github/workflows/test.yml`) runs them on every push and pull request, and the Vercel build runs them before every deploy. `tests/api.test.js` includes a malformed-input sweep (168 junk bodies across 12 routes must never produce a 500 or store objects).
+- **Reproducible builds:** both `package-lock.json` files are committed (the app's was gitignored until 2026-09-27) and Vercel installs with `npm ci`. GitHub Actions also builds the iOS and Android bundles on every push (`native-bundle` job), so web-only code that would break the native app fails a check.
+- **Tests:** `npm test` (69 on 2026-09-27). GitHub Actions (`.github/workflows/test.yml`) runs them on every push and pull request, and the Vercel build runs them before every deploy. `tests/api.test.js` includes a malformed-input sweep (168 junk bodies across 12 routes must never produce a 500 or store objects).
 - **Production watch:** `.github/workflows/smoke.yml` runs every 6 hours and on demand against production; a failure emails the repo owner. Job `smoke`: `scripts/smoke.sh` (API, security headers, `no-store`, POST lookups, persistence). Job `browser`, in the runner's Chrome: the guided tour (`tour-check.mjs`), the axe accessibility audit, the offline check and the installability check. The small-phone `check:layout` is too slow for the schedule; run it by hand after UI or copy changes.
 - **Submission:** Devpost "Jewel City Hacks 5.0", project FirePath.
   - Staged with every field filled; the owner was to tick the terms and press Submit. Submission is unconfirmed: the project page exists, but it is not in the event's public gallery. Check that the Devpost status says Submitted.
