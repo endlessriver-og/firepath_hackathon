@@ -533,3 +533,14 @@ test('address and map-point lookups also work by POST, so the address stays out 
   assert.equal((await call('POST', '/api/public/records', { address: 'x' })).status, 400);
   assert.equal((await call('POST', '/api/public/suggest', { q: '16' })).status, 200);
 });
+
+test('rate limits count per route: typing addresses never uses up the sign-up allowance', async () => {
+  const { call } = setup();
+  for (let i = 0; i < 40; i++) assert.equal((await call('GET', `/api/public/suggest?q=16${i}`)).status, 200);
+  assert.equal((await call('POST', '/api/account/signup', { email: 'after-typing@example.test', password: 'correct-horse', name: 'Typist' })).status, 201);
+  for (let i = 0; i < 19; i++) await call('POST', '/api/account/signup', { email: `bulk${i}@example.test`, password: 'correct-horse', name: 'Bulk' });
+  assert.equal((await call('POST', '/api/account/signup', { email: 'one-too-many@example.test', password: 'correct-horse', name: 'Late' })).status, 429, 'sign-up still has its own ceiling');
+  assert.equal((await call('POST', '/api/public/check', { address: '1613 Glencoe Way' })).status, 200, 'and other routes are unaffected');
+  for (let i = 0; i < 60; i++) await call('POST', '/api/account/login', { email: `nobody${i}@example.test`, password: 'guess-guess' });
+  assert.equal((await call('POST', '/api/account/login', { email: 'after-typing@example.test', password: 'correct-horse' })).status, 429, 'spraying many emails from one IP is capped');
+});

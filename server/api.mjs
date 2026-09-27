@@ -36,12 +36,15 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
   const alertCache = new Map();
   const venueHazards = new Map(); // venue id -> hazard lookup (venues are fixed points, so cache for the process)
   const publicHits = new Map(); // ip -> timestamps; public checks are capped per visitor, in memory only
-  function throttle(req, limit) {
+  // Per IP and per route over 10 minutes. Each route counts only its own traffic, so typing an address
+  // (many suggestions) never uses up the sign-up allowance.
+  function throttle(req, limit, route) {
     // Behind a tunnel every request comes from localhost; use the visitor IP it forwards.
     const ip = req.headers?.['cf-connecting-ip'] || String(req.headers?.['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'local';
-    const recent = (publicHits.get(ip) || []).filter(t => t > now() - 10 * 60_000);
+    const key = `${route}:${ip}`;
+    const recent = (publicHits.get(key) || []).filter(t => t > now() - 10 * 60_000);
     if (recent.length >= limit) fail(429, 'Too many checks from this device. Try again in a few minutes.');
-    publicHits.set(ip, [...recent, now()]);
+    publicHits.set(key, [...recent, now()]);
   }
   // Geocode (City geocoder when available) + coordinate hazard lookup. Shared by registration and the public check.
   // Demo households are throwaway: drop ones older than a day, and any session that expired or
@@ -98,7 +101,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
 
   const routes = {
     'POST /api/account/signup': async (req, body) => {
-      throttle(req, 10);
+      throttle(req, 20, 'signup');
       const email = text(body.email, 200).toLowerCase();
       const name = text(body.name, 80);
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail(400, 'Enter a valid email address.');
@@ -118,7 +121,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
     // Walkthrough: a fresh, clearly fictional demo household at a public address, so a demo never needs
     // a real sign-up. Each call creates its own account; nothing real is stored.
     'POST /api/demo/start': async req => {
-      throttle(req, 30);
+      throttle(req, 60, 'demo');
       pruneDemos();
       const id = randomUUID();
       let lookup;
@@ -140,6 +143,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
     },
 
     'POST /api/account/login': async (req, body) => {
+      throttle(req, 60, 'login');
       const email = text(body.email, 200).toLowerCase();
       const recent = (failures.get(email) || []).filter(t => t > now() - 10 * 60_000);
       if (recent.length >= 5) fail(429, 'Too many attempts. Wait 10 minutes and try again.');
@@ -164,7 +168,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
     // Delete the account for good: the user record (household, business, address) and every session.
     // Real accounts confirm with their password; the fictional demo household does not have one.
     'POST /api/account/delete': async (req, body) => {
-      throttle(req, 10);
+      throttle(req, 10, 'delete');
       const user = session(req);
       if (!user.demo && (typeof body.password !== 'string' || !checkPassword(body.password, user.passwordHash))) fail(403, 'That password is not right.');
       for (const [key, row] of Object.entries(data.sessions)) if (row.userId === user.id) delete data.sessions[key];
@@ -285,14 +289,14 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
 
     // Public, no account: check any Glendale address. Nothing is stored.
     'GET /api/public/suggest': async (req, body, url) => {
-      throttle(req, 200);
+      throttle(req, 200, 'suggest');
       if (!geocoder) return { body: { suggestions: [] } };
       try { return { body: { suggestions: await geocoder.suggest(text(url.searchParams.get('q'), 120)) } }; }
       catch { return { body: { suggestions: [], unavailable: true } }; }
     },
 
     'POST /api/public/check': async (req, body) => {
-      throttle(req, 20);
+      throttle(req, 20, 'check');
       const address = text(body.address, 200);
       if (address.length < 5) fail(400, 'Enter a Glendale street address.');
       // City records (about 3 s) load separately via GET /api/public/records, so the hazard result shows first.
@@ -304,7 +308,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
 
     // Tap-to-inspect on the 3D map: the parcel, mapped hazards, combined index and City records at a point.
     'GET /api/public/point': async (req, body, url) => {
-      throttle(req, 60);
+      throttle(req, 60, 'point');
       const lat = Number(url.searchParams.get('lat')), lon = Number(url.searchParams.get('lon'));
       if (!(lat > 34.1 && lat < 34.3 && lon > -118.33 && lon < -118.16)) fail(400, 'Pick a point in Glendale.');
       let [parcel, lookup, neighborhood] = await Promise.all([parcelAt(lat, lon).catch(() => null), lookupHazards({ lat, lon }).catch(() => null), neighborhoodAt(lat, lon).catch(() => null)]);
@@ -322,7 +326,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
 
     // Public City permit and inspection records for a matched Glendale address (from the address check).
     'GET /api/public/records': async (req, body, url) => {
-      throttle(req, 40);
+      throttle(req, 40, 'records');
       const address = text(url.searchParams.get('address'), 200);
       if (address.length < 5) fail(400, 'Enter a Glendale street address.');
       return { body: { records: await cityRecords(address).catch(() => null) } };
@@ -330,7 +334,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
 
     // Plain-language search over the City of Glendale permit catalog (crawled by scripts/crawl-permits.mjs).
     'GET /api/permits/search': async (req, body, url) => {
-      throttle(req, 300);
+      throttle(req, 300, 'permits');
       const q = text(url.searchParams.get('q'), 120);
       const audience = oneOf(url.searchParams.get('audience'), ['resident', 'business', 'events']) || null;
       return { body: { query: q, permits: searchPermits(permitCatalog, q, { audience }).map(({ score, ...t }) => t), licenses: audience === 'business' ? searchLicenses(permitCatalog, q) : [], source: permitCatalog.source, crawledAt: permitCatalog.crawledAt, portal: permitCatalog.portal } };
