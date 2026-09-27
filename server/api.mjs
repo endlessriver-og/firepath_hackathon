@@ -42,6 +42,13 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
     publicHits.set(ip, [...recent, now()]);
   }
   // Geocode (City geocoder when available) + coordinate hazard lookup. Shared by registration and the public check.
+  // Demo households are throwaway: drop ones older than a day, and any session that expired or
+  // points at a removed account, so the shared store does not grow with every tour.
+  function pruneDemos() {
+    for (const [id, user] of Object.entries(data.users)) if (user.demo && Date.parse(user.createdAt) < now() - DAY) delete data.users[id];
+    for (const [key, sessionRow] of Object.entries(data.sessions)) if (!data.users[sessionRow.userId] || sessionRow.expires < now()) delete data.sessions[key];
+  }
+
   async function locate(address, magicKey) {
     let matched = null, result;
     if (geocoder) {
@@ -110,6 +117,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
     // a real sign-up. Each call creates its own account; nothing real is stored.
     'POST /api/demo/start': async req => {
       throttle(req, 30);
+      pruneDemos();
       const id = randomUUID();
       let lookup;
       try { lookup = await lookupHazards({ lat: 34.199055, lon: -118.230606 }); } catch { fail(503, 'Demo data is unavailable right now.'); }

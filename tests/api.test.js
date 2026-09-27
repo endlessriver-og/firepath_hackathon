@@ -429,3 +429,23 @@ test('household playbooks translate every step but keep what the household typed
     }
   }
 });
+
+test('demo households older than a day are pruned, with their sessions, when a new demo starts', async () => {
+  let clock = Date.parse('2026-09-26T12:00:00Z');
+  const store = { data: { users: {}, sessions: {} }, save() {} };
+  const handle = createApi({ store, lookupHazards: async () => sparr, fetchAlerts: async () => [], now: () => clock });
+  async function call(method, path, body, token) {
+    const req = { method, headers: token ? { authorization: `Bearer ${token}` } : {}, async *[Symbol.asyncIterator]() { if (body) yield JSON.stringify(body); } };
+    const res = { writeHead(status) { this.status = status; }, end(text) { this.body = JSON.parse(text); } };
+    await handle(req, res, new URL(path, 'http://localhost'));
+    return res;
+  }
+  const real = (await call('POST', '/api/account/signup', { email: 'keep@example.test', password: 'correct-horse', name: 'Keep Me' })).body.token;
+  const old = (await call('POST', '/api/demo/start', {})).body.token;
+  clock += 25 * 3600_000;
+  const fresh = (await call('POST', '/api/demo/start', {})).body.token;
+  assert.equal(Object.values(store.data.users).filter(u => u.demo).length, 1, 'the day-old demo is gone');
+  assert.equal((await call('GET', '/api/me', null, old)).status, 401, 'its session is gone too');
+  assert.equal((await call('GET', '/api/me', null, fresh)).status, 200);
+  assert.equal((await call('GET', '/api/me', null, real)).body.user.name, 'Keep Me', 'real accounts are never pruned');
+});
