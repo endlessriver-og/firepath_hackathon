@@ -17,7 +17,8 @@
     "check:installable": "node scripts/installable-check.mjs",
     "check:a11y": "node scripts/a11y-check.mjs",
     "check:lang": "node scripts/lang-sweep.mjs",
-    "check:layout": "node scripts/layout-check.mjs"
+    "check:layout": "node scripts/layout-check.mjs",
+    "check:tour": "node scripts/tour-check.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0"
