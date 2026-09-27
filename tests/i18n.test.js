@@ -63,3 +63,13 @@ test('first visit starts in the device language when FirePath has it', async () 
   assert.equal(deviceLanguage(['ko']), 'ko');
   assert.equal(deviceLanguage(['fr-FR', 'de']), 'en', 'falls back to English');
 });
+
+test('every row of the "How FirePath connects" page has a sys. key in all four languages', () => {
+  const tabs = readFileSync(new URL('../apps/mobile/src/tabs.js', import.meta.url), 'utf8');
+  const i18n = readFileSync(new URL('../apps/mobile/src/i18n.js', import.meta.url), 'utf8');
+  const block = tabs.slice(tabs.indexOf('const SYSTEMS = ['), tabs.indexOf('const BADGE'));
+  const phrases = [...block.matchAll(/'((?:[^'\\]|\\.)*)'/g)].map(m => m[1]).filter(s => !['live', 'prototype', 'city'].includes(s));
+  assert.ok(phrases.length > 20);
+  const missing = phrases.filter(s => i18n.split(`'sys.${s}':`).length - 1 !== 4);
+  assert.deepEqual(missing, []);
+});
