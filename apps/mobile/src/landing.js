@@ -17,7 +17,7 @@ import { HeroIllustration } from './illustration';
 // Public City records for an address (Glendale Permits public search), in a collapsible container.
 export function CityRecords({ records, initiallyOpen, loading }) {
   const { t: tr } = useI18n();
-  if (loading) return <Card><Muted>🗂  Loading City permit and inspection records…</Muted></Card>;
+  if (loading) return <Card><Muted>🗂  {tr('rec.loading')}</Muted></Card>;
   if (!records) return null;
   const t = records.totals;
   return <Collapsible icon="🗂" initiallyOpen={initiallyOpen} title={tr('rec.title', { n: t.total })} summary={`${tr('rec.summary', { p: t.permits, i: t.inspections })}${records.parcel ? ` · parcel ${records.parcel}` : ''}`}>
@@ -61,25 +61,25 @@ export function AddressCheck({ onResult, onRegister, showPreview = false, label 
     {result && <>
       <Card style={{ backgroundColor: color.green, borderColor: color.green }}>
         <Text style={{ color: '#CFE3DA', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>{result.address}</Text>
-        <Text style={{ color: '#FFF', fontSize: 22, fontWeight: '800', marginTop: 6 }}>{mapped.length ? `${mapped.length} map${mapped.length === 1 ? '' : 's'} show a zone at this address` : 'No checked map shows a zone here'}</Text>
-        {unavailable > 0 && <Text style={{ color: '#CFE3DA', marginTop: 4 }}>{unavailable} map{unavailable === 1 ? '' : 's'} could not be checked.</Text>}
-        <Text style={{ color: '#CFE3DA', marginTop: 6 }}>Outside a mapped zone does not mean risk-free.</Text>
+        <Text style={{ color: '#FFF', fontSize: 22, fontWeight: '800', marginTop: 6 }}>{mapped.length ? t('res.zones', { n: mapped.length }) : t('res.none')}</Text>
+        {unavailable > 0 && <Text style={{ color: '#CFE3DA', marginTop: 4 }}>{t('res.unavailable', { n: unavailable })}</Text>}
+        <Text style={{ color: '#CFE3DA', marginTop: 6 }}>{t('res.notSafe')}</Text>
       </Card>
       {onRegister && <Card style={{ borderColor: color.green, borderWidth: 2 }}>
-        <Text style={{ color: color.ink, fontSize: 20, fontWeight: '800' }}>Register this address</Text>
-        <Muted style={{ marginTop: 5 }}>Save a plan, get relevant alerts and find City permits.</Muted>
-        <Button onPress={() => onRegister('resident')}>Register my home</Button>
-        <Button kind="outline" onPress={() => onRegister('business')}>Register my business</Button>
-        <Caption>Free plan · City permit fees may apply</Caption>
+        <Text style={{ color: color.ink, fontSize: 20, fontWeight: '800' }}>{t('res.register')}</Text>
+        <Muted style={{ marginTop: 5 }}>{t('res.registerSub')}</Muted>
+        <Button onPress={() => onRegister('resident')}>{t('res.home')}</Button>
+        <Button kind="outline" onPress={() => onRegister('business')}>{t('res.biz')}</Button>
+        <Caption>{t('res.free')}</Caption>
       </Card>}
       <CityRecords records={records === 'loading' ? null : records} loading={records === 'loading'} />
       <MapFrame src={`${apiBase()}/map.html?layers=combined&label=This%20address&lat=${result.lat}&lon=${result.lon}`} style={{ height: 320, borderRadius: 17, marginTop: 12, borderWidth: 1, borderColor: color.line }} />
-      <Section>Seven hazard maps</Section>
-      <Caption style={{ marginTop: 0 }}>⚠ In zone · ○ Outside · ? Unavailable. Planning maps, not live alerts.</Caption>
+      <Section>{t('res.seven')}</Section>
+      <Caption style={{ marginTop: 0 }}>{t('res.key')}</Caption>
       {[...result.layers].sort((a, b) => inZone(b) - inZone(a)).map(l => <View key={l.key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 1, borderColor: color.line }}>
-        <Text style={{ flex: 1, color: color.ink, fontWeight: '700' }}>{l.name}</Text><Text style={{ color: inZone(l) ? color.warm : color.muted, fontWeight: '800', fontSize: 12 }}>{inZone(l) ? `⚠ ${typeof l.level === 'number' ? l.label : 'In zone'}` : l.level === 'unknown' ? '? Unavailable' : '○ Outside'}</Text>
+        <Text style={{ flex: 1, color: color.ink, fontWeight: '700' }}>{t(`hz.${l.key}`)}</Text><Text style={{ color: inZone(l) ? color.warm : color.muted, fontWeight: '800', fontSize: 12 }}>{inZone(l) ? `⚠ ${typeof l.level === 'number' ? (t(`lvl.${l.label}`) === `lvl.${l.label}` ? l.label : t(`lvl.${l.label}`)) : t('map.inZone')}` : l.level === 'unknown' ? `? ${t('map.unavailable')}` : `○ ${t('map.outside')}`}</Text>
       </View>)}
-      <Collapsible title="Map sources" summary="Official maps and dates">{result.layers.map(l => hazardViewers[l.key] && <Link key={l.key} onPress={() => Linking.openURL(hazardViewers[l.key].url)}>{l.name}: official map ↗</Link>)}<Caption>Checked {result.checkedAt.slice(0, 10)}. Planning maps, not live incidents or evacuation orders.</Caption></Collapsible>
+      <Collapsible title={t('res.sources')} summary={t('res.sourcesSub')}>{result.layers.map(l => hazardViewers[l.key] && <Link key={l.key} onPress={() => Linking.openURL(hazardViewers[l.key].url)}>{l.name}: official map ↗</Link>)}<Caption>Checked {result.checkedAt.slice(0, 10)}. Planning maps, not live incidents or evacuation orders.</Caption></Collapsible>
       {showPreview && result.preview.length > 0 && <><Section>Where to start</Section>
         {result.preview.map(p => <Card key={p.id}><Text style={{ color: color.ink, fontSize: 16, fontWeight: '700' }}>{p.title}</Text><Muted style={{ marginTop: 4 }}>{p.description}</Muted></Card>)}</>}
     </>}
@@ -115,7 +115,7 @@ export function Landing({ onSignedIn, onEmergency, onWalkthrough }) {
     {onWalkthrough && <Pressable accessibilityRole="button" onPress={onWalkthrough} style={{ marginTop: 14, backgroundColor: '#12302A', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <Text style={{ fontSize: 22 }}>▶</Text><Text style={{ color: '#FFF', fontWeight: '800', fontSize: 15 }}>{t('land.tour')}</Text>
     </Pressable>}
-    <Collapsible icon="📚" title={t('land.resources')} summary="Official alerts, zones and help"><Resources compact /></Collapsible>
+    <Collapsible icon="📚" title={t('land.resources')} summary={t('land.resourcesSub')}><Resources compact /></Collapsible>
     <Caption style={{ marginTop: 18 }}>{t('land.disclaimer')}</Caption>
   </>;
 }
