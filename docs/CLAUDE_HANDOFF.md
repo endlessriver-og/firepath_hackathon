@@ -115,6 +115,16 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
   - Staged with every field filled; the owner was to tick the terms and press Submit. Submission is unconfirmed: the project page exists, but it is not in the event's public gallery. Check that the Devpost status says Submitted.
   - The video (<https://youtu.be/7uOw3mHqUbE>) is a crossfaded slideshow of real screens; a live screencast glitched.
   - Pitch deck: a claude.ai Slides artifact (owner's gallery).
+- **Languages (es, hy, ko; drafts, not yet reviewed by native speakers):**
+  - Translated: the public page and address result, sign-up and onboarding, Home, the checklist titles, Plan, Alerts and the drill frame, Map, Permits, Profile and the household form, the "Needs City data" cards, and the guided tour.
+  - Still English: drill and alert-plan steps (`src/playbooks.js`, server-generated), official agency and permit names, and the responder card.
+  - Keys live in `apps/mobile/src/i18n.js`; checklist titles are in `taskTitles`.
+- **Queued for the next deploy (production is on `34926bd`):**
+  - City records load separately.
+  - Conditional Blob writes.
+  - Onboarding progress kept per account.
+  - All translations.
+  - After deploying, run `scripts/smoke.sh`.
 - **Known gaps:**
   - The address check takes 3–4 s warm, mostly the City geocoder.
   - Concurrent Blob writes: fixed in `server/blob-store.mjs` (ETag-conditional write, per-record merge on conflict; tested against the real store) but NOT yet deployed. Deploy after judging. Reads return weak ETags (`W/"…"`); conditional writes need the strong form.
