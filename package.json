@@ -15,7 +15,8 @@
     "public": "bash scripts/public.sh",
     "check:offline": "node scripts/offline-check.mjs",
     "check:installable": "node scripts/installable-check.mjs",
-    "check:a11y": "node scripts/a11y-check.mjs"
+    "check:a11y": "node scripts/a11y-check.mjs",
+    "check:lang": "node scripts/lang-sweep.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0"
