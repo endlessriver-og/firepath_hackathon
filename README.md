@@ -1,5 +1,7 @@
 # FirePath — your place, your plan
 
+[![test](https://github.com/endlessriver-og/firepath_hackathon/actions/workflows/test.yml/badge.svg)](https://github.com/endlessriver-og/firepath_hackathon/actions/workflows/test.yml)
+
 **Try it:** <https://firepath-ruddy.vercel.app> · **Demo video:** <https://youtu.be/7uOw3mHqUbE> · Built at Jewel City Hacks 5.0 (Glendale, September 2026)
 
 FirePath turns a Glendale address into a practical preparedness plan for the people who live or work there. Anyone can check an address against seven state and federal hazard maps and the City's own permit and inspection records, with no account. A household or business then adds who is actually there (someone who needs help leaving, kids, pets, hazardous materials) and gets a short numbered checklist, drills for real alert types, one-tap emergency steps and a printable plan.

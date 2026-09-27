@@ -112,7 +112,7 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
   - No pill selectors remain.
   - "Needs City data" callouts collapse to one line.
   - The tour has five stops.
-- **Tests:** 44 pass.
+- **Tests:** 50 pass. GitHub Actions (`.github/workflows/test.yml`) runs them on every push and pull request.
 - **Submission:** Devpost "Jewel City Hacks 5.0", project FirePath.
   - Staged with every field filled; the owner was to tick the terms and press Submit. Submission is unconfirmed: the project page exists, but it is not in the event's public gallery. Check that the Devpost status says Submitted.
   - The video (<https://youtu.be/7uOw3mHqUbE>) is a crossfaded slideshow of real screens; a live screencast glitched.
