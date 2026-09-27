@@ -316,7 +316,7 @@ const TX = {
     evacBiz: point => `Lleve al personal y a los visitantes a ${point || 'su punto de reunión'}, cuente a las personas y salgan según las indicaciones.`,
     and: ' y ', dogsNote: p => `Lleve las bolsas de emergencia, medicinas, cargadores${p ? ` y a ${p}` : ''}.`,
     earthquake: [
-      'Agáchese, cúbrase y agárrese hasta que pare el temblor. Espere réplicas y repita cada vez.',
+      'Agáchese, cúbrase y sujétese hasta que pare el temblor. Espere réplicas y repita cada vez.',
       'Revise si hay heridos. Póngase zapatos antes de caminar sobre vidrios o escombros.',
       'Si huele a gas o escucha un silbido, saque a todos y llame a la compañía de gas desde afuera.',
       who => `Revise a ${who}, y luego a los vecinos que viven solos.`,
