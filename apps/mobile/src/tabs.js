@@ -422,6 +422,8 @@ export function Profile({ me, onChange, onSignOut, sub, setSub }) {
 
 
 export function MapTab({ me, layers, setLayers, top }) {
+  const { t } = useI18n();
+  const lvl = l => (t(`lvl.${l}`) === `lvl.${l}` ? l : t(`lvl.${l}`));
   const lat = me.address?.lat, lon = me.address?.lon;
   const [view3d, setView3d] = useState(false);
   const src = `${apiBase()}/${view3d ? 'map3d' : 'map'}.html?layers=${layers.join(',')}${lat ? `&lat=${lat}&lon=${lon}` : ''}`;
@@ -430,28 +432,28 @@ export function MapTab({ me, layers, setLayers, top }) {
     return rank(a) - rank(b);
   }) : [];
   const [other, setOther] = useState(false);
-  const mode = <Select label="Address" value={other ? 'other' : 'mine'} options={[['mine', me.user.type === 'business' ? 'My business' : 'My home'], ['other', 'Check another address']]} onChange={v => setOther(v === 'other')} />;
+  const mode = <Select label={t('map.address')} value={other ? 'other' : 'mine'} options={[['mine', t(me.user.type === 'business' ? 'map.mineBiz' : 'map.mine')], ['other', t('map.other')]]} onChange={v => setOther(v === 'other')} />;
   if (other) return <>
-    <Title>Check any address</Title>
+    <Title>{t('map.otherTitle')}</Title>
     {mode}
-    <Muted style={{ marginTop: 10 }}>Check another address without changing yours.</Muted>
+    <Muted style={{ marginTop: 10 }}>{t('map.otherSub')}</Muted>
     <AddressCheck showPreview={false} />
   </>;
   return <>
-    <Title>Hazard map</Title>
+    <Title>{t('map.title')}</Title>
     {mode}
     <MapFrame key={src} src={src} style={{ height: 560, borderRadius: 17, marginTop: 12, borderWidth: 1, borderColor: color.line }} />
-    <Select label="Map view" value={view3d ? '3d' : '2d'} options={[['2d', 'Flat map'], ['3d', '3D terrain']]} onChange={v => setView3d(v === '3d')} />
-    <Caption>Tap the map to inspect a location. Shading shows planning zones, not live incidents.</Caption>
+    <Select label={t('map.view')} value={view3d ? '3d' : '2d'} options={[['2d', t('map.flat')], ['3d', t('map.3d')]]} onChange={v => setView3d(v === '3d')} />
+    <Caption>{t('map.caption')}</Caption>
     {me.hazards ? <>
-      <Collapsible icon="🗺" title="At your address" summary={`${order.filter(k => describeHazard(k, me.hazards[k]).tone === 'mapped').length} of ${order.length} maps show a zone here`}>
+      <Collapsible icon="🗺" title={t('map.atAddress')} summary={t('map.count', { n: order.filter(k => describeHazard(k, me.hazards[k]).tone === 'mapped').length, total: order.length })}>
       {order.map(key => { const sev = hazardSeverity(key, me.hazards[key]); const meta = me.hazards[key]?._meta || {}; const on = layers.includes(key); return (
         <Pressable key={key} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => { setLayers([key]); top?.(); }} style={[s.card, on && { borderColor: color.green, borderWidth: 2 }]}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}><Text style={{ color: color.ink, fontSize: 15, fontWeight: '800' }}>{hazardNames[key]}</Text><Text style={{ color: describeHazard(key, me.hazards[key]).tone === 'mapped' ? color.warm : color.muted, fontWeight: '800', fontSize: 12 }}>{describeHazard(key, me.hazards[key]).tone === 'mapped' ? `⚠ ${typeof sev.level === 'number' ? sev.label : 'In zone'}` : describeHazard(key, me.hazards[key]).tone === 'unknown' ? '? Unavailable' : '○ Outside'}</Text></View>
-          {hazardViewers[key] && <Link style={{ marginTop: 6 }} onPress={() => Linking.openURL(hazardViewers[key].url)}>Official map: {hazardViewers[key].name} ↗</Link>}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}><Text style={{ color: color.ink, fontSize: 15, fontWeight: '800' }}>{t(`hz.${key}`)}</Text><Text style={{ color: describeHazard(key, me.hazards[key]).tone === 'mapped' ? color.warm : color.muted, fontWeight: '800', fontSize: 12 }}>{describeHazard(key, me.hazards[key]).tone === 'mapped' ? `⚠ ${typeof sev.level === 'number' ? lvl(sev.label) : t('map.inZone')}` : describeHazard(key, me.hazards[key]).tone === 'unknown' ? `? ${t('map.unavailable')}` : `○ ${t('map.outside')}`}</Text></View>
+          {hazardViewers[key] && <Link style={{ marginTop: 6 }} onPress={() => Linking.openURL(hazardViewers[key].url)}>{t('map.official', { name: hazardViewers[key].name })}</Link>}
         </Pressable>); })}
       </Collapsible>
-    </> : <Card><Muted>Register your address to see how each layer rates at your home.</Muted></Card>}
+    </> : <Card><Muted>{t('map.noAddress')}</Muted></Card>}
     <CityDataCallout id="evacuationZones" />
     <CityDataCallout id="closures" />
   </>;
