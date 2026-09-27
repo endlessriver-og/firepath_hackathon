@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, Tex
 import { Picker } from '@react-native-picker/picker';
 import Svg, { Circle } from 'react-native-svg';
 import { cityData } from './city-data';
-import { LANGS, useI18n } from './i18n';
+import { LANGS, translateError, useI18n } from './i18n';
 
 export const color = { bg: '#F5F6F1', ink: '#17372E', green: '#1D5B4D', muted: '#53655E', line: '#E2E8E1', soft: '#E6EFE9', warm: '#B4502B', warmBg: '#FFF9F5', warmLine: '#E9C2AE', gold: '#8A5A12', goldBg: '#F6E6C8', blue: '#2E5A88', blueBg: '#EAF1F8' };
 
@@ -18,7 +18,10 @@ export function Step({ n, of, label }) {
   return <Text style={s.step}>{t('ui.step', { n, of }).toUpperCase()} · {label.toUpperCase()}</Text>;
 }
 export const Link = ({ children, onPress, style }) => <Text accessibilityRole="link" style={[s.link, style]} onPress={onPress}>{children}</Text>;
-export const ErrorText = ({ children }) => children ? <Text accessibilityRole="alert" style={s.error}>{children}</Text> : null;
+export function ErrorText({ children }) {
+  const { lang } = useI18n();
+  return children ? <Text accessibilityRole="alert" style={s.error}>{translateError(lang, children)}</Text> : null;
+}
 
 export function Button({ children, onPress, busy, kind = 'primary', disabled, style }) {
   const off = busy || disabled;

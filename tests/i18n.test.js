@@ -7,7 +7,7 @@ import { cityData } from '../src/city-data.js';
 const src = readFileSync(new URL('../apps/mobile/src/i18n.js', import.meta.url), 'utf8');
 const literal = (start, end) => new Function(`return ${src.slice(src.indexOf(start) + start.length, src.indexOf(end)).trim().replace(/;$/, '')}`)();
 const dict = literal('const dict = ', '// Short checklist titles');
-const taskTitles = literal('export const taskTitles = ', 'export const translate');
+const taskTitles = literal('export const taskTitles = ', '// Errors arrive from the API');
 const vars = s => [...String(s).matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort().join(',');
 
 test('every English phrase exists in Spanish, Armenian and Korean with the same placeholders', () => {
@@ -45,4 +45,11 @@ test('both map pages translate every fixed phrase they pass through tr() or trv(
 
 test('the Emergency call button says 911 in every language', () => {
   for (const lang of ['en', 'es', 'hy', 'ko']) assert.match(dict[lang]['em.call'], /911/, lang);
+});
+
+test('every error message the API can send has a translation', () => {
+  const api = readFileSync(new URL('../server/api.mjs', import.meta.url), 'utf8');
+  const sent = [...api.matchAll(/fail\(\d+, (['`])((?:(?!\1).)+)\1/g)].map(m => m[2]).filter(m => !m.includes('${'));
+  const known = new Set(Object.entries(dict.en).filter(([k]) => k.startsWith('err.')).map(([, v]) => v));
+  assert.deepEqual(sent.filter(m => !known.has(m)), []);
 });

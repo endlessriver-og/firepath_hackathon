@@ -11,7 +11,7 @@ import { eventQuestions } from './permit-catalog';
 import { hazardViewers, resourceGroups, RESOURCES_CHECKED } from './resources';
 import { businessPosterPrintout, businessPosterTitle, householdPlanPrintout, printoutTitle, standardPrintout, standardPrintouts } from './printouts';
 import { printHtml } from './print';
-import { taskTitles, useI18n } from './i18n';
+import { taskTitles, translateError, useI18n } from './i18n';
 import { connect as connectDevice, sendToDevice, subscribe as subscribeDevice } from './device';
 import { AddressCheck, CityRecords } from './landing';
 import { eventTemplates, venues } from './venues';
@@ -23,10 +23,11 @@ const EVERBRIDGE = 'https://www.glendaleca.gov/Everbridge';
 const KNOW_YOUR_ZONE = 'https://www.glendaleca.gov/government/departments/fire-department/other-links/emergency-preparedness-response/know-your-zone';
 
 function useToggle(me, onChange) {
+  const { t, lang } = useI18n();
   const [busy, setBusy] = useState(null);
   return [busy, async id => {
     setBusy(id);
-    try { onChange(await api('PUT', '/api/me/tasks', { id, done: !me.done[id] })); } catch (e) { Alert.alert('Could not save', e.message); } finally { setBusy(null); }
+    try { onChange(await api('PUT', '/api/me/tasks', { id, done: !me.done[id] })); } catch (e) { Alert.alert(t('al.saveFailed'), translateError(lang, e.message)); } finally { setBusy(null); }
   }];
 }
 
@@ -181,9 +182,9 @@ export function Alerts({ me, onChange, sub, setSub }) {
   async function testNotification() {
     try {
       const permission = await Notifications.requestPermissionsAsync();
-      if (permission.status !== 'granted') return Alert.alert('Notifications off', 'Enable notifications in device settings to try the local test.');
+      if (permission.status !== 'granted') return Alert.alert(t('al.notifOff'), t('al.notifOffSub'));
       await Notifications.scheduleNotificationAsync({ content: { title: 'FirePath test', body: 'This is a local test, not an emergency alert.', data: { demo: true } }, trigger: null });
-    } catch (e) { Alert.alert('Notification unavailable', String(e?.message || e)); }
+    } catch (e) { Alert.alert(t('al.notifUnavailable'), String(e?.message || e)); }
   }
   const time = iso => iso ? new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
   return <>

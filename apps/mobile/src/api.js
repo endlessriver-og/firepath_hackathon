@@ -24,7 +24,7 @@ export async function api(method, path, body) {
   try {
     response = await fetch(`${apiBase()}${path}`, { method, headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined });
   } catch {
-    throw Object.assign(new Error('Cannot reach the FirePath server. Is `npm start` running?'), { status: 0 });
+    throw Object.assign(new Error("Can't reach FirePath. Check your connection and try again."), { status: 0 });
   }
   const json = await response.json().catch(() => ({}));
   if (!response.ok) throw Object.assign(new Error(json.error || `Request failed (${response.status})`), { status: response.status, data: json });
