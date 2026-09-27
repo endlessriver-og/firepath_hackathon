@@ -28,7 +28,7 @@ function occupancy(h) {
 const playbookFor = (user, event, lang = 'en') => buildPlaybook(event, { type: user.type, household: user.household || {}, business: user.business || {}, hazards: user.hazards, done: user.done || {}, lang });
 const playbookLang = url => oneOf(url.searchParams.get('lang'), ['en', 'es', 'hy', 'ko']) || 'en';
 
-export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, combinedIndex = () => null, cityRecords = async () => null, parcelAt = async () => null, neighborhoodAt = async () => null, permitCatalog = { permitTypes: [], businessLicenseTypes: [] }, demoMailbox = true, now = () => Date.now() }) {
+export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, combinedIndex = () => null, cityRecords = async () => null, parcelAt = async () => null, neighborhoodAt = async () => null, version = 'local', permitCatalog = { permitTypes: [], businessLicenseTypes: [] }, demoMailbox = true, now = () => Date.now() }) {
   const { data } = store;
   const failures = new Map(); // email -> [timestamps] of failed logins, in memory only
   const alertCache = new Map();
@@ -368,6 +368,9 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
     },
 
     // Example City-configured venues with pre-set permit packages (see src/venues.js).
+    // Which build is running (the commit stamped into VERSION by git archive), for deploy checks.
+    'GET /api/health': async () => ({ body: { ok: true, version, time: new Date(now()).toISOString() } }),
+
     'GET /api/venues': async () => ({ body: { venues: venues.map(({ id, name, where, about, kind, url }) => ({ id, name, where, about, kind, url })), templates: eventTemplates } }),
 
     'POST /api/me/venues/package': async (req, body) => {

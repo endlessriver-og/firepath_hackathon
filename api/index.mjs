@@ -27,6 +27,7 @@ const api = createApi({
   cityRecords: createCityRecords(), parcelAt: createParcels(), neighborhoodAt: createNeighborhood({ layerRoot: resolve(root, 'data/map-layers') }),
   permitCatalog: JSON.parse(readFileSync(resolve(root, 'src/glendale-permits.json'), 'utf8')),
   demoMailbox: process.env.FIREPATH_DEMO_MAILBOX !== '0',
+  version: (() => { try { const v = readFileSync(resolve(root, 'VERSION'), 'utf8').trim(); return v.startsWith('$Format') ? 'unstamped' : v; } catch { return 'unknown'; } })(),
 });
 
 export default async function handler(req, res) {

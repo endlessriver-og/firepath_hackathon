@@ -6,7 +6,7 @@
   "installCommand": "npm install && npm install --prefix apps/mobile",
   "functions": {
     "api/index.mjs": {
-      "includeFiles": "{data/map-layers/*.json,data/map-layers/*.geojson,src/glendale-permits.json}",
+      "includeFiles": "{data/map-layers/*.json,data/map-layers/*.geojson,src/glendale-permits.json,VERSION}",
       "maxDuration": 60
     },
     "api/gis.py": {
