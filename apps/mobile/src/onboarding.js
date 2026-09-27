@@ -107,7 +107,7 @@ export function AddressPanel({ me, onChange, onDone, onboarding, initialAddress 
       {a && <Link onPress={() => setEditing(false)}>{t('ad.cancel')}</Link>}
     </> : <>
       <Card>
-        <Tag>{t(a.verified === 'mail' ? 'ad.verified' : 'ad.matched')}</Tag>
+        <Tag>{t(a.verified !== 'mail' ? 'ad.matched' : a.demoCode ? 'ad.verifiedDemo' : 'ad.verified')}</Tag>
         <Text style={{ color: color.ink, fontSize: 17, fontWeight: '700' }}>{a.text}</Text>
         {place && <Muted style={{ marginTop: 6 }}>{place.mapped.length ? place.mapped.map(i => `⚠ ${t(`hz.${i.key}`)}`).join('   ') : t('ad.noZone')}</Muted>}
         <Link onPress={() => setEditing(true)}>{t('ad.different')}</Link>

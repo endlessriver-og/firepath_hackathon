@@ -124,7 +124,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
     const recommendations = recommendationsFor(user, household, user.hazards);
     return {
       user: { id: user.id, email: user.email, name: user.name, type: user.type, createdAt: user.createdAt, demo: Boolean(user.demo) },
-      address: user.address ? { text: user.address, lat: user.lat, lon: user.lon, verified: user.addressVerified, checkedAt: user.hazardsCheckedAt, codePending: Boolean(user.verification && user.addressVerified !== 'mail') } : null,
+      address: user.address ? { text: user.address, lat: user.lat, lon: user.lon, verified: user.addressVerified, demoCode: Boolean(user.verifiedWithDemoCode), checkedAt: user.hazardsCheckedAt, codePending: Boolean(user.verification && user.addressVerified !== 'mail') } : null,
       hazards: user.hazards || null,
       household: user.type === 'business' ? {} : household,
       business: user.type === 'business' ? household : null,
@@ -164,7 +164,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       const user = {
         id, email: `demo-${id.slice(0, 8)}@firepath.demo`, name: 'Dana Rivera', type: 'resident', demo: true, passwordHash: 'demo:no-login',
         createdAt: new Date(now()).toISOString(),
-        address: '1613 GLENCOE WAY, GLENDALE, CA, 91208', lat: 34.199055, lon: -118.230606, addressScore: 100, addressVerified: 'mail',
+        address: '1613 GLENCOE WAY, GLENDALE, CA, 91208', lat: 34.199055, lon: -118.230606, addressScore: 100, addressVerified: 'mail', verifiedWithDemoCode: true,
         hazards: lookup.hazards, hazardsCheckedAt: new Date(now()).toISOString(), business: {},
         household: { housing: 'own', homeType: 'house', members: [{ name: 'Mia', ageGroup: 'child', needsHelp: false }, { name: 'Rosa', ageGroup: 'senior', needsHelp: true }], people: 3,
           ...demoHousehold(body?.lang), shareWithResponders: true, updatedAt: new Date(now()).toISOString() },

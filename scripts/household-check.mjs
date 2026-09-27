@@ -65,7 +65,7 @@ try {
   const code = await page.evaluate(() => (document.body.innerText.match(/DEMO MAILBOX[\s\S]{0,200}?(\d{6})/) || [])[1]);
   step(Boolean(code), `demo mailbox shows a code${code ? '' : ' (none found)'}`);
   if (code) { await fill('Code from your postcard', code); await sleep(300); await click('Verify address'); await sleep(3000); }
-  step(/VERIFIED BY MAIL/.test(await text()), 'address verified');
+  step(/VERIFIED (BY MAIL|WITH A DEMO CODE)/.test(await text()), 'address verified');
   step(await click('Sign out'), 'sign out'); await sleep(2500);
   await click('Already registered? Sign in'); await sleep(1200);
   await fill('Email', email); await fill('Password', password); await click('Sign in'); await sleep(3000);
