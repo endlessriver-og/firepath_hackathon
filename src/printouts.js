@@ -92,7 +92,7 @@ const P = {
       warn: '¿Sin luz? Mapa de apagones y alertas de Glendale Water &amp; Power: glendaleca.gov (Power Outages).', sub: 'Sepa dónde están antes de necesitarlos.',
     },
     home: {
-      title: 'Nuestro plan de emergencia', holder: '(titular de la cuenta)', ages: { senior: 'adulto mayor', adult: 'adulto', child: 'niño' }, mayNeedHelp: 'puede necesitar ayuda para salir', usually: where => `normalmente en ${where}`,
+      title: 'Nuestro plan de emergencia', holder: '(titular de la cuenta)', ages: { senior: 'persona mayor', adult: 'persona adulta', child: 'menor' }, mayNeedHelp: 'puede necesitar ayuda para salir', usually: where => `normalmente en ${where}`,
       label: 'Casa:', who: 'Quiénes viven aquí', pets: 'Mascotas:', separated: 'Si nos separamos', meetNear: 'Punto de reunión cerca de casa:', meetFar: 'Punto de reunión fuera del área:', contact: 'Contacto fuera del área:',
       important: 'Información importante', zone: 'Nuestra zona de evacuación:', utilities: 'Cierres de servicios:', help: 'Ayuda que alguien puede necesitar:', doctor: 'Médico / farmacia:',
       leave: 'Si tenemos que salir', leave1: pets => `Tomen las mochilas, medicinas, cargadores${pets ? ' y las mascotas' : ''}.`, leave2: 'Sigan las instrucciones y rutas oficiales. Salgan temprano si no se sienten seguros.', leave3: 'Avisen por mensaje al contacto fuera del área a dónde van.',

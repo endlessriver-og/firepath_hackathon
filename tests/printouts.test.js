@@ -28,7 +28,7 @@ test('translated sheets set the page language and say they are drafts', () => {
 test('translated custom sheets use the app dictionary for hazard names and levels', () => {
   const home = householdPlanPrintout({ name: 'Dana', address: '1 Main', hazards, household: { members: [{ name: 'Rosa', ageGroup: 'senior', needsHelp: true }] } }, { lang: 'es', t });
   assert.match(home, /Incendio forestal \(Muy alto\)/);
-  assert.match(home, /adulto mayor/);
+  assert.match(home, /persona mayor/);
   assert.doesNotMatch(home, /Mapped at this address|older adult|hz\.|lvl\./);
   const biz = businessPosterPrintout({ business: { name: 'Panadería', hazmat: ['propane'] }, address: '1 Main', hazards: null }, { lang: 'es', t: k => (k === 'hz.propane' ? 'Cilindros de propano' : k) });
   assert.match(biz, /Panadería: en una emergencia/);
