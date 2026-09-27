@@ -107,14 +107,15 @@ export function Home({ me, onChange, go }) {
 }
 
 export function Actions({ me, onChange, sub, setSub }) {
+  const { t } = useI18n();
   const [busy, toggle] = useToggle(me, onChange);
   const ordered = checklist(me);
   const complete = ordered.filter(r => me.done[r.id]).length;
   const steps = [...ordered.filter(t => !me.done[t.id]), ...ordered.filter(t => me.done[t.id])];
   return <>
-    <Title style={{ marginBottom: 2 }}>Your plan</Title>
-    <Muted>{complete} of {ordered.length} done</Muted>
-    <SubTabs value={sub || 'todo'} options={[['todo', 'Steps'], ['print', 'Print & post']]} onChange={setSub} />
+    <Title style={{ marginBottom: 2 }}>{t('plan.title')}</Title>
+    <Muted>{t('plan.done', { done: complete, total: ordered.length })}</Muted>
+    <SubTabs value={sub || 'todo'} options={[['todo', t('plan.steps')], ['print', t('plan.print')]]} onChange={setSub} />
     {sub === 'print' ? <PrintSheets me={me} /> : steps.map((task, i) => <TaskCard key={task.id} task={task} number={me.done[task.id] ? null : i + 1} done={Boolean(me.done[task.id])} busy={busy === task.id} onToggle={toggle} />)}
   </>;
 }
@@ -474,6 +475,7 @@ export function Resources({ compact }) {
 
 // Print-and-post sheets: a custom one from the account's saved data, plus standard guidance sheets.
 export function PrintSheets({ me }) {
+  const { t } = useI18n();
   const [error, setError] = useState('');
   const business = me.user.type === 'business';
   const run = async html => { setError(''); try { await printHtml(html); } catch (e) { setError(e.message); } };
@@ -481,15 +483,15 @@ export function PrintSheets({ me }) {
     ? businessPosterPrintout({ business: me.business, address: me.address?.text, hazards: me.hazards, name: me.user.name })
     : householdPlanPrintout({ name: me.user.name, address: me.address?.text, hazards: me.hazards, household: me.household });
   return <>
-    <Muted style={{ marginTop: 12 }}>One page each, for the fridge or front door.</Muted>
+    <Muted style={{ marginTop: 12 }}>{t('plan.printIntro')}</Muted>
     <Card style={{ borderColor: color.green, borderWidth: 1.5 }}>
-      <Tag>Made for you</Tag>
-      <Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>{business ? `${me.business?.name || 'Business'}: in an emergency` : 'Our emergency plan'}</Text>
-      <Button onPress={() => run(custom())}>Print</Button>
+      <Tag>{t('plan.madeForYou')}</Tag>
+      <Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>{business ? `${me.business?.name || 'Business'}: in an emergency` : t('plan.ours')}</Text>
+      <Button onPress={() => run(custom())}>{t('plan.printBtn')}</Button>
     </Card>
     {standardPrintouts.map(d => <View key={d.id} style={[s.card, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 }]}>
       <Text style={{ color: color.ink, fontWeight: '700', flex: 1 }}>{d.title}</Text>
-      <Pressable accessibilityRole="button" onPress={() => run(standardPrintout(d.id))} style={{ borderWidth: 1.5, borderColor: color.green, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }}><Text style={{ color: color.green, fontWeight: '800' }}>Print</Text></Pressable>
+      <Pressable accessibilityRole="button" onPress={() => run(standardPrintout(d.id))} style={{ borderWidth: 1.5, borderColor: color.green, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }}><Text style={{ color: color.green, fontWeight: '800' }}>{t('plan.printBtn')}</Text></Pressable>
     </View>)}
     <ErrorText>{error}</ErrorText>
   </>;
