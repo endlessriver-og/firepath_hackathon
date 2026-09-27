@@ -112,7 +112,7 @@ export function AddressPanel({ me, onChange, onDone, onboarding, initialAddress 
         {place && <Muted style={{ marginTop: 6 }}>{place.mapped.length ? place.mapped.map(i => `⚠ ${t(`hz.${i.key}`)}`).join('   ') : t('ad.noZone')}</Muted>}
         <Link onPress={() => setEditing(true)}>{t('ad.different')}</Link>
       </Card>
-      <MapPanel style={{ height: 180, borderRadius: 17, marginTop: 12 }} point={{ latitude: a.lat, longitude: a.lon }} title="Your registered address" />
+      <MapPanel style={{ height: 180, borderRadius: 17, marginTop: 12 }} point={{ latitude: a.lat, longitude: a.lon }} title={t('mx.registered')} />
       {a.verified !== 'mail' && <Card>
         <Tag tone="gold">{t(me.user.type === 'business' ? 'ad.verifyBiz' : 'ad.verifyHome')}</Tag>
         <Muted>{t(me.user.type === 'business' ? 'ad.mailBiz' : 'ad.mailHome')}</Muted>

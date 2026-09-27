@@ -26,7 +26,7 @@ export function CityRecords({ records, initiallyOpen, loading }) {
       <Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{r.kind} {r.number} · {r.status || 'status unknown'}{r.date ? ` · ${r.date}` : ''}</Text>
     </View>)}
     <Link onPress={() => Linking.openURL(records.searchUrl)}>See every record in Glendale Permits ↗</Link>
-    <Caption>Public records from the City of Glendale's permit portal. Code-enforcement cases are not listed here.</Caption>
+    <Caption>{tr('mx.recordsNote')}</Caption>
   </Collapsible>;
 }
 

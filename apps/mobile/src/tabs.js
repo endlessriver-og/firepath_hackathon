@@ -75,7 +75,7 @@ export function Home({ me, onChange, go }) {
   const next = ordered.filter(t => !me.done[t.id]).slice(0, 3);
   const done = ordered.length - ordered.filter(t => !me.done[t.id]).length, total = ordered.length;
   return <>
-    <Text role="heading" aria-level={1} style={s.muted}>{me.user.type === 'business' ? me.business?.name || 'Your business' : t('home.hi', { name: me.user.name.split(' ')[0] })}</Text>
+    <Text role="heading" aria-level={1} style={s.muted}>{me.user.type === 'business' ? me.business?.name || t('home.yourSite') : t('home.hi', { name: me.user.name.split(' ')[0] })}</Text>
     <Card style={{ marginTop: 8, backgroundColor: color.green, borderColor: color.green, flexDirection: narrow ? 'column' : 'row', alignItems: narrow ? 'flex-start' : 'center', gap: narrow ? 12 : 18 }}>
       <ProgressRing percent={r.score} track="#3E7667" fill="#F2C46D" textColor="#FFF" />
       <View style={{ flex: 1 }}>
@@ -167,7 +167,7 @@ function Drill({ me, onChange }) {
       </Pressable>)}
       <Caption>{t('dr.count', { done: practicedCount, total: practiceSteps.length })}</Caption>
       <Collapsible title={t('dr.fullPlan')} summary={t('dr.fullPlanSub')}><Playbook playbook={playbook} /></Collapsible>
-      {device.connected && <Button kind="outline" onPress={() => sendToDevice({ kind: 'drill', hazard: playbook.kind, severity: 'drill', text: `DRILL: ${event}. Not a real alert.` }).catch(e => setError(e.message))}>Sound the in-home device</Button>}
+      {device.connected && <Button kind="outline" onPress={() => sendToDevice({ kind: 'drill', hazard: playbook.kind, severity: 'drill', text: `DRILL: ${event}. Not a real alert.` }).catch(e => setError(e.message))}>{t('mx.soundDevice')}</Button>}
       <Button busy={busy} disabled={practicedCount < practiceSteps.length || !practiceSteps.length} onPress={finish}>{t(me.done.drill ? 'dr.close' : 'dr.finish')}</Button>
     </Card>}
   </>;
@@ -493,6 +493,7 @@ export function MapTab({ me, layers, setLayers, top }) {
 
 // Official public resources, grouped. `limit` shows the first group only (with a "see all" toggle).
 export function Resources({ compact }) {
+  const { t } = useI18n();
   const [all, setAll] = useState(!compact);
   const groups = all ? resourceGroups : resourceGroups.slice(0, 1);
   return <>
@@ -503,7 +504,7 @@ export function Resources({ compact }) {
         <Text style={{ color: color.muted, fontSize: 13, marginTop: 2 }}>{r.what}</Text>
       </Pressable>)}
     </View>)}
-    {compact && <Link onPress={() => setAll(!all)}>{all ? 'Show fewer' : `See all ${resourceGroups.reduce((n, g) => n + g.items.length, 0)} public resources`}</Link>}
+    {compact && <Link onPress={() => setAll(!all)}>{all ? t('mx.showFewer') : t('mx.seeAllRes', { n: resourceGroups.reduce((n, g) => n + g.items.length, 0) })}</Link>}
     <Caption>Links checked {RESOURCES_CHECKED}. FirePath is not affiliated with these agencies.</Caption>
   </>;
 }
