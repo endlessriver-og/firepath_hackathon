@@ -16,6 +16,15 @@ for p in /app/ /map.html /map3d.html /map-layers/combined.json /map-layers/zonin
   [ "$(code "$BASE$p")" = 200 ] && ok "GET $p" || bad "GET $p"
 done
 
+# Security headers set in vercel.json (the local server does not send them).
+if [[ "$BASE" != *localhost* && "$BASE" != *127.0.0.1* ]]; then
+  hdrs=$(curl -s -m 30 -D - -o /dev/null "$BASE/app/" | tr 'A-Z' 'a-z')
+  missing=""
+  for h in "x-content-type-options: nosniff" "x-frame-options: sameorigin" "referrer-policy: strict-origin-when-cross-origin" "permissions-policy: camera=()"; do echo "$hdrs" | grep -q "$h" || missing="$missing [$h]"; done
+  [ -z "$missing" ] && ok "security headers" || bad "security headers missing:$missing"
+  [ "$(curl -s -m 30 -D - -o /dev/null "$BASE/api/health" | tr 'A-Z' 'a-z' | grep -c 'cache-control: no-store')" = 1 ] && ok "API responses are no-store" || bad "API responses are cacheable"
+fi
+
 # /api/gis is the Vercel Python function; a local server runs the lookup as a Python process instead.
 if [[ "$BASE" != *localhost* && "$BASE" != *127.0.0.1* ]]; then
   gis=$(curl -s -m 60 "$BASE/api/gis")
