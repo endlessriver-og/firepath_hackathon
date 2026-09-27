@@ -92,3 +92,13 @@ test('a hazard map that could not be checked is never printed as a clear map', (
   assert.match(sheet, /could not be checked/);
   assert.match(householdPlanPrintout({ name: 'T', address: '1 Main', hazards, household: {} }, { lang: 'ko' }), /확인하지 못했습니다/);
 });
+
+test('every Emergency situation has steps in every language, for households and businesses', async () => {
+  const { emergencyGuideIn, emergencySituations } = await import('../src/playbooks.js');
+  const missing = [];
+  for (const lang of ['es', 'hy', 'ko']) for (const s of emergencySituations) for (const type of ['resident', 'business']) {
+    const g = emergencyGuideIn(lang, s.id, { type, household: {}, business: {} });
+    if (!g?.translated || !g.steps.length) missing.push(`${lang}:${s.id}:${type}`);
+  }
+  assert.deepEqual(missing, []);
+});
