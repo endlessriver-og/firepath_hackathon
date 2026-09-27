@@ -430,7 +430,8 @@ export function MapTab({ me, layers, setLayers, top }) {
   const lvl = l => (t(`lvl.${l}`) === `lvl.${l}` ? l : t(`lvl.${l}`));
   const lat = me.address?.lat, lon = me.address?.lon;
   const [view3d, setView3d] = useState(false);
-  const src = `${apiBase()}/${view3d ? 'map3d' : 'map'}.html?layers=${layers.join(',')}${lat ? `&lat=${lat}&lon=${lon}` : ''}`;
+  const { lang } = useI18n();
+  const src = `${apiBase()}/${view3d ? 'map3d' : 'map'}.html?lang=${lang}&layers=${layers.join(',')}${lat ? `&lat=${lat}&lon=${lon}` : ''}`;
   const order = me.hazards ? Object.keys(hazardNames).sort((a, b) => {
     const rank = k => { const l = hazardSeverity(k, me.hazards[k]).level; return typeof l === 'number' ? -l : l === 'zone' ? -1.5 : 1; };
     return rank(a) - rank(b);

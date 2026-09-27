@@ -34,7 +34,7 @@ export function CityRecords({ records, initiallyOpen, loading }) {
 const inZone = l => l.level === 'zone' || (typeof l.level === 'number' && l.level > 0);
 
 export function AddressCheck({ onResult, onRegister, showPreview = false, label }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [address, setAddress] = useState('');
   const [result, setResult] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [candidates, setCandidates] = useState([]), [checked, setChecked] = useState('');
   const [records, setRecords] = useState(null); // null | 'loading' | records
@@ -73,7 +73,7 @@ export function AddressCheck({ onResult, onRegister, showPreview = false, label 
         <Caption>{t('res.free')}</Caption>
       </Card>}
       <CityRecords records={records === 'loading' ? null : records} loading={records === 'loading'} />
-      <MapFrame src={`${apiBase()}/map.html?layers=combined&label=This%20address&lat=${result.lat}&lon=${result.lon}`} style={{ height: 320, borderRadius: 17, marginTop: 12, borderWidth: 1, borderColor: color.line }} />
+      <MapFrame src={`${apiBase()}/map.html?lang=${lang}&layers=combined&label=${encodeURIComponent(t('res.thisAddress'))}&lat=${result.lat}&lon=${result.lon}`} style={{ height: 320, borderRadius: 17, marginTop: 12, borderWidth: 1, borderColor: color.line }} />
       <Section>{t('res.seven')}</Section>
       <Caption style={{ marginTop: 0 }}>{t('res.key')}</Caption>
       {[...result.layers].sort((a, b) => inZone(b) - inZone(a)).map(l => <View key={l.key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 1, borderColor: color.line }}>
