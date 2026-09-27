@@ -93,9 +93,16 @@ export function createNeighborhood({ layerRoot, fetchImpl = fetch }) {
 }
 
 // What these mean for a resident. Each note ties to a published rule or a plain fact.
-export function neighborhoodNotes(n) {
-  const notes = [];
-  if (n.schoolZone) notes.push(`Within 500 ft of ${n.schoolZone}: the 25 mph school-zone limit applies when children are present, and evacuation traffic can back up at drop-off and pick-up times.`);
-  if (n.historicDistrict || n.historicResource) notes.push('Historic designation: exterior changes, including some fire-hardening work like replacing roofs, vents or windows, may need Historic Preservation review before a permit is issued.');
+// English is the source; es, hy and ko are drafts not yet reviewed by native speakers.
+const NOTES = {
+  en: { school: s => `Within 500 ft of ${s}: the 25 mph school-zone limit applies when children are present, and evacuation traffic can back up at drop-off and pick-up times.`, historic: 'Historic designation: exterior changes, including some fire-hardening work like replacing roofs, vents or windows, may need Historic Preservation review before a permit is issued.' },
+  es: { school: s => `A menos de 500 pies de ${s}: el límite de 25 mph de zona escolar aplica cuando hay niños presentes, y el tráfico de evacuación puede atascarse a la hora de entrada y salida.`, historic: 'Designación histórica: los cambios exteriores, incluidos algunos trabajos de protección contra incendios como cambiar techos, ventilas o ventanas, pueden requerir una revisión de Preservación Histórica antes de emitir el permiso.' },
+  hy: { school: s => `${s}-ից 500 ֆուտի սահմաններում․ երեխաների ներկայությամբ գործում է դպրոցական գոտու 25 մղոն/ժ սահմանափակումը, իսկ տարհանման երթևեկությունը կարող է խցանվել երեխաներին բերելու և տանելու ժամերին։`, historic: 'Պատմական նշանակություն․ արտաքին փոփոխությունները, ներառյալ հրդեհից պաշտպանության որոշ աշխատանքներ, օրինակ՝ տանիքի, օդանցքների կամ պատուհանների փոխարինումը, կարող են պահանջել Պատմական ժառանգության պահպանման վերանայում՝ նախքան թույլտվություն տալը։' },
+  ko: { school: s => `${s}에서 500피트 이내: 어린이가 있을 때 시속 25마일 스쿨존 제한이 적용되며, 등하교 시간에는 대피 차량이 막힐 수 있습니다.`, historic: '역사 지정 건물: 지붕, 환기구, 창문 교체 같은 일부 화재 대비 공사를 포함한 외부 변경은 허가 전에 역사 보존 심사가 필요할 수 있습니다.' },
+};
+export function neighborhoodNotes(n, lang = 'en') {
+  const N = NOTES[lang] || NOTES.en, notes = [];
+  if (n.schoolZone) notes.push(N.school(n.schoolZone));
+  if (n.historicDistrict || n.historicResource) notes.push(N.historic);
   return notes;
 }

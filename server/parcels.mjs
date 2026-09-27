@@ -27,11 +27,18 @@ export function summarizeParcel(attributes, geometry) {
 }
 
 // What the build year means for preparedness. Only claims tied to published program rules.
-export function parcelNotes(year, residential = true) {
+// English is the source; es, hy and ko are drafts not yet reviewed by native speakers.
+const PARCEL_NOTES = {
+  en: { chapter7a: year => `Built ${year}, before California's 2008 wildfire building standards (Building Code Chapter 7A). Vents, eaves and roofing may predate ember-resistant rules.`, braceBolt: 'Built before 1980: houses this age may qualify for Earthquake Brace + Bolt retrofit grants (EarthquakeBraceBolt.com).' },
+  es: { chapter7a: year => `Construida en ${year}, antes de las normas de construcción contra incendios forestales de California de 2008 (Capítulo 7A del Código de Construcción). Las ventilas, aleros y techos pueden ser anteriores a las reglas contra brasas.`, braceBolt: 'Construida antes de 1980: las casas de esta edad pueden calificar para las subvenciones de refuerzo sísmico Earthquake Brace + Bolt (EarthquakeBraceBolt.com).' },
+  hy: { chapter7a: year => `Կառուցվել է ${year}-ին՝ Կալիֆոռնիայի 2008-ի անտառային հրդեհների շինարարական նորմերից առաջ (Շինարարական օրենսգրքի 7A գլուխ)։ Օդանցքները, քիվերը և տանիքը կարող են նախորդել կայծերից պաշտպանության կանոններին։`, braceBolt: 'Կառուցվել է 1980-ից առաջ․ այս տարիքի տները կարող են իրավասու լինել Earthquake Brace + Bolt սեյսմիկ ամրացման դրամաշնորհների (EarthquakeBraceBolt.com)։' },
+  ko: { chapter7a: year => `${year}년에 지어져 캘리포니아의 2008년 산불 건축 기준(건축법 7A장)보다 앞섭니다. 환기구, 처마, 지붕이 불씨 방지 규정 이전의 것일 수 있습니다.`, braceBolt: '1980년 이전에 지어짐: 이 연식의 주택은 Earthquake Brace + Bolt 내진 보강 보조금 대상일 수 있습니다(EarthquakeBraceBolt.com).' },
+};
+export function parcelNotes(year, residential = true, lang = 'en') {
   if (!year) return [];
-  const notes = [];
-  if (year < 2008) notes.push(`Built ${year}, before California's 2008 wildfire building standards (Building Code Chapter 7A). Vents, eaves and roofing may predate ember-resistant rules.`);
-  if (year < 1980 && residential) notes.push(`Built before 1980: houses this age may qualify for Earthquake Brace + Bolt retrofit grants (EarthquakeBraceBolt.com).`);
+  const N = PARCEL_NOTES[lang] || PARCEL_NOTES.en, notes = [];
+  if (year < 2008) notes.push(N.chapter7a(year));
+  if (year < 1980 && residential) notes.push(N.braceBolt);
   return notes;
 }
 

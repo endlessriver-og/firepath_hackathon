@@ -16,6 +16,8 @@ test('build-year notes only claim what the year supports', () => {
   assert.equal(parcelNotes(1995).length, 1);
   assert.equal(parcelNotes(1950, false).length, 1); // retrofit grants are for houses only
   assert.deepEqual(parcelNotes(null), []);
+  assert.match(parcelNotes(1995, true, 'ko')[0], /^1995년에 지어져/);
+  assert.equal(parcelNotes(1995, true, 'xx')[0], parcelNotes(1995)[0]); // unknown language falls back to English
 });
 
 test('a tap on a street falls back to the nearest addressed parcel', async () => {

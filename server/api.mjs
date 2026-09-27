@@ -8,6 +8,8 @@ import { planEvent, searchLicenses, searchPermits } from '../src/permit-catalog.
 import { eventTemplates, venuePackage, venues } from '../src/venues.js';
 import { hazardNames } from '../src/preparedness.js';
 import { checkPassword, hashPassword, newCode, newToken, tokenKey } from './auth.mjs';
+import { parcelNotes } from './parcels.mjs';
+import { neighborhoodNotes } from './neighborhood.mjs';
 
 const SESSION_DAYS = 30, CODE_DAYS = 14, MAX_CODE_ATTEMPTS = 5;
 const DAY = 86_400_000;
@@ -293,10 +295,16 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       throttle(req, 60);
       const lat = Number(url.searchParams.get('lat')), lon = Number(url.searchParams.get('lon'));
       if (!(lat > 34.1 && lat < 34.3 && lon > -118.33 && lon < -118.16)) fail(400, 'Pick a point in Glendale.');
-      const [parcel, lookup, neighborhood] = await Promise.all([parcelAt(lat, lon).catch(() => null), lookupHazards({ lat, lon }).catch(() => null), neighborhoodAt(lat, lon).catch(() => null)]);
+      let [parcel, lookup, neighborhood] = await Promise.all([parcelAt(lat, lon).catch(() => null), lookupHazards({ lat, lon }).catch(() => null), neighborhoodAt(lat, lon).catch(() => null)]);
       const layers = lookup ? Object.keys(hazardNames).map(key => ({ key, name: hazardNames[key], ...hazardSeverity(key, lookup.hazards[key]) })) : null;
       // The City's permit system is keyed to the same parcel number (AIN = APN without dashes).
       const records = parcel?.apn && parcel.city === 'GLENDALE' ? await cityRecords(parcel.apn.replace(/-/g, '')).catch(() => null) : null;
+      // Notes come back in the viewer's language; copies, so the cached English stays intact.
+      const lang = url.searchParams.get('lang');
+      if (lang && lang !== 'en') {
+        if (parcel) parcel = { ...parcel, notes: parcelNotes(parcel.yearBuilt, parcel.useType === 'Residential', lang) };
+        if (neighborhood) neighborhood = { ...neighborhood, notes: neighborhoodNotes(neighborhood, lang) };
+      }
       return { body: { lat, lon, parcel, neighborhood, layers, combined: combinedIndex(lat, lon), records, inCity: !!lookup, checkedAt: new Date(now()).toISOString() } };
     },
 

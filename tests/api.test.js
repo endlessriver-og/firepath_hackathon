@@ -383,6 +383,18 @@ test('tap-to-inspect: bounds check, records keyed by parcel number, and graceful
   assert.equal(partial.status, 200);
   assert.equal(partial.body.parcel, null);
   assert.ok(partial.body.layers.length > 0);
+
+  // ?lang= translates the notes without touching the (cached) English objects.
+  const cachedParcel = { apn: '5615-017-003', city: 'GLENDALE', yearBuilt: 1950, useType: 'Residential', notes: ['english'] };
+  const cachedHood = { zoning: { code: 'R 3050' }, schools: [], schoolZone: 'Fremont Elementary', notes: ['english'] };
+  const translated = createApi({ store, lookupHazards: async () => sparr, fetchAlerts: async () => [], parcelAt: async () => cachedParcel, neighborhoodAt: async () => cachedHood });
+  const es = await get(translated, '/api/public/point?lat=34.19912&lon=-118.2311&lang=es');
+  assert.match(es.body.parcel.notes[0], /^Construida en 1950/);
+  assert.match(es.body.parcel.notes[1], /Brace \+ Bolt/);
+  assert.match(es.body.neighborhood.notes[0], /^A menos de 500 pies de Fremont Elementary/);
+  assert.deepEqual(cachedParcel.notes, ['english']);
+  assert.deepEqual(cachedHood.notes, ['english']);
+  assert.deepEqual((await get(translated, '/api/public/point?lat=34.19912&lon=-118.2311')).body.parcel.notes, ['english']);
 });
 
 test('address check answers without waiting on City records, which load from their own route', async () => {
