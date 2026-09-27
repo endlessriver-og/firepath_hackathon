@@ -48,7 +48,7 @@ GLENDALE_GIS_PYTHON=.venv/bin/python npm start
 
 Open <http://localhost:5173/app/>. Run `npm test` for the test suite. Local accounts are stored in `data/firepath-dev.json` (gitignored).
 
-**Deploying to Vercel:** `vercel.json` builds the web app and maps and deploys both API functions. The deployment needs a private Blob store connected to the project (`BLOB_READ_WRITE_TOKEN`).
+**Deploying to Vercel:** `vercel.json` builds the web app and maps and deploys both API functions. The deployment needs a private Blob store connected to the project (`BLOB_READ_WRITE_TOKEN`) and a random `FIREPATH_INTERNAL_KEY`, which restricts the GIS function to FirePath's own API. Check a deploy with `scripts/smoke.sh <url>`.
 
 ## More
 
