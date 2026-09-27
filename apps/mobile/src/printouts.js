@@ -6,6 +6,7 @@
 import { describeHazard, hazardNames } from './preparedness.js';
 import { hazardSeverity, hazmatKinds } from './readiness.js';
 import { formatDate } from './dates.js';
+import { petLabel } from './playbooks.js';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const blank = (value, width = '100%') => value ? esc(value) : `<span class="line" style="width:${width}"></span>`;
@@ -286,7 +287,7 @@ ${E.steps.map(([word, rest], i) => `      <li><span class="big">${word}</span> $
 export function householdPlanPrintout({ name, address, hazards, household: h = {} }, { lang: requested, t } = {}) {
   const lang = pick(requested), H = P[lang].home;
   const members = [`${esc(name)} ${H.holder}`, ...(h.members || []).map(m => `${esc(m.name)} · ${H.ages[m.ageGroup] || esc(m.ageGroup)}${m.needsHelp ? ` · <b>${H.mayNeedHelp}</b>` : ''}`)];
-  const pets = (h.pets || []).map(p => `${p.count} ${esc(p.kind)}${p.where ? ` (${H.usually(esc(p.where))})` : ''}`);
+  const pets = (h.pets || []).map(p => `${esc(petLabel({ ...p, count: p.count || 1 }, lang))}${p.where ? ` (${H.usually(esc(p.where))})` : ''}`);
   return page(H.title, '#1D5B4D', `
     <div class="field"><b>${H.label}</b> ${blank(address)}</div>${mappedLine(hazards, lang, t)}
     <div class="grid"><div><h2>${H.who}</h2>${list(members)}${pets.length ? `<b>${H.pets}</b> ${pets.join('; ')}` : ''}</div>

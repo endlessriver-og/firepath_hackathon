@@ -180,6 +180,9 @@ const BUSINESS = {
   },
 };
 
+// "2 dogs" in most languages; Korean counts after the noun with a counter (강아지 2마리).
+export const petLabel = (p, lang = 'en') => lang === 'ko' ? `${p.kind}${p.count > 1 ? ` ${p.count}마리` : ''}` : `${p.count > 1 ? `${p.count} ` : ''}${p.kind}`;
+
 export function buildPlaybook(event, { type = 'resident', household = {}, business = {}, hazards = null, done = {}, lang = 'en' } = {}) {
   const { kind, title } = alertKind(event);
   const inZone = key => hazards?.[key] && describeHazard(key, hazards[key]).tone === 'mapped';
@@ -208,7 +211,7 @@ export function buildPlaybook(event, { type = 'resident', household = {}, busine
   } else {
     const h = household, P = RESIDENT[lang] || RESIDENT.en;
     const join = items => items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')}${P.and}${items.at(-1)}`;
-    const pets = (h.pets || []).map(p => `${p.count > 1 ? `${p.count} ` : ''}${p.kind}`);
+    const pets = (h.pets || []).map(p => petLabel(p, lang));
     const helpers = (h.members || []).filter(m => m.needsHelp || m.ageGroup === 'senior').map(m => m.name);
     const kids = (h.members || []).filter(m => m.ageGroup === 'child').map(m => m.name);
     if (['fire', 'wind'].includes(kind)) {
@@ -382,7 +385,7 @@ export function emergencyGuideIn(lang, id, ctx = {}) {
   if (!base || !tx || !tx[id]) return { ...base, translated: lang === 'en' };
   const h = ctx.household || {}, business = ctx.type === 'business';
   const helpers = business ? [] : (h.members || []).filter(m => m.needsHelp || m.ageGroup === 'senior').map(m => m.name);
-  const pets = (h.pets || []).map(p => `${p.count > 1 ? `${p.count} ` : ''}${p.kind}`).join(', ');
+  const pets = (h.pets || []).map(p => petLabel(p, lang)).join(', ');
   const T = tx[id];
   const why = base.steps.map(s => s.why);
   let steps;

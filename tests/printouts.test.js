@@ -51,3 +51,10 @@ test('Drop, Cover, Hold On uses the same words in the app and on the printed she
     }
   }
 });
+
+test('pet counts read naturally: "2 dogs" in English, "강아지 2마리" in Korean', async () => {
+  const { petLabel } = await import('../src/playbooks.js');
+  assert.equal(petLabel({ kind: 'dogs', count: 2 }), '2 dogs');
+  assert.equal(petLabel({ kind: 'cat', count: 1 }, 'es'), 'cat');
+  assert.equal(petLabel({ kind: '강아지', count: 2 }, 'ko'), '강아지 2마리');
+});
