@@ -154,18 +154,18 @@ function Drill({ me, onChange }) {
     <Muted>{t('dr.intro')}</Muted>
     <Select label={t('dr.pick')} placeholder={t('dr.choose')} value={event} options={drillEvents.map(e => [e, e.replace(' Warning', '').replace(' Alert', '')])} onChange={open} />
     <ErrorText>{error}</ErrorText>
-    {event && !playbook && !error && <Muted style={{ marginTop: 10 }}>Preparing your drill…</Muted>}
+    {event && !playbook && !error && <Muted style={{ marginTop: 10 }}>{t('dr.preparing')}</Muted>}
     {playbook && <Card style={{ borderColor: '#E3C98E', backgroundColor: '#FFFCF3' }}>
-      <Text style={{ alignSelf: 'flex-start', backgroundColor: color.goldBg, color: color.gold, fontWeight: '900', fontSize: 11, letterSpacing: 1, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>DRILL · NOT A REAL ALERT</Text>
-      <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>Imagine a {event} just arrived</Text>
-      <Muted style={{ marginTop: 6 }}>Practice these {practiceSteps.length} actions out loud or with someone at home.</Muted>
+      <Text style={{ alignSelf: 'flex-start', backgroundColor: color.goldBg, color: color.gold, fontWeight: '900', fontSize: 11, letterSpacing: 1, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>{t('dr.badge')}</Text>
+      <Text style={{ color: color.ink, fontSize: 18, fontWeight: '800' }}>{t('dr.imagine', { event })}</Text>
+      <Muted style={{ marginTop: 6 }}>{t('dr.practice', { n: practiceSteps.length })}</Muted>
       {practiceSteps.map((step, i) => <Pressable key={`${i}-${step.text}`} accessibilityRole="checkbox" accessibilityState={{ checked: Boolean(practiced[i]) }} onPress={() => setPracticed(current => ({ ...current, [i]: !current[i] }))} style={{ flexDirection: 'row', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderColor: color.line }}>
         <Text style={{ width: 26, fontSize: 18, color: color.green, fontWeight: '900' }}>{practiced[i] ? '☑' : '☐'}</Text><Text style={{ flex: 1, color: color.ink, lineHeight: 21 }}>{step.text}</Text>
       </Pressable>)}
-      <Caption>{practicedCount} of {practiceSteps.length} practiced</Caption>
-      <Collapsible title="See the full plan" summary="More actions for this scenario"><Playbook playbook={playbook} /></Collapsible>
+      <Caption>{t('dr.count', { done: practicedCount, total: practiceSteps.length })}</Caption>
+      <Collapsible title={t('dr.fullPlan')} summary={t('dr.fullPlanSub')}><Playbook playbook={playbook} /></Collapsible>
       {device.connected && <Button kind="outline" onPress={() => sendToDevice({ kind: 'drill', hazard: playbook.kind, severity: 'drill', text: `DRILL: ${event}. Not a real alert.` }).catch(e => setError(e.message))}>Sound the in-home device</Button>}
-      <Button busy={busy} disabled={practicedCount < practiceSteps.length || !practiceSteps.length} onPress={finish}>{me.done.drill ? 'Close practice' : 'Finish practice'}</Button>
+      <Button busy={busy} disabled={practicedCount < practiceSteps.length || !practiceSteps.length} onPress={finish}>{t(me.done.drill ? 'dr.close' : 'dr.finish')}</Button>
     </Card>}
   </>;
 }

@@ -14,7 +14,9 @@ import { TOUR_STEPS, QUICK_TOUR_STEPS } from './src/walkthrough';
 import { I18nProvider, useI18n } from './src/i18n';
 import { Button, ErrorText, color } from './src/ui';
 
+// Onboarding progress is remembered per account, so one account's unfinished setup never leaks into another's.
 const ONBOARDING = 'firepath-onboarding-step';
+const stepKey = user => `${ONBOARDING}:${user?.email || user?.id || 'anon'}`;
 // Bottom bar: four icon tabs around a raised Home button. Profile lives in the top bar.
 const TABS = [['Map', 'map', 'nav.map'], ['Plan', 'checkbox', 'nav.plan'], ['Home', 'home', 'nav.home'], ['Alerts', 'notifications', 'nav.alerts'], ['Permits', 'document-text', 'nav.permits']];
 Notifications.setNotificationHandler({ handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }) });
@@ -59,18 +61,19 @@ function App() {
     const token = await loadSession();
     if (!token) return setMe(null);
     try {
-      setMe(await api('GET', '/api/me'));
-      setStep(Number(await AsyncStorage.getItem(ONBOARDING).catch(() => 0)) || 0);
+      const current = await api('GET', '/api/me');
+      setMe(current);
+      setStep(current.user.demo ? 0 : Number(await AsyncStorage.getItem(stepKey(current.user)).catch(() => 0)) || 0);
     } catch (e) {
       if (e.status === 401) { await saveSession(null); setMe(null); } else setError(e.message);
     }
   }
   useEffect(() => { load(); }, []);
-  const goStep = async n => { setStep(n); await AsyncStorage.setItem(ONBOARDING, String(n)).catch(() => {}); };
-  const finish = async () => { setStep(0); setTab('Home'); await AsyncStorage.removeItem(ONBOARDING).catch(() => {}); };
+  const goStep = async (n, user = me?.user) => { setStep(n); await AsyncStorage.setItem(stepKey(user), String(n)).catch(() => {}); };
+  const finish = async () => { setStep(0); setTab('Home'); await AsyncStorage.removeItem(stepKey(me?.user)).catch(() => {}); };
   async function signOut() {
     await api('POST', '/api/account/logout').catch(() => {});
-    await saveSession(null); await AsyncStorage.removeItem(ONBOARDING).catch(() => {});
+    await saveSession(null); await AsyncStorage.removeItem(stepKey(me?.user)).catch(() => {});
     setMe(null); setTab('Home');
   }
 
@@ -78,7 +81,7 @@ function App() {
   if (me === undefined) return <Shell><ActivityIndicator color={color.green} style={{ marginTop: 80 }} /></Shell>;
   if (emergency && (me === null || step)) return <Shell><EmergencyNow me={me} onClose={() => setEmergency(false)} /></Shell>;
   if (me === null && hub) return <Shell><WalkthroughHub onStart={startTour} onClose={() => setHub(false)} busy={demoBusy} error={demoError} /></Shell>;
-  if (me === null) return <Shell><Landing onEmergency={() => setEmergency(true)} onWalkthrough={() => setHub(true)} onSignedIn={(result, isNew, checked) => { setMe(result); setPendingAddress(isNew ? checked : null); if (isNew) goStep(1); }} /></Shell>;
+  if (me === null) return <Shell><Landing onEmergency={() => setEmergency(true)} onWalkthrough={() => setHub(true)} onSignedIn={(result, isNew, checked) => { setMe(result); setPendingAddress(isNew ? checked : null); if (isNew) goStep(1, result.user); }} /></Shell>;
   const business = me.user.type === 'business';
   if (step === 1) return <Shell>{business ? <BusinessProfile me={me} onSaved={next => { setMe(next); goStep(2); }} onboarding /> : <AboutYou me={me} onSaved={next => { setMe(next); goStep(2); }} />}</Shell>;
   if (step === 2) return <Shell><AddressPanel me={me} onChange={setMe} onDone={() => goStep(3)} onboarding initialAddress={pendingAddress} /></Shell>;
