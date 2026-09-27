@@ -96,7 +96,7 @@ export function SeverityBadge({ severity }) {
 export function PrivacyNote() {
   const { t } = useI18n();
   return <Collapsible icon="🔒" title={t('pv.title')} summary={t('pv.sub')}>
-    {[1, 2, 3, 4, 5, 6, 7].map(n => <Text key={n} style={{ color: color.ink, fontSize: 15, lineHeight: 22, marginTop: 8 }}>• {t(`pv.${n}`)}</Text>)}
+    {[1, 2, 3, 4, 5, 6, 7, 8].map(n => <Text key={n} style={{ color: color.ink, fontSize: 15, lineHeight: 22, marginTop: 8 }}>• {t(`pv.${n}`)}</Text>)}
   </Collapsible>;
 }
 
