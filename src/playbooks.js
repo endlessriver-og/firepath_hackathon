@@ -64,7 +64,7 @@ const RESIDENT = {
     heatPets: p => `Mantenga a ${p} dentro con agua; el pavimento quema las patas.`,
     smoke: 'Mantenga las ventanas cerradas, use un filtro HEPA o el aire en recirculación y salga lo menos posible.',
     helpersLeave: h => `${h} puede necesitar ayuda para salir. Organice ya el transporte y planee salir temprano.`,
-    helpersCheck: h => `${h} puede necesitar ayuda con este clima. Visítelos hoy.`,
+    helpersCheck: h => `Con este clima, pase hoy a ver a ${h}, por si hace falta ayuda.`,
     kidsPickup: k => `Confirme el plan para recoger de la escuela a ${k}.`,
     kidsIndoors: k => `Mantenga a ${k} adentro durante las peores horas.`,
     meet: (near, far) => `Si se separan: reúnanse en ${[near, far].filter(Boolean).join(', o más lejos en ')}.`,
