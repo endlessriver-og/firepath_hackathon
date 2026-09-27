@@ -338,3 +338,40 @@ test('translated emergency steps keep household names and fall back to English w
   assert.equal(fire.translated, false, 'weather situations are flagged as English-only');
   assert.equal(emergencyGuideIn('en', 'earthquake', ctx).translated, true);
 });
+
+test('tap-to-inspect: bounds check, records keyed by parcel number, and graceful partial failures', async () => {
+  const store = { data: { users: {}, sessions: {} }, save() {} };
+  const recordCalls = [];
+  const make = parcelAt => createApi({
+    store, lookupHazards: async () => sparr, fetchAlerts: async () => [],
+    combinedIndex: () => ({ score: 6, max: 11, parts: [] }),
+    cityRecords: async key => { recordCalls.push(key); return { totals: { total: 1 } }; },
+    parcelAt,
+    neighborhoodAt: async () => ({ zoning: { code: 'R 3050' }, schools: [], notes: [] }),
+  });
+  async function get(handle, path) {
+    const req = { method: 'GET', headers: {}, async *[Symbol.asyncIterator]() {} };
+    const res = { writeHead(status) { this.status = status; }, end(text) { this.body = JSON.parse(text); } };
+    await handle(req, res, new URL(path, 'http://localhost'));
+    return res;
+  }
+  const glendale = make(async () => ({ apn: '5615-017-003', city: 'GLENDALE', address: '1606 GLENCOE WAY GLENDALE CA 91208' }));
+  assert.equal((await get(glendale, '/api/public/point?lat=40.7&lon=-74')).status, 400);
+  const ok = await get(glendale, '/api/public/point?lat=34.19912&lon=-118.2311');
+  assert.equal(ok.status, 200);
+  assert.equal(ok.body.parcel.apn, '5615-017-003');
+  assert.equal(ok.body.neighborhood.zoning.code, 'R 3050');
+  assert.equal(ok.body.combined.score, 6);
+  assert.deepEqual(recordCalls, ['5615017003']); // the City's permit system keys parcels by AIN, no dashes
+
+  recordCalls.length = 0;
+  const outside = make(async () => ({ apn: '5800-001-001', city: 'LOS ANGELES' }));
+  assert.equal((await get(outside, '/api/public/point?lat=34.15&lon=-118.25')).body.records, null);
+  assert.equal(recordCalls.length, 0);
+
+  const broken = make(async () => { throw new Error('County GIS down'); });
+  const partial = await get(broken, '/api/public/point?lat=34.15&lon=-118.25');
+  assert.equal(partial.status, 200);
+  assert.equal(partial.body.parcel, null);
+  assert.ok(partial.body.layers.length > 0);
+});
