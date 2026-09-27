@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: bash scripts/smoke.sh https://firepath-ruddy.vercel.app
-  tour:
+  browser:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -20,3 +20,5 @@ jobs:
       - run: npm ci
       # The judges' path through the guided tour, in the runner's own Chrome.
       - run: CHROME=$(command -v google-chrome) node scripts/tour-check.mjs https://firepath-ruddy.vercel.app
+      # axe-core across the main screens, Armenian Home and both maps.
+      - run: CHROME=$(command -v google-chrome) node scripts/a11y-check.mjs https://firepath-ruddy.vercel.app
