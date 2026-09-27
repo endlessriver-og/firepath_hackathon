@@ -13,7 +13,10 @@ export const Muted = ({ children, style }) => <Text style={[s.muted, style]}>{ch
 export const Caption = ({ children, style }) => <Text style={[s.caption, style]}>{children}</Text>;
 export const Tag = ({ children, tone }) => <Text style={[s.tag, tone === 'warm' && { color: color.warm }, tone === 'gold' && { color: color.gold }]}>{String(children).toUpperCase()}</Text>;
 export const Card = ({ children, style }) => <View style={[s.card, style]}>{children}</View>;
-export const Step = ({ n, of, label }) => <Text style={s.step}>STEP {n} OF {of} · {label.toUpperCase()}</Text>;
+export function Step({ n, of, label }) {
+  const { t } = useI18n();
+  return <Text style={s.step}>{t('ui.step', { n, of }).toUpperCase()} · {label.toUpperCase()}</Text>;
+}
 export const Link = ({ children, onPress, style }) => <Text accessibilityRole="link" style={[s.link, style]} onPress={onPress}>{children}</Text>;
 export const ErrorText = ({ children }) => children ? <Text accessibilityRole="alert" style={s.error}>{children}</Text> : null;
 

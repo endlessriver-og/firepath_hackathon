@@ -42,6 +42,7 @@ export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'reside
 }
 
 export function AboutYou({ me, onSaved }) {
+  const { t } = useI18n();
   const h = me.household || {};
   const [form, setForm] = useState({ housing: h.housing || 'own', homeType: h.homeType || 'house', members: h.members || [] });
   const [member, setMember] = useState({ name: '', ageGroup: 'adult', needsHelp: false });
@@ -51,27 +52,27 @@ export function AboutYou({ me, onSaved }) {
     setBusy(true); setError('');
     try { onSaved(await api('PUT', '/api/me/household', { ...h, ...form })); } catch (e) { setError(e.message); } finally { setBusy(false); }
   }
-  const ages = { child: 'Child', adult: 'Adult', senior: 'Older adult' };
+  const ages = { child: t('ab.child'), adult: t('ab.adult'), senior: t('ab.senior') };
   return <>
-    <Step n={1} of={3} label="Your household" />
-    <Title>Hi {me.user.name.split(' ')[0]}. Who lives with you?</Title>
-    <Muted>This shapes your plan. First names are only for your own plan; responders would see counts, not names.</Muted>
-    <Text style={[s.fieldLabel, { marginTop: 20 }]}>People who live here</Text>
-    <View style={[s.toggleRow, { marginTop: 4 }]}><Text style={{ flex: 1, color: color.ink }}>{me.user.name} (you)</Text></View>
+    <Step n={1} of={3} label={t('ab.step')} />
+    <Title>{t('ab.title', { name: me.user.name.split(' ')[0] })}</Title>
+    <Muted>{t('ab.intro')}</Muted>
+    <Text style={[s.fieldLabel, { marginTop: 20 }]}>{t('ab.people')}</Text>
+    <View style={[s.toggleRow, { marginTop: 4 }]}><Text style={{ flex: 1, color: color.ink }}>{t('ab.you', { name: me.user.name })}</Text></View>
     {form.members.map((m, i) => <View key={`${m.name}-${i}`} style={[s.toggleRow, { marginTop: 8 }]}>
-      <Text style={{ flex: 1, color: color.ink }}>{m.name} · {ages[m.ageGroup]}{m.needsHelp ? ' · may need help leaving' : ''}</Text>
-      <Link style={{ marginTop: 0 }} onPress={() => setForm({ ...form, members: form.members.filter((_, j) => j !== i) })}>Remove</Link>
+      <Text style={{ flex: 1, color: color.ink }}>{m.name} · {ages[m.ageGroup]}{m.needsHelp ? ` · ${t('ab.mayNeedHelp')}` : ''}</Text>
+      <Link style={{ marginTop: 0 }} onPress={() => setForm({ ...form, members: form.members.filter((_, j) => j !== i) })}>{t('hh.remove')}</Link>
     </View>)}
     <Card>
-      <Field style={{ marginTop: 0 }} label="Add someone" value={member.name} onChangeText={name => setMember({ ...member, name })} placeholder="First name" maxLength={40} onSubmitEditing={addMember} />
-      <Select label="Age group" value={member.ageGroup} options={[['child', 'Child'], ['adult', 'Adult'], ['senior', 'Older adult']]} onChange={ageGroup => setMember({ ...member, ageGroup })} />
-      <Toggle label="May need help leaving" value={member.needsHelp} onChange={needsHelp => setMember({ ...member, needsHelp })} />
-      <Button kind="outline" disabled={!member.name.trim()} onPress={addMember}>+ Add to household</Button>
+      <Field style={{ marginTop: 0 }} label={t('ab.add')} value={member.name} onChangeText={name => setMember({ ...member, name })} placeholder={t('ab.firstName')} maxLength={40} onSubmitEditing={addMember} />
+      <Select label={t('ab.age')} value={member.ageGroup} options={[['child', t('ab.child')], ['adult', t('ab.adult')], ['senior', t('ab.senior')]]} onChange={ageGroup => setMember({ ...member, ageGroup })} />
+      <Toggle label={t('ab.needsHelp')} value={member.needsHelp} onChange={needsHelp => setMember({ ...member, needsHelp })} />
+      <Button kind="outline" disabled={!member.name.trim()} onPress={addMember}>{t('ab.addBtn')}</Button>
     </Card>
-    <Select label="Housing" value={form.housing} options={[['own', 'I own'], ['rent', 'I rent']]} onChange={housing => setForm({ ...form, housing })} />
-    <Select label="Home type" value={form.homeType} options={[['house', 'House'], ['apartment', 'Apartment / condo']]} onChange={homeType => setForm({ ...form, homeType })} />
+    <Select label={t('ab.housing')} value={form.housing} options={[['own', t('ab.own')], ['rent', t('ab.rent')]]} onChange={housing => setForm({ ...form, housing })} />
+    <Select label={t('ab.homeType')} value={form.homeType} options={[['house', t('ab.house')], ['apartment', t('ab.apartment')]]} onChange={homeType => setForm({ ...form, homeType })} />
     <ErrorText>{error}</ErrorText>
-    <Button busy={busy} onPress={save}>Continue</Button>
+    <Button busy={busy} onPress={save}>{t('ab.continue')}</Button>
   </>;
 }
 
