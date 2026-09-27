@@ -52,7 +52,7 @@ export function EmergencyNow({ me, onClose }) {
     <View style={{ marginTop: 10 }}>
       {guide.steps.map((step, i) => <View key={step.text} style={{ flexDirection: 'row', gap: 12, paddingVertical: 11, borderBottomWidth: 1, borderColor: color.line }}>
         <Text style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: color.green, color: '#FFF', textAlign: 'center', lineHeight: 28, fontWeight: '900', overflow: 'hidden' }}>{i + 1}</Text>
-        <View style={{ flex: 1 }}><Text style={{ color: color.ink, fontSize: 18, lineHeight: 26 }}>{step.text}</Text>{me && <Text style={{ color: '#7A8A83', fontSize: 11, marginTop: 2 }}>{step.why}</Text>}</View>
+        <View style={{ flex: 1 }}><Text style={{ color: color.ink, fontSize: 18, lineHeight: 26 }}>{step.text}</Text></View>
       </View>)}
     </View>
     {guide.links.map(([name, url]) => <Link key={url} onPress={() => Linking.openURL(url)}>{t(LINK_KEYS.find(([k]) => url.includes(k))?.[1] || '') || name} ↗</Link>)}
