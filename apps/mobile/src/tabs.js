@@ -262,13 +262,13 @@ function PermitSearch({ me }) {
 
 // Event planner: a few yes/no questions -> the City permits an event likely needs, with fire-zone notes.
 function EventPlanner({ me }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [open, setOpen] = useState(false), [name, setName] = useState(''), [attendees, setAttendees] = useState(''), [answers, setAnswers] = useState({});
   const [plan, setPlan] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false);
   const [where, setWhere] = useState('mine'), [location, setLocation] = useState(''), [locationKey, setLocationKey] = useState(null);
   async function build() {
     setBusy(true); setError(''); setCopied(false);
-    try { setPlan(await api('POST', '/api/me/permits/event', { name, attendees: Number(attendees) || 0, answers, ...(where === 'other' ? { location, magicKey: locationKey } : {}) })); } catch (e) { setError(e.message); } finally { setBusy(false); }
+    try { setPlan(await api('POST', '/api/me/permits/event', { name, lang, attendees: Number(attendees) || 0, answers, ...(where === 'other' ? { location, magicKey: locationKey } : {}) })); } catch (e) { setError(e.message); } finally { setBusy(false); }
   }
   if (!open) return <Card style={{ borderColor: color.green, borderWidth: 1.5 }}>
     <Tag>{t('pz.new')}</Tag><Text style={{ color: color.ink, fontSize: 17, fontWeight: '800' }}>{t('pz.planEvent')}</Text>

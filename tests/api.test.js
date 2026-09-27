@@ -570,3 +570,15 @@ test('permit guide notes and needs come back in the requested language; permit n
   assert.ok(es.notes.every(n => !/Your address|The City/.test(n)), 'no English notes');
   assert.deepEqual((await call('POST', '/api/me/permits/guide', { type: 'reroof', lang: 'xx' }, token)).body.notes, en.notes, 'unknown language falls back to English');
 });
+
+test('event planner explanations come back in the requested language; permit types and the summary stay English', async () => {
+  const { call } = setup();
+  const token = (await call('POST', '/api/demo/start')).body.token;
+  const body = { name: 'Feria', attendees: 800, answers: { tents: true, flame: true } };
+  const en = (await call('POST', '/api/me/permits/event', body, token)).body;
+  const hy = (await call('POST', '/api/me/permits/event', { ...body, lang: 'hy' }, token)).body;
+  assert.deepEqual(hy.items.map(i => i.type), en.items.map(i => i.type));
+  assert.equal(hy.summary, en.summary);
+  assert.ok(hy.items.every(i => !/[A-Za-z]{4,} [a-z]{3,}/.test(i.why)), 'why lines are translated');
+  assert.ok(hy.notes.every(n => /[\u0531-\u058F]/.test(n)), 'notes are in Armenian');
+});

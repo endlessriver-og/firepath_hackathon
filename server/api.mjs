@@ -429,7 +429,7 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
       let site = { address: user.address, hazards: user.hazards };
       const location = text(body.location, 200);
       if (location) { const found = await locate(location, text(body.magicKey, 200) || undefined); site = { address: found.location.matched_address || location, hazards: found.hazards }; }
-      const plan = planEvent(permitCatalog, answers, { hazards: site.hazards, attendees });
+      const plan = planEvent(permitCatalog, answers, { hazards: site.hazards, attendees, lang: text(body.lang, 5) || 'en' });
       const summary = [`Event: ${text(body.name, 100) || 'unnamed event'}${attendees ? `, about ${attendees} people` : ''}`, `Location: ${site.address || 'not set'}`, `Organizer: ${user.type === 'business' ? `${user.business?.name || 'business'} · ${user.name}` : user.name}`, 'Likely City of Glendale permits:', ...plan.items.map(i => `- ${i.type}${i.workClass && !i.type.includes(i.workClass) ? ` (${i.workClass})` : ''}`), 'Prepared with FirePath. Not a City submission; confirm requirements with the City of Glendale.'].join('\n');
       return { body: { ...plan, location: site.address || 'not set', summary, portal: permitCatalog.portal, crawledAt: permitCatalog.crawledAt } };
     },
