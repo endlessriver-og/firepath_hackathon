@@ -76,7 +76,8 @@ const TX = {"es": {"Orbit": "Girar", "Stop": "Detener", "Recenter": "Centrar", "
 // ?lang= from the app; opened directly, use the first device language the page has (else English).
 const LANG = params.get('lang') || (navigator.languages || [navigator.language || '']).map(l => String(l).toLowerCase().split('-')[0]).find(l => TX[l]) || 'en';
 const tr = text => (TX[LANG] || {})[text] || text;
-const trv = (text, vars) => tr(text).replace(/\{(\w+)\}/g, (_, k) => vars[k]);
+// Values come from outside data (County, City), so they are escaped as they go into the HTML.
+const trv = (text, vars) => tr(text).replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]));
 if (TX[LANG]) document.documentElement.lang = LANG;
 // Screen-reader labels and the no-WebGL message in the same language.
 document.querySelector('h1.sr').textContent = tr('FirePath Glendale 3D map');
@@ -212,7 +213,7 @@ async function inspect(lngLat) {
     ${rec ? `<div class="k">${tr('CITY RECORDS FOR THIS PARCEL')}</div><div>${trv('{permits} permits · {inspections} inspections', rec.totals)}${rec.totals.codeCases ? ` · ${trv('{n} code cases', { n: rec.totals.codeCases })}` : ''}</div>
       ${rec.recent.slice(0, 3).map(r => `<div class="row"><span>${esc(r.type.length > 70 ? r.type.slice(0, 68) + '…' : r.type)}${r.description ? `<br><span class="muted">${esc(r.description.length > 90 ? r.description.slice(0, 88) + '…' : r.description)}</span>` : ''}</span><span class="muted" style="white-space:nowrap">${esc(r.status || '')}<br>${esc(r.date || '')}</span></div>`).join('')}
       <a href="${esc(rec.searchUrl)}" target="_blank" rel="noopener">${tr('Open in Glendale Permits ↗')}</a>` : ''}
-    <div class="muted" style="margin-top:10px;font-size:12px">${trv('Parcel: {source}. Records, zoning and districts: City of Glendale public permit search and GIS. Hazards: CAL FIRE, FEMA, CGS, DWR planning maps. Planning information, not an official determination.', { source: esc(p?.source || 'LA County Assessor') })}</div>`;
+    <div class="muted" style="margin-top:10px;font-size:12px">${trv('Parcel: {source}. Records, zoning and districts: City of Glendale public permit search and GIS. Hazards: CAL FIRE, FEMA, CGS, DWR planning maps. Planning information, not an official determination.', { source: p?.source || 'LA County Assessor' })}</div>`;
 }
 map.on('click', e => inspect(e.lngLat));
 // Keyboard: the canvas already pans with arrow keys; Enter or Space inspects the lot at the centre.
