@@ -17,7 +17,7 @@ import { AddressCheck, CityRecords } from './landing';
 import { eventTemplates, venues } from './venues';
 import { AddressPanel, AddressSearch, BusinessDetails, BusinessProfile, HouseholdForm } from './onboarding';
 import { Toggle } from './ui';
-import { Button, Caption, Card, Chips, CityDataCallout, ErrorText, Field, Link, Muted, ScoreBar, Collapsible, LanguageSettings, ProgressRing, Section, SubTabs, Segment, Select, SeverityBadge, Tag, Title, color, s } from './ui';
+import { Button, Caption, Card, Chips, CityDataCallout, PrivacyNote, ErrorText, Field, Link, Muted, ScoreBar, Collapsible, LanguageSettings, ProgressRing, Section, SubTabs, Segment, Select, SeverityBadge, Tag, Title, color, s } from './ui';
 
 const EVERBRIDGE = 'https://www.glendaleca.gov/Everbridge';
 const KNOW_YOUR_ZONE = 'https://www.glendaleca.gov/government/departments/fire-department/other-links/emergency-preparedness-response/know-your-zone';
@@ -434,7 +434,7 @@ export function Profile({ me, onChange, onSignOut, sub, setSub }) {
     <Title>{me.user.name}</Title>
     <Muted>{me.user.demo ? t('pr.demo') : me.user.email}</Muted>
     <SubTabs value={tab} options={[['household', t(me.user.type === 'business' ? 'pr.business' : 'pr.household')], ['address', t('pr.address')], ['responders', t('pr.responders')], ['settings', t('pr.settings')]]} onChange={setSub} />
-    {tab === 'settings' && <><LanguageSettings /><Caption>{t('pr.langNote')}</Caption><DeleteAccount me={me} onDeleted={onSignOut} /></>}
+    {tab === 'settings' && <><LanguageSettings /><Caption>{t('pr.langNote')}</Caption><PrivacyNote /><DeleteAccount me={me} onDeleted={onSignOut} /></>}
     {tab === 'household' && (me.user.type === 'business' ? <><BusinessProfile me={me} onSaved={onChange} /><BusinessDetails me={me} onSaved={onChange} /></> : <HouseholdForm me={me} onSaved={onChange} />)}
     {tab === 'address' && <View style={{ marginTop: 8 }}><AddressPanel me={me} onChange={onChange} /></View>}
     {tab === 'responders' && <>

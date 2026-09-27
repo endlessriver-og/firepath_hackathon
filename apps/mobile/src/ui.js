@@ -87,6 +87,14 @@ export function SeverityBadge({ severity }) {
 }
 
 // Collapsible container: a tappable header row with a summary; content only when open. Keeps pages short.
+// What the prototype keeps and sends, in plain words (Settings and sign-up). Keep in step with server/api.mjs.
+export function PrivacyNote() {
+  const { t } = useI18n();
+  return <Collapsible icon="🔒" title={t('pv.title')} summary={t('pv.sub')}>
+    {[1, 2, 3, 4, 5, 6, 7].map(n => <Text key={n} style={{ color: color.ink, fontSize: 15, lineHeight: 22, marginTop: 8 }}>• {t(`pv.${n}`)}</Text>)}
+  </Collapsible>;
+}
+
 export function Collapsible({ title, summary, icon, initiallyOpen = false, children, tone }) {
   const [open, setOpen] = useState(initiallyOpen);
   return <View style={[s.card, { padding: 0, overflow: 'hidden' }, tone === 'blue' && { borderColor: '#C9D8EA' }]}>

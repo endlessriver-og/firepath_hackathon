@@ -5,7 +5,7 @@ import { summarizePlace } from './preparedness';
 import { businessKinds, hazmatKinds } from './readiness';
 import MapPanel from './MapPanel';
 import { useI18n } from './i18n';
-import { Button, Caption, Card, CityDataCallout, Collapsible, ErrorText, Field, Link, Muted, Section, Segment, Select, Step, Tag, Title, Toggle, color, s } from './ui';
+import { Button, Caption, Card, CityDataCallout, Collapsible, ErrorText, Field, Link, Muted, PrivacyNote, Section, Segment, Select, Step, Tag, Title, Toggle, color, s } from './ui';
 
 export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'resident' }) {
   const { t } = useI18n();
@@ -38,6 +38,7 @@ export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'reside
     <Button busy={busy} onPress={submit}>{t(mode === 'signup' ? 'au.createBtn' : 'au.signIn')}</Button>
     <Link onPress={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(''); }}>{t(mode === 'signup' ? 'au.toLogin' : 'au.toSignup')}</Link>
     <Caption>{t('au.proto')}</Caption>
+    {mode === 'signup' && <PrivacyNote />}
   </>;
 }
 
