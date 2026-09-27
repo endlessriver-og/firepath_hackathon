@@ -598,7 +598,7 @@ export function Systems({ go }) {
       {items.map(([name, status, what]) => { const [label, fg, bg] = BADGE[status]; const deviceLive = name.startsWith('In-home') && device.connected; return (
         <View key={name} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderColor: color.line }}>
           <View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{tx(name)}</Text><Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{tx(deviceLive ? 'Connected now over USB' : what)}</Text></View>
-          <Text style={{ fontSize: 10, fontWeight: '900', letterSpacing: 0.8, color: deviceLive ? '#1D5B4D' : fg, backgroundColor: deviceLive ? '#E6EFE9' : bg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overflow: 'hidden' }}>{tx(deviceLive ? 'CONNECTED' : label)}</Text>
+          <Text style={{ fontSize: 10, fontWeight: '900', letterSpacing: 0.8, color: deviceLive ? '#1D5B4D' : fg, backgroundColor: deviceLive ? '#E6EFE9' : bg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overflow: 'hidden', maxWidth: 96, textAlign: 'center' }}>{tx(deviceLive ? 'CONNECTED' : label)}</Text>
         </View>); })}
       {gi < SYSTEMS.length - 1 && <Text style={{ textAlign: 'center', color: color.green, fontSize: 20, marginTop: 8 }}>↓</Text>}
     </View>)}
