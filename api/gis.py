@@ -3,6 +3,7 @@ scripts/lookup-hazards.py). The package downloads and verifies its published sna
 a cold start and reuses it while the instance stays warm. Coordinates only: FirePath geocodes first.
 """
 import asyncio
+import hmac
 import json
 import os
 from http.server import BaseHTTPRequestHandler
@@ -51,6 +52,17 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_POST(self):
+        # Lookups are for FirePath's own API only; the key keeps this function from being an open,
+        # unthrottled endpoint. (GET, the warm-up, stays open.)
+        key = os.environ.get('FIREPATH_INTERNAL_KEY', '')
+        if key and not hmac.compare_digest(self.headers.get('x-firepath-internal', ''), key):
+            data = b'{"error": "Not available."}'
+            self.send_response(403)
+            self.send_header('content-type', 'application/json')
+            self.send_header('content-length', str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
         try:
             payload = json.loads(self.rfile.read(min(int(self.headers.get('content-length') or 0), 1024)))
             lat, lon = float(payload['lat']), float(payload['lon'])

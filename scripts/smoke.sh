@@ -18,8 +18,9 @@ done
 
 # /api/gis is the Vercel Python function; a local server runs the lookup as a Python process instead.
 if [[ "$BASE" != *localhost* && "$BASE" != *127.0.0.1* ]]; then
-  gis=$(curl -s -m 60 -X POST "$BASE/api/gis" -H 'content-type: application/json' -d '{"lat":34.199055,"lon":-118.230606}')
-  echo "$gis" | grep -q '"in_city": true' && ok "GIS lookup (Python function)" || bad "GIS lookup: ${gis:0:120}"
+  gis=$(curl -s -m 60 "$BASE/api/gis")
+  echo "$gis" | grep -q '"ok": true' && ok "GIS function warm (GET)" || bad "GIS warm-up: ${gis:0:120}"
+  [ "$(code -X POST "$BASE/api/gis" -H 'content-type: application/json' -d '{"lat":34.2,"lon":-118.23}')" = 403 ] && ok "GIS lookups refused without the internal key" || bad "GIS POST is open to the public"
 fi
 
 check=$(curl -s -m 60 -X POST "$BASE/api/public/check" -H 'content-type: application/json' -d '{"address":"1613 Glencoe Way"}')

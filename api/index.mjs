@@ -15,7 +15,7 @@ const store = openBlobStore();
 let origin = '';
 
 async function lookupHazards(payload) {
-  const res = await fetch(`${origin}/api/gis`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(45_000) });
+  const res = await fetch(`${origin}/api/gis`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-firepath-internal': process.env.FIREPATH_INTERNAL_KEY || '' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(45_000) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'GIS lookup is unavailable.');
   return data;
