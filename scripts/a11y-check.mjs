@@ -1,5 +1,5 @@
 // Accessibility audit with axe-core in Chrome across the main screens and every Profile tab (signed out and as the demo
-// household) and both map pages. Usage: node scripts/a11y-check.mjs [base-url]. Exits 1 on serious or critical issues.
+// household) and both map pages, which also fails on anything the Content-Security-Policy blocks. Usage: node scripts/a11y-check.mjs [base-url]. Exits 1 on serious or critical issues.
 import puppeteer from 'puppeteer-core';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -13,9 +13,15 @@ const open = async url => { try { await page.goto(url, { waitUntil: 'networkidle
 await page.setViewport({ width: 390, height: 844, isMobile: true });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const found = new Map();
+// Anything the Content-Security-Policy blocks on these pages is a broken resource: report it like a violation.
+// axe itself fetches cross-origin stylesheets to read their rules, which connect-src refuses; those are not user-facing.
+let auditing = false;
+page.on('console', m => { if (!auditing && /Content Security Policy/i.test(m.text())) found.set('serious · csp-blocked', { help: 'the Content-Security-Policy blocked a resource (add its origin in vercel.json)', screens: new Set([page.url().replace(/^https?:\/\/[^/]+/, '')]), examples: [...(found.get('serious · csp-blocked')?.examples || []), m.text().slice(0, 120)].slice(0, 3) }); });
 async function audit(label) {
+  auditing = true;
   await page.evaluate(axeSource);
   const { violations } = await page.evaluate(() => window.axe.run(document, { resultTypes: ['violations'] }));
+  await new Promise(r => setTimeout(r, 300)); auditing = false;
   for (const v of violations) {
     const key = `${v.impact} · ${v.id}`;
     const entry = found.get(key) || { help: v.help, screens: new Set(), examples: [] };
