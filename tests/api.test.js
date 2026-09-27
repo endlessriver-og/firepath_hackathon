@@ -461,3 +461,22 @@ test('demo households older than a day are pruned, with their sessions, when a n
   assert.equal((await call('GET', '/api/me', null, fresh)).status, 200);
   assert.equal((await call('GET', '/api/me', null, real)).body.user.name, 'Keep Me', 'real accounts are never pruned');
 });
+
+test('malformed or hostile input gets a clean 4xx or a sanitised save, never a 500', async () => {
+  const { call } = setup();
+  const token = (await call('POST', '/api/demo/start')).body.token;
+  const junk = [[], 'text', 42, { __proto__: { admin: true } }, { members: 'x', pets: 5 }, { members: [null, 1, 'a', { name: {} }], pets: [null, { kind: [] }] }, { housing: { a: 1 }, meetNear: ['x'], contact: 123 }, { done: { kit: 'yes' }, id: {} }, { type: {}, description: ['x'] }, { answers: { __proto__: true }, attendees: 1e999, location: ['x'] }, { venueId: {}, date: 'not-a-date', start: '99:99' }, { address: [], magicKey: {} }, { code: {} }, { email: ['a'], password: {}, name: {} }];
+  const routes = ['PUT /api/me/household', 'PUT /api/me/business', 'PUT /api/me/tasks', 'PUT /api/me/profile', 'POST /api/me/address', 'POST /api/me/address/verify', 'POST /api/me/permits/event', 'POST /api/me/permits/guide', 'POST /api/me/venues/package', 'POST /api/public/check', 'POST /api/account/signup', 'POST /api/account/login'];
+  for (const route of routes) for (const body of junk) {
+    const [method, path] = route.split(' ');
+    const res = await call(method, path, body, token);
+    assert.ok(res.status < 500, `${route} ${JSON.stringify(body)} → ${res.status} ${JSON.stringify(res.body)}`);
+  }
+  for (const path of ['/api/me/playbook?event=__proto__&lang=__proto__', '/api/me/alerts?lang=constructor', '/api/public/point?lat=abc&lon=xyz', '/api/public/records?address=', '/api/permits/search?q=' + 'roof'.repeat(300)]) {
+    assert.ok((await call('GET', path, null, token)).status < 500, path);
+  }
+  // Junk never lands in the store as objects.
+  const household = (await call('GET', '/api/me', null, token)).body.household;
+  assert.ok(household.members.every(m => typeof m.name === 'string'));
+  assert.equal(typeof household.contact, 'string');
+});
