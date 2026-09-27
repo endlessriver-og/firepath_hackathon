@@ -239,7 +239,7 @@ test('permit catalog search and event plan use the City catalog and the address 
   const search = (await call('GET', '/api/permits/search?q=block%20party')).body;
   assert.equal(search.permits[0].name, 'PW - ROW - Street Use');
   assert.ok(permitCatalog.permitTypes.length > 50, 'crawled catalog present');
-  assert.deepEqual((await call('GET', '/api/permits/search?q=bakery&audience=business')).body.licenses, ['BAKERY PRODUCTS']);
+  assert.deepEqual((await call('GET', '/api/permits/search?q=bakery&audience=business')).body.licenses, ['Retail Bakeries', 'BAKERY PRODUCTS']);
   const token = await signup(call);
   await call('POST', '/api/me/address', { address: '1613 Glencoe Way' }, token);
   const plan = (await call('POST', '/api/me/permits/event', { name: 'Harvest fair', attendees: 600, answers: { commercial: true, tents: true, flame: true, publicWay: true } }, token)).body;

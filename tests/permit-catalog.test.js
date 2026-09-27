@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { searchPermits } from '../src/permit-catalog.js';
+import { searchLicenses, searchPermits } from '../src/permit-catalog.js';
 
 const catalog = JSON.parse(readFileSync(new URL('../src/glendale-permits.json', import.meta.url)));
 const top = (q, audience) => searchPermits(catalog, q, { audience })[0]?.name || '';
@@ -31,4 +31,15 @@ test('every example in the permit search placeholder finds a permit, in every la
     const words = line.replace(/^(e\.g\.,|p\. ej\.,|օր\.՝|예:)\s*/, '').split(/,\s*/);
     for (const w of words) assert.ok(searchPermits(catalog, w).length, `"${w}" finds nothing`);
   }
+});
+
+test('business license search understands everyday words in all four languages', () => {
+  const cases = [
+    [/Restaurants/, ['restaurant', 'restaurante', 'ռեստորան', '식당']],
+    [/Nonalcoholic Beverage Bars/, ['coffee shop', 'cafetería', 'սրճարան', '카페']],
+    [/Bakeries/, ['bakery', 'panadería', 'հացատուն', '빵집']],
+    [/Automotive/, ['auto repair', 'taller mecánico', 'ավտոնորոգում', '정비소']],
+    [/Nail Salons/, ['nail salon', 'salón de uñas', 'մանիկյուր', '네일샵']],
+  ];
+  for (const [expected, queries] of cases) for (const q of queries) assert.match(searchLicenses(catalog, q)[0] || '', expected, `"${q}" found ${searchLicenses(catalog, q)[0] || 'nothing'}`);
 });

@@ -55,10 +55,45 @@ export function searchPermits(catalog, query, { audience = null, limit = 8 } = {
   }).filter(t => t.score > (audience && t.audience.includes(audience) ? 1 : 0)).sort((a, b) => b.score - a.score).slice(0, limit);
 }
 
+// Everyday business words in English, Spanish, Armenian and Korean -> words in the City's license names
+// (which follow the federal industry list, e.g. "Snack and Nonalcoholic Beverage Bars" for a coffee shop).
+const LICENSE_WORDS = [
+  [/restaurant|restaurante|ռեստորան|식당|레스토랑|음식점/, ['full-service restaurants', 'limited-service restaurants']],
+  [/bakery|panader|pasteler|հացատուն|հրուշակ|빵집|베이커리|제과/, ['retail bakeries']],
+  [/coffee|\bcafe|café|cafeter|սրճարան|카페|커피/, ['snack and nonalcoholic beverage bars']],
+  [/food truck|catering|caterer|lonchera|banquete|կեյթերինգ|푸드트럭|케이터링|출장 요리/, ['caterers']],
+  [/beauty|hair salon|salón de belleza|estética|peluquer|գեղեցկության սրահ|վարսահարդար|미용실|헤어/, ['beauty salons']],
+  [/barber|barber[ií]a|վարսավիր|이발소|바버/, ['barber shops']],
+  [/nail|uñas|մանիկյուր|네일/, ['nail salons']],
+  [/auto repair|mechanic|car repair|taller mec|mecánic|ավտոնորոգ|ավտոսպասարկ|자동차 수리|정비소/, ['automotive repair']],
+  [/clothing|clothes|boutique|\bropa\b|հագուստ|옷가게|의류/, ['clothing stores']],
+  [/grocery|abarrotes|supermercado|մթերային|식료품|슈퍼마켓/, ['grocery']],
+  [/jewel|joyer|ոսկերչ|զարդեր|보석|주얼리/, ['jewelry stores']],
+  [/dentist|dental|dentista|ատամնաբույժ|ստոմատոլոգ|치과/, ['offices of dentists']],
+  [/daycare|day care|guarder|մանկապարտեզ|어린이집/, ['child day care']],
+  [/\bbars?\b|\bpub\b|cantina|술집|주점/, ['drinking places']],
+  [/cleaning|janitor|limpieza|մաքրման ծառայ|청소/, ['janitorial']],
+  [/tutor|tutor[ií]a|clases particulares|կրկնուսույց|과외|학원/, ['exam preparation']],
+  [/pharmac|farmacia|դեղատուն|약국/, ['pharmacies']],
+  [/florist|flower shop|florer|florister|ծաղկի խանութ|꽃집/, ['florists']],
+  [/laundry|dry clean|lavander|tintorer|լվացքատուն|քիմմաքրում|세탁소/, ['laundry services']],
+  [/\bgym\b|fitness|gimnasio|մարզասրահ|헬스|체육관|피트니스/, ['fitness']],
+  [/real estate|bienes ra[ií]ces|inmobiliaria|անշարժ գույք|부동산/, ['real estate agents']],
+  [/insurance|seguros|ապահովագր|보험/, ['insurance']],
+  [/doctor|clinic|médico|clínica|բժշկ|կլինիկա|병원|의원/, ['offices of physicians']],
+  [/veterin|pet groom|mascota|անասնաբույժ|동물병원|애견/, ['veterinary', 'pet care']],
+  [/accountant|bookkeep|tax prep|contador|contabilidad|impuestos|հաշվապահ|회계|세무/, ['accounting services']],
+  [/lawyer|attorney|abogad|փաստաբան|իրավաբան|변호사|법률/, ['legal services']],
+];
+
 export function searchLicenses(catalog, query, limit = 6) {
-  const words = norm(query || '').split(/\s+/).filter(w => w.length > 2).map(w => w.replace(/(es|s)$/, ''));
-  if (!words.length) return [];
-  return catalog.businessLicenseTypes.filter(name => words.every(w => norm(name).includes(w))).slice(0, limit);
+  const q = norm(query || '');
+  const byWords = phrase => {
+    const words = phrase.split(/\s+/).filter(w => w.length > 2).map(w => w.replace(/(es|s)$/, ''));
+    return words.length ? catalog.businessLicenseTypes.filter(name => words.every(w => norm(name).includes(w))) : [];
+  };
+  const mapped = LICENSE_WORDS.filter(([re]) => re.test(q)).flatMap(([, phrases]) => phrases.flatMap(byWords));
+  return [...new Set([...mapped, ...byWords(q)])].slice(0, limit);
 }
 
 export const eventQuestions = [
