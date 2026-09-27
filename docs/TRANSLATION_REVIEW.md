@@ -14,7 +14,7 @@ Review in this order. The first two are safety text; a mistake there could chang
 2. **Printable sheets.** Plan tab → Print. Open each sheet (earthquake, wildfire "Ready, Set, Go!", go-bag, utility shutoffs, and the household plan). These end up on refrigerators, so check them as carefully as the emergency steps. The wildfire sheet uses CAL FIRE's three-step names; if your community knows official translations, use those.
 3. **Drills and alert plans.** Alerts tab → Drill → pick an alert. These are longer and less urgent.
 4. **Permit guidance.** Permits tab: a project's "what you'll usually need" list and notes, the event planner's explanations, and a City-venue package's timeline. Official permit and agency names stay English on purpose.
-5. **Everything else.** Sign-up, the checklist, maps and settings.
+5. **Everything else.** Sign-up, the checklist, maps and settings, the official-links list (Home → resources; the agency names stay English, the one-line descriptions are translated) and the "How FirePath connects" page (Home → How FirePath connects).
 
 ## Words the builder was unsure about
 
