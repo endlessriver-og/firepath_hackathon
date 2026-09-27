@@ -129,7 +129,7 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
 - **Offline:**
   - `scripts/build-demo.mjs` writes `dist/app/sw.js`. Pages are network-first and the fingerprinted bundle is cache-first; `/api/` is never cached.
   - `App.js` keeps the last `/api/me` in `firepath-me-cache` and uses it only when the server is unreachable (status 0), showing an offline banner.
-  - Verified in headless Chrome with network offline, locally and on production. The in-app browser pane cannot register service workers, so test in Chrome.
+  - Check with `npm run check:offline [url]` (headless Chrome, network cut). The in-app browser pane cannot register service workers, so test in Chrome.
 - **Known gaps:**
   - Concurrent Blob writes: fixed and deployed (ETag-conditional write, per-record merge on conflict). Reads return weak ETags (`W/"…"`); conditional writes need the strong form.
   - No physical phone or ESP32 run.
