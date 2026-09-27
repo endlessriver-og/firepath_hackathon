@@ -156,7 +156,7 @@ export function permitGuide(typeId, { profile = {}, household = {}, hazards = nu
   const summary = [
     `Project: ${type.title}`,
     `Likely permit: ${type.permit}`,
-    `Address: ${profile.address || 'not set'}${profile.addressVerified === 'mail' ? ' (verified by mail in FirePath)' : ''}`,
+    `Address: ${profile.address || 'not set'}${profile.addressVerified !== 'mail' ? '' : profile.verifiedWithDemoCode ? ' (confirmed with a FirePath pilot demo code; no postcard was mailed)' : ' (verified by mail in FirePath)'}`,
     profile.type === 'business' ? `Business: ${household.name || 'not set'} · contact ${profile.name || 'not set'}` : `Applicant: ${profile.name || 'not set'} (${household.housing === 'rent' ? 'renter' : household.housing === 'own' ? 'owner' : 'relationship not set'})`,
     description.trim() ? `Description: ${description.trim()}` : null,
     wildfire ? `Mapped CAL FIRE zone: ${zone || 'mapped'} (planning layer)` : null,

@@ -683,3 +683,13 @@ test('data export has the resident\'s own data and none of the secrets', async (
   for (const secret of ['passwordHash', 'scrypt', 'codeKey', 'verification"', 'passwordFailures', 'codeRequests', 'correct-horse']) assert.ok(!text.includes(secret), `export leaks ${secret}`);
   assert.equal((await call('GET', '/api/me/export')).status, 401);
 });
+
+test('the copyable permit summary for City staff does not claim a mailed postcard for a demo code', async () => {
+  const { call } = setup();
+  const token = (await call('POST', '/api/demo/start')).body.token;
+  const types = (await call('GET', '/api/permits', null, token)).body.types;
+  const guide = (await call('POST', '/api/me/permits/guide', { type: types[0].id }, token)).body;
+  const text = JSON.stringify(guide);
+  assert.match(text, /pilot demo code; no postcard was mailed/);
+  assert.doesNotMatch(text, /verified by mail in FirePath/);
+});
