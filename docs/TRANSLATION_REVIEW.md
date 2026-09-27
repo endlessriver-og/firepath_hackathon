@@ -28,6 +28,10 @@ These are known weak spots. Please check them first.
 | Korean | Wildfire sheet title | "준비, 대비, 대피!" | Is there an established translation of "Ready, Set, Go!"? |
 | All | Hazard names | "Liquefaction", "Debris flow", "Dam inundation" | Are these the terms residents would recognize? |
 
+## Not translated yet
+
+The permit guidance the server writes is still English: the "What you'll usually need" lists on the Permits tab, notes about your address there, why each event permit applies, and venue timelines. The screens around it are translated. If you review, you can skip these for now.
+
 ## What stays in English on purpose
 
 - Official names: City permit types, agency names (CAL FIRE, FEMA), program names such as "Brace + Bolt", and City venue names. People search for these by their English names.

@@ -125,7 +125,7 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
   - Household drill and alert-plan steps, including the Emergency weather situations, are translated too (`RESIDENT` in `src/playbooks.js`; the API takes `?lang=`).
   - Business alert plans are translated as well (`BUSINESS` in `src/playbooks.js`).
   - Also translated since: business profile and emergency-details forms, the Permits tab (event and venue planners, project guides), printable sheets (`src/printouts.js`, drafts labelled in their footer), both maps' cards, legends and screen-reader labels, and the parcel notes (`/api/public/point?lang=`).
-  - Still English: official agency and permit names, the copyable project summary (for City staff) and the responder brief's contents.
+  - Still English: official agency and permit names, the copyable project summary (for City staff) and the responder brief's contents. **Also still English (a real gap):** the permit guidance written by the server: `permitTypes`/`businessPermitTypes` `needs` lists and guide notes in `src/readiness.js`, event-planner notes and per-permit `why` lines in `src/permit-catalog.js`, and venue timelines, notes and other-agency lines in `src/venues.js` (about 80 sentences). Translating them means phrase tables like `PARCEL_NOTES` plus a `lang` passed to `/api/me/permits/guide`, `/api/me/permits/event` and `/api/me/venues/package`.
   - Keys live in `apps/mobile/src/i18n.js`; checklist titles are in `taskTitles`.
 - **Deployed:** `17328e4`, 2026-09-26 at 7:15 PM.
   - Production passed all 15 `scripts/smoke.sh` checks.

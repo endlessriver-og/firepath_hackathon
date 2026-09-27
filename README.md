@@ -17,7 +17,7 @@ FirePath is an independent Glendale pilot prototype, not a City of Glendale serv
 3. Tap **Explore the app → Begin** for a five-stop tour with a fictional household: Dana, her daughter, her mother Rosa who uses a walker, and two dogs. No sign-up.
 4. On the **Map** tab, switch the view to **3D terrain** and tap any building or lot for its parcel, zoning, fire station district, nearby schools and permit history.
 5. Tap **Emergency** (top right, on every screen) and pick a situation.
-6. Tap 🌐 (or Profile → Settings) to switch to Español, Հայերեն or 한국어. The app, both maps and the printable sheets follow; City permit names stay in English. The translations are drafts that native speakers have not yet reviewed.
+6. Tap 🌐 (or Profile → Settings) to switch to Español, Հայերեն or 한국어. The app, both maps and the printable sheets follow. City permit names stay in English, and so, for now, does the permit guidance the server writes (what a project usually needs, event notes, venue timelines). The translations are drafts that native speakers have not yet reviewed.
 7. Add it to your phone's home screen (Share → Add to Home Screen, or Chrome's Install). It opens full-screen, and once opened it keeps working offline: your saved plan and the Emergency steps still load with no signal.
 
 ## What is real, and what is not
