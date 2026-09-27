@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Linking, Platform, Pressable, Text, View, useWindowDimensions } from 'react-native';
+import { Alert, Linking, Platform, Pressable, Share, Text, View, useWindowDimensions } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { showTestNotification } from './notify';
 import { queueTask, settleTask } from './offline';
@@ -422,6 +422,28 @@ function briefRows(text) {
 }
 
 // Delete the account for good. Real accounts confirm with their password; a confirm dialog comes first.
+// A copy of everything FirePath keeps for this account: a file on the web, the share sheet on a phone.
+function ExportData() {
+  const { t } = useI18n();
+  const [busy, setBusy] = useState(false), [error, setError] = useState('');
+  async function save() {
+    setError(''); setBusy(true);
+    try {
+      const text = JSON.stringify(await api('GET', '/api/me/export'), null, 2);
+      if (Platform.OS === 'web') {
+        const link = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([text], { type: 'application/json' })), download: 'firepath-my-data.json' });
+        document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+      } else await Share.share({ message: text, title: 'FirePath' });
+    } catch (e) { setError(e.message); } finally { setBusy(false); }
+  }
+  return <Card>
+    <Text style={{ color: color.ink, fontSize: 16, fontWeight: '800' }}>{t('exp.title')}</Text>
+    <Muted>{t('exp.sub')}</Muted>
+    <ErrorText>{error}</ErrorText>
+    <Button kind="outline" busy={busy} onPress={save}>{t('exp.btn')}</Button>
+  </Card>;
+}
+
 // Signed-in password change. Other devices are signed out by the server.
 function ChangePassword() {
   const { t } = useI18n();
@@ -465,7 +487,7 @@ export function Profile({ me, onChange, onSignOut, sub, setSub }) {
     <Title>{me.user.name}</Title>
     <Muted>{me.user.demo ? t('pr.demo') : me.user.email}</Muted>
     <SubTabs value={tab} options={[['household', t(me.user.type === 'business' ? 'pr.business' : 'pr.household')], ['address', t('pr.address')], ['responders', t('pr.responders')], ['settings', t('pr.settings')]]} onChange={setSub} />
-    {tab === 'settings' && <><LanguageSettings /><Caption>{t('pr.langNote')}</Caption><PrivacyNote />{!me.user.demo && <ChangePassword />}<DeleteAccount me={me} onDeleted={onSignOut} /></>}
+    {tab === 'settings' && <><LanguageSettings /><Caption>{t('pr.langNote')}</Caption><PrivacyNote /><ExportData />{!me.user.demo && <ChangePassword />}<DeleteAccount me={me} onDeleted={onSignOut} /></>}
     {tab === 'household' && (me.user.type === 'business' ? <><BusinessProfile me={me} onSaved={onChange} /><BusinessDetails me={me} onSaved={onChange} /></> : <HouseholdForm me={me} onSaved={onChange} />)}
     {tab === 'address' && <View style={{ marginTop: 8 }}><AddressPanel me={me} onChange={onChange} /></View>}
     {tab === 'responders' && <>

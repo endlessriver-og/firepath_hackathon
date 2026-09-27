@@ -666,3 +666,20 @@ test('the login lockout is kept on the account, so another server instance enfor
   assert.equal(res.status, 429);
   assert.equal(JSON.stringify(Object.values(first.store.data.users)[0]).includes('correct-horse'), false);
 });
+
+test('data export has the resident\'s own data and none of the secrets', async () => {
+  const { call } = setup();
+  const token = await signup(call, 'export@example.test');
+  await call('POST', '/api/me/address', { address: '1613 Glencoe Way' }, token);
+  await call('POST', '/api/me/address/mail', null, token);
+  await call('POST', '/api/account/login', { email: 'export@example.test', password: 'wrong-horse' });
+  await call('PUT', '/api/me/household', { members: [{ name: 'Ana', ageGroup: 'child' }], meetNear: 'The oak tree' }, token);
+  const res = await call('GET', '/api/me/export', null, token);
+  assert.equal(res.status, 200);
+  const text = JSON.stringify(res.body);
+  assert.equal(res.body.account.email, 'export@example.test');
+  assert.match(text, /The oak tree/);
+  assert.match(text, /Ana/);
+  for (const secret of ['passwordHash', 'scrypt', 'codeKey', 'verification"', 'passwordFailures', 'codeRequests', 'correct-horse']) assert.ok(!text.includes(secret), `export leaks ${secret}`);
+  assert.equal((await call('GET', '/api/me/export')).status, 401);
+});

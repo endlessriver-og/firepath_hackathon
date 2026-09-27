@@ -230,6 +230,22 @@ export function createApi({ store, lookupHazards, fetchAlerts, geocoder = null, 
 
     'GET /api/me': async req => ({ body: view(session(req)) }),
 
+    // Everything FirePath keeps about this account, for the resident to keep or check. Built from an allowlist,
+    // so secrets (the password hash, pending codes, attempt counters, session keys) can never slip in.
+    'GET /api/me/export': async req => {
+      const user = session(req);
+      const pick = keys => Object.fromEntries(keys.filter(k => user[k] !== undefined).map(k => [k, user[k]]));
+      return { body: {
+        exportedAt: new Date(now()).toISOString(),
+        note: 'Everything FirePath stores for this account. Map results are public data and are looked up again when needed.',
+        account: pick(['email', 'name', 'type', 'createdAt']),
+        address: pick(['address', 'lat', 'lon', 'addressVerified', 'verifiedAt', 'verifiedWithDemoCode', 'hazardsCheckedAt']),
+        ...(user.type === 'business' ? { business: user.business || {} } : { household: user.household || {} }),
+        checklist: user.done || {},
+        signedInDevices: Object.values(data.sessions).filter(row => row.userId === user.id && row.expires > now()).length,
+      } };
+    },
+
     'PUT /api/me/profile': async (req, body) => {
       const user = session(req);
       const name = text(body.name, 80);
