@@ -11,7 +11,7 @@ import { eventQuestions } from './permit-catalog';
 import { hazardViewers, resourceGroups, RESOURCES_CHECKED } from './resources';
 import { businessPosterPrintout, householdPlanPrintout, standardPrintout, standardPrintouts } from './printouts';
 import { printHtml } from './print';
-import { useI18n } from './i18n';
+import { taskTitles, useI18n } from './i18n';
 import { connect as connectDevice, sendToDevice, subscribe as subscribeDevice } from './device';
 import { AddressCheck, CityRecords } from './landing';
 import { eventTemplates, venues, VENUE_NOTE } from './venues';
@@ -47,11 +47,13 @@ const shortTaskTitles = {
 };
 
 export function TaskCard({ task, number, done, busy, onToggle }) {
+  const { lang } = useI18n();
+  const title = taskTitles[lang]?.[task.id] || shortTaskTitles[task.id] || task.title;
   return <View style={[s.card, { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }, done && { opacity: 0.62 }]}>
     <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: done, busy }} accessibilityLabel={task.title} onPress={() => onToggle(task.id)} style={{ width: 30, height: 30, borderRadius: 9, borderWidth: 2, borderColor: color.green, backgroundColor: done ? color.green : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ color: '#FFF', fontWeight: '900' }}>{busy ? '…' : done ? '✓' : ''}</Text>
     </Pressable>
-    <Text style={{ flex: 1, color: color.ink, fontSize: 16, fontWeight: '700', textDecorationLine: done ? 'line-through' : 'none' }}>{number ? `${number}. ` : ''}{shortTaskTitles[task.id] || task.title}</Text>
+    <Text style={{ flex: 1, color: color.ink, fontSize: 16, fontWeight: '700', textDecorationLine: done ? 'line-through' : 'none' }}>{number ? `${number}. ` : ''}{title}</Text>
     {task.url ? <Pressable accessibilityRole="link" accessibilityLabel={`${task.link || 'Official guidance'} for ${task.title}`} onPress={() => Linking.openURL(task.url)} hitSlop={10}><Text style={{ color: color.green, fontSize: 18, fontWeight: '800' }}>↗</Text></Pressable> : null}
   </View>;
 }
@@ -77,7 +79,7 @@ export function Home({ me, onChange, go }) {
       <View style={{ flex: 1 }}>
         <Text style={{ color: '#CFE3DA', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>{t('home.checklist')}</Text>
         <Text style={{ color: '#FFF', fontSize: 20, fontWeight: '800', marginTop: 2 }}>{t('home.done', { done, total })}</Text>
-        <Text style={{ color: '#CFE3DA', fontSize: 13, marginTop: 4 }}>{done === total ? 'All done. Review your plan in a few months.' : 'Check off a step when it is done.'}</Text>
+        <Text style={{ color: '#CFE3DA', fontSize: 13, marginTop: 4 }}>{done === total ? t('home.allDone') : t('home.hint')}</Text>
       </View>
     </Card>
 
@@ -85,9 +87,9 @@ export function Home({ me, onChange, go }) {
     {next.map((task, i) => <TaskCard key={task.id} task={task} number={i + 1} done={false} busy={busy === task.id} onToggle={toggle} />)}
     <Link onPress={() => go('Plan')}>{t('home.seeAll', { total })}</Link>
 
-    <Section>{me.user.type === 'business' ? 'Your site' : 'Your home'}</Section>
-    {!me.address ? <Card><Muted>Register your address to see which hazard maps include it.</Muted><Link onPress={() => go('Profile', null, 'address')}>Add your address →</Link></Card> : <>
-      <Collapsible icon="🗺" title="What the maps show" summary={place.mapped.length ? place.mapped.map(i => { const sev = hazardSeverity(i.key, me.hazards[i.key]); return `⚠ ${i.name}${typeof sev.level === 'number' ? ` ${sev.label}` : ''}`; }).join('   ') : 'No hazard map flags this address'}>
+    <Section>{t(me.user.type === 'business' ? 'home.yourSite' : 'home.yourHome')}</Section>
+    {!me.address ? <Card><Muted>{t('home.noAddress')}</Muted><Link onPress={() => go('Profile', null, 'address')}>{t('home.addAddress')}</Link></Card> : <>
+      <Collapsible icon="🗺" title={t('home.maps')} summary={place.mapped.length ? place.mapped.map(i => { const sev = hazardSeverity(i.key, me.hazards[i.key]); return `⚠ ${i.name}${typeof sev.level === 'number' ? ` ${sev.label}` : ''}`; }).join('   ') : t('home.noZone')}>
         <Caption>{me.address.text} · {me.address.verified === 'mail' ? 'verified' : 'not yet verified'}</Caption>
         {place.mapped.map(item => <View key={item.key} style={{ flexDirection: 'row', gap: 12, backgroundColor: color.warmBg, borderWidth: 1, borderColor: color.warmLine, borderRadius: 14, padding: 14, marginTop: 8 }}>
           <Text style={{ color: color.warm }}>●</Text><View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{item.name} · {hazardSeverity(item.key, me.hazards[item.key]).label}</Text><Muted>{item.label}</Muted><Link style={{ marginTop: 6 }} onPress={() => go('Map', [item.key])}>See zones on the map →</Link></View></View>)}
@@ -99,7 +101,7 @@ export function Home({ me, onChange, go }) {
     <Collapsible icon="📚" title="Public resources" summary="20 official links: alerts, zones, CERT, outages, 211"><Resources compact /></Collapsible>
     <Pressable accessibilityRole="button" onPress={() => go('Walkthrough')} style={{ marginTop: 16, backgroundColor: '#12302A', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <Text style={{ fontSize: 20, color: '#F2C46D' }}>▶</Text>
-      <View style={{ flex: 1 }}><Text style={{ color: '#FFF', fontWeight: '800' }}>Take the tour</Text><Text style={{ color: '#CFE3DA', fontSize: 12, marginTop: 2 }}>Five stops, about a minute</Text></View>
+      <View style={{ flex: 1 }}><Text style={{ color: '#FFF', fontWeight: '800' }}>{t('home.tour')}</Text><Text style={{ color: '#CFE3DA', fontSize: 12, marginTop: 2 }}>{t('home.tourSub')}</Text></View>
     </Pressable>
   </>;
 }
