@@ -95,7 +95,7 @@ export function Landing({ onSignedIn, onEmergency, onWalkthrough }) {
   const [languageOpen, setLanguageOpen] = useState(false);
 
   if (signup) return <>
-    <Link style={{ marginTop: 0 }} onPress={() => setSignup(null)}>← Back to the address check</Link>
+    <Link style={{ marginTop: 0 }} onPress={() => setSignup(null)}>{t('au.back')}</Link>
     {result && <Caption>Signing up for {result.address}. We'll set it up as your address in step 2.</Caption>}
     <Auth initialMode={signup.mode} initialType={signup.type} onSignedIn={(me, isNew) => onSignedIn(me, isNew, result?.address)} />
   </>;

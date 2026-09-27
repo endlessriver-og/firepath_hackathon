@@ -8,12 +8,13 @@ import { useI18n } from './i18n';
 import { Button, Caption, Card, CityDataCallout, Collapsible, ErrorText, Field, Link, Muted, Section, Segment, Select, Step, Tag, Title, Toggle, color, s } from './ui';
 
 export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'resident' }) {
+  const { t } = useI18n();
   const [mode, setMode] = useState(initialMode);
   const [form, setForm] = useState({ name: '', email: '', password: '', type: initialType, businessName: '', businessKind: null });
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const set = patch => setForm(current => ({ ...current, ...patch }));
   async function submit() {
-    if (mode === 'signup' && form.type === 'business' && (!form.businessName.trim() || !form.businessKind)) return setError('Enter the business name and choose its type.');
+    if (mode === 'signup' && form.type === 'business' && (!form.businessName.trim() || !form.businessKind)) return setError(t('au.bizMissing'));
     setBusy(true); setError('');
     try {
       const result = await api('POST', mode === 'signup' ? '/api/account/signup' : '/api/account/login', mode === 'signup' ? form : { email: form.email, password: form.password });
@@ -23,20 +24,20 @@ export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'reside
   }
   return <>
     <Text style={{ fontSize: 15, fontWeight: '900', letterSpacing: 2, color: color.green }}>FIREPATH</Text>
-    <Text style={{ fontSize: 28, lineHeight: 34, fontWeight: '800', color: color.ink, marginTop: 16, marginBottom: 6 }}>{mode === 'signup' ? 'Create your account' : 'Welcome back'}</Text>
-    <Muted>{mode === 'signup' ? 'Save your plan, alerts and permits in one place.' : 'Sign in to see your plan.'}</Muted>
-    {mode === 'signup' && <Select label="I'm setting up" value={form.type} options={[['resident', 'My home'], ['business', 'A business']]} onChange={type => set({ type })} />}
+    <Text style={{ fontSize: 28, lineHeight: 34, fontWeight: '800', color: color.ink, marginTop: 16, marginBottom: 6 }}>{t(mode === 'signup' ? 'au.create' : 'au.welcome')}</Text>
+    <Muted>{t(mode === 'signup' ? 'au.createSub' : 'au.loginSub')}</Muted>
+    {mode === 'signup' && <Select label={t('au.settingUp')} value={form.type} options={[['resident', t('au.myHome')], ['business', t('au.aBusiness')]]} onChange={type => set({ type })} />}
     {mode === 'signup' && form.type === 'business' && <>
-      <Field label="Business name" value={form.businessName} onChangeText={businessName => set({ businessName })} placeholder="e.g., Glencoe Bakery" maxLength={100} />
-      <Select label="Type of business" value={form.businessKind} options={businessKinds} placeholder="Choose one" onChange={businessKind => set({ businessKind })} />
+      <Field label={t('au.bizName')} value={form.businessName} onChangeText={businessName => set({ businessName })} placeholder="e.g., Glencoe Bakery" maxLength={100} />
+      <Select label={t('au.bizType')} value={form.businessKind} options={businessKinds} placeholder={t('au.chooseOne')} onChange={businessKind => set({ businessKind })} />
     </>}
-    {mode === 'signup' && <Field label={form.type === 'business' ? 'Your name (key contact)' : 'Your name'} value={form.name} onChangeText={name => set({ name })} placeholder="First and last name" autoComplete="name" maxLength={80} />}
-    <Field label="Email" value={form.email} onChangeText={email => set({ email })} placeholder="you@example.com" autoCapitalize="none" autoComplete="email" keyboardType="email-address" maxLength={200} />
-    <Field label="Password" hint={mode === 'signup' ? 'At least 8 characters.' : null} value={form.password} onChangeText={password => set({ password })} secureTextEntry autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} onSubmitEditing={submit} maxLength={200} />
+    {mode === 'signup' && <Field label={t(form.type === 'business' ? 'au.nameKey' : 'au.name')} value={form.name} onChangeText={name => set({ name })} placeholder={t('au.namePh')} autoComplete="name" maxLength={80} />}
+    <Field label={t('au.email')} value={form.email} onChangeText={email => set({ email })} placeholder="you@example.com" autoCapitalize="none" autoComplete="email" keyboardType="email-address" maxLength={200} />
+    <Field label={t('au.password')} hint={mode === 'signup' ? t('au.pwHint') : null} value={form.password} onChangeText={password => set({ password })} secureTextEntry autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} onSubmitEditing={submit} maxLength={200} />
     <ErrorText>{error}</ErrorText>
-    <Button busy={busy} onPress={submit}>{mode === 'signup' ? 'Create account' : 'Sign in'}</Button>
-    <Link onPress={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(''); }}>{mode === 'signup' ? 'Already have an account? Sign in' : 'New here? Create an account'}</Link>
-    <Caption>Prototype: accounts live on this demo server, not with the City.</Caption>
+    <Button busy={busy} onPress={submit}>{t(mode === 'signup' ? 'au.createBtn' : 'au.signIn')}</Button>
+    <Link onPress={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(''); }}>{t(mode === 'signup' ? 'au.toLogin' : 'au.toSignup')}</Link>
+    <Caption>{t('au.proto')}</Caption>
   </>;
 }
 
