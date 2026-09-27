@@ -62,10 +62,12 @@ export function Chips({ value, options, onChange }) {
 // "If we had City data" callout, fed by src/city-data.js: one headline, details on tap.
 export function CityDataCallout({ id }) {
   const item = cityData[id];
+  const { t } = useI18n();
   const [open, setOpen] = React.useState(false);
+  const title = t(`cd.${id}`) === `cd.${id}` ? item.title : t(`cd.${id}`); // English titles live in city-data.js
   return <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={() => setOpen(!open)} style={s.callout}>
-    <Text style={s.calloutTag}>NEEDS CITY DATA {open ? '−' : '+'}</Text>
-    <Text style={[s.calloutText, { fontWeight: '800' }]}>{item.title}</Text>
+    <Text style={s.calloutTag}>{t('cd.tag')} {open ? '−' : '+'}</Text>
+    <Text style={[s.calloutText, { fontWeight: '800' }]}>{title}</Text>
     {open && <Text style={[s.calloutText, { marginTop: 4 }]}>With the City's {item.dataset} (for example, <Text style={{ fontStyle: 'italic' }}>{item.example}</Text>), FirePath could {item.unlocks}.</Text>}
   </Pressable>;
 }
