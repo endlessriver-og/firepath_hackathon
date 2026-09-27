@@ -28,11 +28,13 @@ const isHy = ch => ch >= '\u0531' && ch <= '\u0587';
 export const hyDat = w => !isHy(hyLast(w)) ? `${w}-ին` : /[աո]$/.test(w) ? `${w}յին` : `${w}ին`;
 export const hyDef = w => !isHy(hyLast(w)) ? `${w}-ն` : /[աեըիոու]$/.test(w) ? `${w}ն` : `${w}ը`;
 
-// Korean object particle: 을 after a final consonant, 를 after a vowel. Non-Hangul endings (a typed
-// English name, a digit) keep the neutral 을(를).
+// Korean object particle: 을 after a final consonant, 를 after a vowel. A Latin-script name goes by its
+// last letter (Mia → 를, John → 을); anything else (a digit, a symbol) keeps the neutral 을(를).
 export const eul = word => {
-  const c = String(word).trim().slice(-1).charCodeAt(0);
-  return c >= 0xAC00 && c <= 0xD7A3 ? `${word}${(c - 0xAC00) % 28 ? '을' : '를'}` : `${word}을(를)`;
+  const last = String(word).trim().slice(-1), c = last.charCodeAt(0);
+  if (c >= 0xAC00 && c <= 0xD7A3) return `${word}${(c - 0xAC00) % 28 ? '을' : '를'}`;
+  if (/[a-z]/i.test(last)) return `${word}${/[aeiouy]/i.test(last) ? '를' : '을'}`;
+  return `${word}을(를)`;
 };
 
 const RESIDENT = {

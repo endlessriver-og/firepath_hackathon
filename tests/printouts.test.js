@@ -65,7 +65,9 @@ test('Korean object particle follows the last syllable', async () => {
   assert.equal(eul('고양이 한 마리와 강아지'), '고양이 한 마리와 강아지를');
   assert.equal(eul('물고기'), '물고기를');
   assert.equal(eul('닭'), '닭을');
-  assert.equal(eul('Mia'), 'Mia을(를)');
+  assert.equal(eul('Mia'), 'Mia를');
+  assert.equal(eul('John'), 'John을');
+  assert.equal(eul('2'), '2을(를)');
 });
 
 test('Armenian endings attach to Armenian-script names, and typed places are never suffixed', async () => {
