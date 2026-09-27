@@ -42,7 +42,7 @@ A point outside a mapped zone is labelled "Outside", never "safe". Weather alert
 
 ## How it is checked
 
-- **On every push:** 66 tests (`npm test`) run in GitHub Actions and again inside the Vercel build, so a failing push never replaces production. They cover the API, including a sweep of malformed input that must never cause a server error, the translations in every language, the printable sheets and the privacy promises.
+- **On every push:** the test suite (`npm test`) runs in GitHub Actions and again inside the Vercel build, so a failing push never replaces production. They cover the API, including a sweep of malformed input that must never cause a server error, the translations in every language, the printable sheets and the privacy promises.
 - **Every 6 hours, against production:** the API smoke test, the guided tour walked in Chrome, an axe accessibility audit (main screens, Armenian, both maps), and checks that the Emergency steps open offline and the app is installable.
 - **By hand after UI changes:** `npm run check:layout` walks every screen in all four languages at 320 and 390 px, at normal and large text sizes.
 
