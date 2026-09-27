@@ -3,7 +3,7 @@
   "framework": null,
   "buildCommand": "npm test && npm run build:demo",
   "outputDirectory": "dist",
-  "installCommand": "npm install && npm install --prefix apps/mobile",
+  "installCommand": "npm ci && npm ci --prefix apps/mobile",
   "functions": {
     "api/index.mjs": {
       "includeFiles": "{data/map-layers/*.json,data/map-layers/*.geojson,src/glendale-permits.json,VERSION}",
