@@ -26,6 +26,9 @@ await p.goto(`${B}/app/`, { waitUntil: 'networkidle2' });
 await p.evaluate(l => { localStorage.clear(); localStorage.setItem('firepath-lang', l); }, LANG);
 await p.reload({ waitUntil: 'networkidle2' }); await sleep(2000);
 await report('landing');
+// The signed-out address check, the first thing many residents try.
+const box = await p.$('main input');
+if (box) { await box.type('1613 Glencoe Way'); await sleep(1500); await p.keyboard.press('Enter'); await sleep(12000); await report('landing address check'); }
 // Demo household, every tab and its sub-tabs
 // Demo household by default. With "business" as the third argument, signs up a throwaway example.test business
 // (generated password, City Hall's address), sweeps as that business and deletes the account at the end.
