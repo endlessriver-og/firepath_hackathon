@@ -43,6 +43,12 @@ point=$(curl -s -m 60 "$BASE/api/public/point?lat=34.19912&lon=-118.2311")
 echo "$point" | grep -q '"apn"' && ok "tap-to-inspect parcel" || bad "tap-to-inspect: ${point:0:120}"
 echo "$point" | grep -q '"zoning"' && ok "tap-to-inspect neighborhood" || bad "tap-to-inspect neighborhood missing"
 
+# The app sends addresses and map points in POST bodies so they stay out of URLs.
+precords=$(curl -s -m 60 -X POST "$BASE/api/public/records" -H 'content-type: application/json' -d '{"address":"1613 GLENCOE WAY"}')
+echo "$precords" | grep -q '"totals"' && ok "City records by POST" || bad "City records by POST: ${precords:0:120}"
+ppoint=$(curl -s -m 60 -X POST "$BASE/api/public/point" -H 'content-type: application/json' -d '{"lat":"34.19912","lon":"-118.2311"}')
+echo "$ppoint" | grep -q '"apn"' && ok "tap-to-inspect by POST" || bad "tap-to-inspect by POST: ${ppoint:0:120}"
+
 token=$(curl -s -m 60 -X POST "$BASE/api/demo/start" -H 'content-type: application/json' -d '{}' | python3 -c 'import json,sys; print(json.load(sys.stdin).get("token",""))' 2>/dev/null)
 if [ -n "$token" ]; then
   ok "demo household created"
