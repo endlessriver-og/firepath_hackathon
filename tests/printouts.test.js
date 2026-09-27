@@ -67,3 +67,16 @@ test('Korean object particle follows the last syllable', async () => {
   assert.equal(eul('닭'), '닭을');
   assert.equal(eul('Mia'), 'Mia을(를)');
 });
+
+test('Armenian endings attach to Armenian-script names, and typed places are never suffixed', async () => {
+  const { hyDat, hyDef, buildPlaybook } = await import('../src/playbooks.js');
+  assert.equal(hyDat('Ռոզա'), 'Ռոզային');
+  assert.equal(hyDat('Արմեն'), 'Արմենին');
+  assert.equal(hyDat('Rosa'), 'Rosa-ին');
+  assert.equal(hyDef('Ռոզա'), 'Ռոզան');
+  assert.equal(hyDef('Արմեն'), 'Արմենը');
+  const household = { meetNear: 'Անկյունի փոստարկղը', meetFar: 'Մոնտրոզի գրադարանը', contact: 'Լյուսիա մորաքույրը', members: [{ name: 'Ռոզա', ageGroup: 'senior', needsHelp: true }] };
+  const text = buildPlaybook('Red Flag Warning', { household, lang: 'hy' }).groups.flatMap(g => g.steps).map(s => s.text || s).join('\n');
+  assert.doesNotMatch(text, /փոստարկղը-ում|գրադարանը-ում|մորաքույրը-ին/);
+  assert.match(text, /Ռոզային/);
+});
