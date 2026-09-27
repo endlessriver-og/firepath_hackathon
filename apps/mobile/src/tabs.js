@@ -585,21 +585,24 @@ const BADGE = { live: ['LIVE', '#1D5B4D', '#E6EFE9'], prototype: ['PROTOTYPE', '
 
 export function Systems({ go }) {
   const device = useDevice();
+  const { t } = useI18n();
+  // English source text, looked up per language (sys.<english>); unknown phrases stay English.
+  const tx = s => { const v = t(`sys.${s}`); return v === `sys.${s}` ? s : v; };
   return <>
-    <Link style={{ marginTop: 0 }} onPress={() => go('Home')}>← Home</Link>
-    <Title style={{ marginTop: 10 }}>How FirePath connects</Title>
-    <Muted>One address-keyed record links public data, your household and your devices, so every alert turns into steps for the people actually there.</Muted>
+    <Link style={{ marginTop: 0 }} onPress={() => go('Home')}>{tx('← Home')}</Link>
+    <Title style={{ marginTop: 10 }}>{tx('How FirePath connects')}</Title>
+    <Muted>{tx('One address-keyed record links public data, your household and your devices, so every alert turns into steps for the people actually there.')}</Muted>
     {SYSTEMS.map(([group, items], gi) => <View key={group}>
-      <Section>{group}</Section>
+      <Section>{tx(group)}</Section>
       {items.map(([name, status, what]) => { const [label, fg, bg] = BADGE[status]; const deviceLive = name.startsWith('In-home') && device.connected; return (
         <View key={name} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderColor: color.line }}>
-          <View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{name}</Text><Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{deviceLive ? 'Connected now over USB' : what}</Text></View>
-          <Text style={{ fontSize: 10, fontWeight: '900', letterSpacing: 0.8, color: deviceLive ? '#1D5B4D' : fg, backgroundColor: deviceLive ? '#E6EFE9' : bg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overflow: 'hidden' }}>{deviceLive ? 'CONNECTED' : label}</Text>
+          <View style={{ flex: 1 }}><Text style={{ color: color.ink, fontWeight: '700' }}>{tx(name)}</Text><Text style={{ color: color.muted, fontSize: 12, marginTop: 2 }}>{tx(deviceLive ? 'Connected now over USB' : what)}</Text></View>
+          <Text style={{ fontSize: 10, fontWeight: '900', letterSpacing: 0.8, color: deviceLive ? '#1D5B4D' : fg, backgroundColor: deviceLive ? '#E6EFE9' : bg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overflow: 'hidden' }}>{tx(deviceLive ? 'CONNECTED' : label)}</Text>
         </View>); })}
       {gi < SYSTEMS.length - 1 && <Text style={{ textAlign: 'center', color: color.green, fontSize: 20, marginTop: 8 }}>↓</Text>}
     </View>)}
     <DeviceCard />
-    <Caption>Live: working now with real data. Prototype: built and demonstrable, not in production. Needs City: waits on a City data connection.</Caption>
+    <Caption>{tx('Live: working now with real data. Prototype: built and demonstrable, not in production. Needs City: waits on a City data connection.')}</Caption>
   </>;
 }
 

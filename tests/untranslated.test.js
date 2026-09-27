@@ -17,13 +17,14 @@ const ALLOWED = new Set([
   'Ticketed or run by a business', 'Food vendors', 'Cooking or open flame', 'Alcohol served', 'Amplified sound or music', 'Commercial filming',
   'Needs help', 'Wildfire map',
   'Device not connected.', 'Connect the device first.', 'Print this plan',
-  // The "How FirePath connects" systems page and the judging walkthrough: pitch material, English by design.
+  // English source text for the "How FirePath connects" page, looked up as sys.<english> in every language.
   'How FirePath connects', 'Data coming in', 'Checked live for each registered address', 'Autocomplete and address matching', 'Public records per address',
   'Would match every order to the exact address', 'Would send consented notes en route and suggest open routes', 'Address and parcel as the shared key',
   'Household and business profiles with consent', 'Playbook engine', 'Turns any alert or emergency into steps for this household',
   'Permit matcher and event packages', 'Out to people and devices', 'Phone and web app', 'Printed sheets on the fridge or break room',
   'Custom plans that work with no power or signal', 'Responder brief',
   'One address-keyed record links public data, your household and your devices, so every alert turns into steps for the people actually there.',
+  // The judging walkthrough: pitch material, English by design.
   'How FirePath meets the judging criteria', 'Exit walkthrough',
 ]);
 // Data and content modules that hold English source text by design (translated elsewhere or English on purpose).
