@@ -55,3 +55,11 @@ test('an unchanged request does not write, and a reload after 304 keeps data', a
   await s.flush();
   assert.equal(b.state.puts, 1);
 });
+
+test('preview deployments use their own document, never the production accounts', async () => {
+  const { storePath } = await import('../server/blob-store.mjs');
+  assert.equal(storePath('production'), 'firepath/store.json');
+  assert.equal(storePath(undefined), 'firepath/store.json');
+  assert.equal(storePath('preview'), 'firepath/store-preview.json');
+  assert.equal(storePath('development'), 'firepath/store-development.json');
+});

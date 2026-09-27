@@ -6,7 +6,9 @@
 // The very first write, before the document exists, is unconditional (there is no ETag to match).
 import * as blob from '@vercel/blob';
 
-const PATH = 'firepath/store.json';
+// Previews (branch pushes) share the Blob token with production, so they get their own document and
+// can never read or overwrite real accounts. Local and test runs keep the production name.
+export const storePath = (env = process.env.VERCEL_ENV) => (env && env !== 'production' ? `firepath/store-${env}.json` : 'firepath/store.json');
 const EMPTY = () => ({ users: {}, sessions: {} });
 
 // Per-record changes between two versions of the document: { map: { key: value | undefined } }.
@@ -31,12 +33,12 @@ export function applyChanges(doc, changes) {
   return doc;
 }
 
-export function openBlobStore({ get = blob.get, put = blob.put, isConflict = e => e instanceof blob.BlobPreconditionFailedError } = {}) {
+export function openBlobStore({ get = blob.get, put = blob.put, isConflict = e => e instanceof blob.BlobPreconditionFailedError, path = storePath() } = {}) {
   const data = EMPTY();
   let etag = null, loaded = JSON.stringify(data), dirty = false;
   const replace = fresh => { for (const key of Object.keys(data)) delete data[key]; Object.assign(data, EMPTY(), fresh); };
   async function fetchLatest(useEtag) {
-    const result = await get(PATH, { access: 'private', useCache: false, ...(useEtag && etag ? { ifNoneMatch: etag } : {}) });
+    const result = await get(path, { access: 'private', useCache: false, ...(useEtag && etag ? { ifNoneMatch: etag } : {}) });
     if (!result || result.statusCode === 304) return result ? null : { doc: EMPTY(), etag: null };
     // Reads return a weak ETag (W/"…"); conditional writes only accept the strong form.
     return { doc: JSON.parse(await new Response(result.stream).text()), etag: result.blob.etag?.replace(/^W\//, '') ?? null };
@@ -55,7 +57,7 @@ export function openBlobStore({ get = blob.get, put = blob.put, isConflict = e =
       const changes = recordChanges(JSON.parse(loaded), data);
       for (let attempt = 0; ; attempt++) {
         try {
-          const saved = await put(PATH, JSON.stringify(data), { access: 'private', allowOverwrite: true, addRandomSuffix: false, contentType: 'application/json', ...(etag ? { ifMatch: etag } : {}) });
+          const saved = await put(path, JSON.stringify(data), { access: 'private', allowOverwrite: true, addRandomSuffix: false, contentType: 'application/json', ...(etag ? { ifMatch: etag } : {}) });
           etag = saved?.etag ?? null;
           loaded = JSON.stringify(data);
           return;
