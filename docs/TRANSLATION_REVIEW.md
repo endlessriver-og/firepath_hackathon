@@ -30,7 +30,7 @@ These are known weak spots. Please check them first.
 
 ## Not translated yet
 
-The permit guidance the server writes is still English: the "What you'll usually need" lists on the Permits tab, notes about your address there, why each event permit applies, and venue timelines. The screens around it are translated. If you review, you can skip these for now.
+On the Permits tab, the event planner's explanations (why each permit applies) and the City-venue timelines are still English. The project guide (what you'll usually need, notes for your address) is translated and worth reviewing. The screens around it are translated. If you review, you can skip these for now.
 
 ## What stays in English on purpose
 
