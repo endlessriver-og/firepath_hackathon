@@ -154,6 +154,7 @@ These are hypotheses, not marching orders. If the hackathon has minutes left, a 
 - **Known gaps:**
   - Concurrent Blob writes: fixed and deployed (ETag-conditional write, per-record merge on conflict). Reads return weak ETags (`W/"…"`); conditional writes need the strong form.
   - No physical phone or ESP32 run.
+  - Independent reviews on 2026-09-27, all findings fixed: the day's logic changes (offline queue, search, lockout; `fc1ae46`), security (lost writes under concurrency, code brute force, hashing; `53c0f03`, `fb466f5`), and the screens under failure (server errors hiding the plan, unchecked maps reading as clear, stale responses; `a29f630`). Printed sheets, both maps and `/classic` escape outside and typed text. A fresh review after any long build session keeps paying off.
   - Security review 2026-09-27 (no cross-account leaks found; fixes in `53c0f03`). Still open, owner decisions:
     - The demo mailbox is on in production (`FIREPATH_DEMO_MAILBOX` unset), so any signed-in person can "verify" any Glendale address. The responder brief now says "confirmed with a pilot demo code; no postcard was mailed". Real verification needs a postcard service; until then this is a pilot convenience, not a proof.
     - The per-IP rate limits (`throttle`) live in memory per serverless instance, so they multiply across warm instances and reset on cold starts; sharing them needs a KV store. The password lockout itself is shared: failed attempts are stored on the account.
