@@ -222,7 +222,8 @@ function PermitPrice({ otherAgency = false }) {
   </Text>;
 }
 function FeeGuide() {
-  return <Collapsible icon="💲" title="What will it cost?" summary="The City quotes each project">
+  const { t } = useI18n();
+  return <Collapsible icon="💲" title={t('pm.cost')} summary={t('pm.costSub')}>
     <Muted style={{ marginTop: 8 }}>Fees depend on your project's scope. Expect a City quote, and possibly plan review, inspection or other-agency charges. FirePath does not calculate or collect fees.</Muted>
     <Link onPress={() => Linking.openURL(CITY_FEE_SCHEDULE)}>Glendale fee schedule ↗</Link>
   </Collapsible>;
@@ -230,6 +231,7 @@ function FeeGuide() {
 
 // Plain-language search across the City of Glendale's full permit catalog (crawled from Glendale Permits).
 function PermitSearch({ me }) {
+  const { t } = useI18n();
   const [q, setQ] = useState(''), [result, setResult] = useState(null);
   const audience = me.user.type === 'business' ? 'business' : 'resident';
   useEffect(() => {
@@ -238,7 +240,7 @@ function PermitSearch({ me }) {
     return () => clearTimeout(timer);
   }, [q]);
   return <>
-    <Field label="What are you planning?" value={q} onChangeText={setQ} placeholder={audience === 'business' ? 'e.g., outdoor dining, block party, sign, propane' : 'e.g., new roof, ADU, solar, remove an oak tree'} autoCapitalize="none" />
+    <Field label={t('pm.planning')} value={q} onChangeText={setQ} placeholder={audience === 'business' ? 'e.g., outdoor dining, block party, sign, propane' : 'e.g., new roof, ADU, solar, remove an oak tree'} autoCapitalize="none" />
     {result && <View>
       <FeeGuide />
       {result.permits.length === 0 ? <Caption>No City permit type matches. Try other words, or ask the City's Permit Services Center.</Caption> : result.permits.slice(0, 5).map(p => <Card key={p.name} style={{ marginTop: 8, padding: 14 }}>
@@ -347,6 +349,7 @@ function VenuePlanner({ me }) {
 }
 
 export function Permits({ me, top, sub, setSub }) {
+  const { t } = useI18n();
   const [type, setType] = useState(null), [description, setDescription] = useState('');
   const [guide, setGuide] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false);
   async function build() {
@@ -368,18 +371,18 @@ export function Permits({ me, top, sub, setSub }) {
     <Caption>FirePath does not submit permits or guarantee requirements. The City of Glendale decides what your project needs.</Caption>
   </>;
   return <>
-    <Title>Permits</Title>
-    <SubTabs value={sub || 'search'} options={[['search', 'Search'], ['events', 'Events'], ['projects', 'Projects']]} onChange={setSub} />
+    <Title>{t('pm.title')}</Title>
+    <SubTabs value={sub || 'search'} options={[['search', t('pm.search')], ['events', t('pm.events')], ['projects', t('pm.projects')]]} onChange={setSub} />
     {(sub || 'search') === 'search' && <PermitSearch me={me} />}
     {sub === 'events' && <><VenuePlanner me={me} /><EventPlanner me={me} /></>}
     {sub === 'projects' && <>
-    <Muted style={{ marginTop: 12 }}>Pick a project to see what the City asks for.</Muted>
-    <Select label="Your project" value={type} placeholder="Choose a project" options={(me.user.type === 'business' ? businessPermitTypes : permitTypes).map(t => [t.id, t.title])} onChange={v => { setType(v); setGuide(null); }} />
+    <Muted style={{ marginTop: 12 }}>{t('pm.pick')}</Muted>
+    <Select label={t('pm.project')} value={type} placeholder={t('pm.choose')} options={(me.user.type === 'business' ? businessPermitTypes : permitTypes).map(p => [p.id, p.title])} onChange={v => { setType(v); setGuide(null); }} />
     {type && <>
       <Card><Text style={{ color: color.ink, fontWeight: '700' }}>{(me.user.type === 'business' ? businessPermitTypes : permitTypes).find(t => t.id === type)?.permit}</Text><PermitPrice /></Card>
       <Field label="Describe the project (optional)" value={description} onChangeText={setDescription} placeholder="e.g., add a 200 sq ft bedroom at the back" multiline maxLength={500} />
       <ErrorText>{error}</ErrorText>
-      <Button busy={busy} onPress={build}>Get my permit checklist</Button>
+      <Button busy={busy} onPress={build}>{t('pm.checklist')}</Button>
     </>}
     </>}
     <FeeGuide />
