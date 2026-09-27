@@ -9,3 +9,14 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: bash scripts/smoke.sh https://firepath-ruddy.vercel.app
+  tour:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # The judges' path through the guided tour, in the runner's own Chrome.
+      - run: CHROME=$(command -v google-chrome) node scripts/tour-check.mjs https://firepath-ruddy.vercel.app
