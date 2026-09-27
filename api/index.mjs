@@ -33,7 +33,9 @@ const api = createApi({
 export default async function handler(req, res) {
   origin = `https://${req.headers['x-forwarded-host'] || req.headers.host}`;
   const url = new URL(req.url, origin);
-  try { await store.load(); }
+  // Public, account-free routes never touch the store, so they skip the Blob read.
+  const stateless = /^\/api\/(public\/|permits(\/search)?$|venues$|health$)/.test(url.pathname);
+  try { if (!stateless) await store.load(); }
   catch (error) { console.error('store load failed', error); res.writeHead(503, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'FirePath storage is unavailable. Try again in a moment.' })); return; }
   // Persist any change before the response goes out, so the next request (maybe on another instance) sees it.
   const end = res.end.bind(res);
