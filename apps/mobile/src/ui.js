@@ -11,7 +11,7 @@ export const Title = ({ children, style }) => <Text role="heading" aria-level={1
 export const Section = ({ children }) => <Text style={s.section}>{children}</Text>;
 export const Muted = ({ children, style }) => <Text style={[s.muted, style]}>{children}</Text>;
 export const Caption = ({ children, style }) => <Text style={[s.caption, style]}>{children}</Text>;
-export const Tag = ({ children, tone }) => <Text style={[s.tag, tone === 'warm' && { color: color.warm }, tone === 'gold' && { color: color.gold }]}>{String(children).toUpperCase()}</Text>;
+export const Tag = ({ children, tone }) => <Text style={[s.tag, tone === 'warm' && { color: color.warm }, tone === 'gold' && { color: color.gold }]}>{[].concat(children).join('').toUpperCase()}</Text>;
 export const Card = ({ children, style }) => <View style={[s.card, style]}>{children}</View>;
 export function Step({ n, of, label }) {
   const { t } = useI18n();
