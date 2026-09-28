@@ -22,11 +22,12 @@ const list = items => items.length <= 1 ? items.join('') : `${items.slice(0, -1)
 // Household playbook phrases. English is the source; es, hy and ko are drafts not yet reviewed by
 // native speakers.
 // Armenian endings on a typed name: dative -ին and definite -ն/-ը. An Armenian-script name takes them the
-// Armenian way (Ռոզա → Ռոզային, Արմեն → Արմենին); a Latin-script name keeps the hyphen (Rosa-ին).
+// Armenian way (Ռոզա → Ռոզային, Արմեն → Արմենին); a Latin-script name keeps a non-breaking hyphen (Rosa‑ին),
+// so the ending never lands alone on the next line.
 const hyLast = w => String(w).trim().slice(-1);
 const isHy = ch => ch >= '\u0531' && ch <= '\u0587';
-export const hyDat = w => !isHy(hyLast(w)) ? `${w}-ին` : /[աո]$/i.test(String(w).trim()) ? `${w}յին` : `${w}ին`;
-export const hyDef = w => !isHy(hyLast(w)) ? `${w}-ն` : /[աեըիոու]$/i.test(String(w).trim()) ? `${w}ն` : `${w}ը`;
+export const hyDat = w => !isHy(hyLast(w)) ? `${w}‑ին` : /[աո]$/i.test(String(w).trim()) ? `${w}յին` : `${w}ին`;
+export const hyDef = w => !isHy(hyLast(w)) ? `${w}‑ն` : /[աեըիոու]$/i.test(String(w).trim()) ? `${w}ն` : `${w}ը`;
 
 // Korean object particle: 을 after a final consonant, 를 after a vowel. A Latin-script name goes by its
 // last letter (Mia → 를, John → 을); anything else (a digit, a symbol) keeps the neutral 을(를).

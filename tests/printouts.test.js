@@ -76,7 +76,7 @@ test('Armenian endings attach to Armenian-script names, and typed places are nev
   const { hyDat, hyDef, buildPlaybook } = await import('../src/playbooks.js');
   assert.equal(hyDat('Ռոզա'), 'Ռոզային');
   assert.equal(hyDat('Արմեն'), 'Արմենին');
-  assert.equal(hyDat('Rosa'), 'Rosa-ին');
+  assert.equal(hyDat('Rosa'), 'Rosa‑ին', 'non-breaking hyphen');
   assert.equal(hyDat('ՌՈԶԱ'), 'ՌՈԶԱյին', 'capitals');
   assert.equal(hyDef('Ռոզա'), 'Ռոզան');
   assert.equal(hyDef('Արմեն'), 'Արմենը');
