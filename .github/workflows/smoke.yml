@@ -33,3 +33,5 @@ jobs:
       # Checklist ticks made with the API cut off are kept and sent once it is back.
       - run: CHROME=$(command -v google-chrome) node scripts/offline-ticks-check.mjs https://firepath-ruddy.vercel.app
       - run: CHROME=$(command -v google-chrome) node scripts/installable-check.mjs https://firepath-ruddy.vercel.app
+      # Every screen in all four languages at 320 and 390 px with the largest text: nothing spills out of its tile.
+      - run: CHROME=$(command -v google-chrome) node scripts/layout-check.mjs https://firepath-ruddy.vercel.app 1.4
