@@ -85,3 +85,8 @@ test('every official-links heading and description has a res. key in all four la
   const missing = phrases.filter(s => i18n.split(`'res.${esc(s)}':`).length - 1 !== 4);
   assert.deepEqual(missing, []);
 });
+
+test('Armenian endings on a number or name use a non-breaking hyphen, so they never start a new line', () => {
+  const broken = Object.entries(dict.hy).filter(([, v]) => /\}-/.test(v)).map(([k]) => k);
+  assert.deepEqual(broken, []);
+});
