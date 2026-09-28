@@ -10,7 +10,7 @@ import { Button, Caption, Card, CityDataCallout, Collapsible, ErrorText, Field, 
 // Two fields side by side, stacked when large text leaves a narrow phone under 300 px (labels get too tight).
 function usePairRow() {
   const { scale } = useI18n();
-  return useWindowDimensions().width / (scale || 1) < 300 ? { gap: 0 } : { flexDirection: 'row', gap: 8 };
+  return useWindowDimensions().width / (scale || 1) < 300 ? { gap: 14 } : { flexDirection: 'row', gap: 8 };
 }
 
 export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'resident' }) {
