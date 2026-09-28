@@ -89,4 +89,8 @@ test('every official-links heading and description has a res. key in all four la
 test('Armenian endings on a number or name use a non-breaking hyphen, so they never start a new line', () => {
   const broken = Object.entries(dict.hy).filter(([, v]) => /\}-/.test(v)).map(([k]) => k);
   assert.deepEqual(broken, []);
+  // The same in the phrase tables outside the dictionary (playbooks, sheets, venue and parcel notes, both maps).
+  const files = ['../src/venues.js', '../src/printouts.js', '../src/playbooks.js', '../src/readiness.js', '../src/permit-catalog.js', '../server/parcels.mjs', '../server/neighborhood.mjs', '../map.html', '../map3d.html'];
+  const found = files.flatMap(f => [...readFileSync(new URL(f, import.meta.url), 'utf8').matchAll(/\}-[\u0531-\u0587]+/g)].map(m => `${f}: ${m[0]}`));
+  assert.deepEqual(found, []);
 });

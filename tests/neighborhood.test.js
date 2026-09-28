@@ -19,7 +19,7 @@ test('distances are in metres', () => {
 test('notes only for school zones and historic designation', () => {
   assert.equal(neighborhoodNotes({ schoolZone: null, historicDistrict: null, historicResource: false }).length, 0);
   const notes = neighborhoodNotes({ schoolZone: 'Fremont Elementary', historicDistrict: { name: 'Rossmoyne' }, historicResource: false });
-  assert.match(neighborhoodNotes({ schoolZone: 'Fremont Elementary', historicDistrict: null }, 'hy')[0], /^Fremont Elementary-ից 500 ֆուտի/);
+  assert.match(neighborhoodNotes({ schoolZone: 'Fremont Elementary', historicDistrict: null }, 'hy')[0], /^Fremont Elementary‑ից 500 ֆուտի/);
   assert.equal(notes.length, 2);
   assert.match(notes[0], /Fremont Elementary/);
 });
