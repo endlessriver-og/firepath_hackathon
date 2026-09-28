@@ -75,6 +75,8 @@ try {
       await note(`Profile › ${j}`);
     }
     await page.evaluate(() => document.querySelectorAll('[aria-label]')[0]?.click()); await sleep(800); await note('Emergency');
+    // And the steps a situation opens (the screen someone reads mid-emergency).
+    if (await page.evaluate(() => { const b = [...document.querySelectorAll('main [role=button]')].find(e => e.innerText.trim() && !/911/.test(e.innerText)); b?.click(); return !!b; })) { await sleep(900); await note('Emergency steps'); }
     // Below ~250 px of room (320 px at the largest text size) some Armenian words are longer than any line; a clean
     // break is the accepted outcome there, so those are notes rather than failures.
     const tight = width / Number(SCALE) < 250;
