@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { api, saveSession } from './api';
 import { summarizePlace } from './preparedness';
 import { businessKinds, hazmatKinds } from './readiness';
 import MapPanel from './MapPanel';
 import { useI18n } from './i18n';
 import { Button, Caption, Card, CityDataCallout, Collapsible, ErrorText, Field, Link, Muted, PrivacyNote, Section, Segment, Select, Step, Tag, Title, Toggle, color, s } from './ui';
+
+// Two fields side by side, stacked when large text leaves a narrow phone under 300 px (labels get too tight).
+function usePairRow() {
+  const { scale } = useI18n();
+  return useWindowDimensions().width / (scale || 1) < 300 ? { gap: 0 } : { flexDirection: 'row', gap: 8 };
+}
 
 export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'resident' }) {
   const { t } = useI18n();
@@ -134,6 +140,7 @@ export function AddressPanel({ me, onChange, onDone, onboarding, initialAddress 
 // Household facts a future responder connection could use. Nothing here leaves the FirePath server.
 export function HouseholdForm({ me, onSaved, onboarding }) {
   const { t } = useI18n();
+  const pairRow = usePairRow();
   const h = me.household || {};
   const [form, setForm] = useState({ pets: h.pets || [], assistance: h.assistance || '', access: h.access || '', utilities: h.utilities || '', meetNear: h.meetNear || '', meetFar: h.meetFar || '', contact: h.contact || '', shareWithResponders: Boolean(h.shareWithResponders) });
   const [pet, setPet] = useState({ kind: '', count: '1', where: '' });
@@ -154,7 +161,7 @@ export function HouseholdForm({ me, onSaved, onboarding }) {
       <Text style={{ flex: 1, color: color.ink }}>{p.count} {p.kind}{p.where ? ` · ${p.where}` : ''}</Text>
       <Link style={{ marginTop: 0 }} onPress={() => set({ pets: form.pets.filter((_, j) => j !== i) })}>{t('hh.remove')}</Link>
     </View>)}
-    <View style={{ flexDirection: 'row', gap: 8 }}>
+    <View style={pairRow}>
       <Field style={{ flex: 2 }} label={t('hh.animal')} value={pet.kind} onChangeText={kind => setPet({ ...pet, kind })} placeholder={t('hh.animalPh')} maxLength={40} />
       <Field style={{ flex: 1 }} label={t('hh.count')} value={pet.count} onChangeText={count => setPet({ ...pet, count: count.replace(/\D/g, '') })} keyboardType="number-pad" maxLength={2} />
     </View>
@@ -184,6 +191,7 @@ export function HouseholdForm({ me, onSaved, onboarding }) {
 
 export function BusinessProfile({ me, onSaved, onboarding }) {
   const { t } = useI18n();
+  const pairRow = usePairRow();
   const b = me.business || {};
   const [form, setForm] = useState({ name: b.name || '', kind: b.kind || 'retail', employees: String(b.employees || ''), visitors: String(b.visitors || ''), floors: String(b.floors || ''), hours: b.hours || '', needsHelp: String(b.needsHelp || ''), sprinklers: b.sprinklers || 'unknown' });
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
@@ -200,11 +208,11 @@ export function BusinessProfile({ me, onSaved, onboarding }) {
     <Muted>{t('bz.intro')}</Muted>
     <Field label={t('bz.name')} value={form.name} onChangeText={name => set({ name })} placeholder={t('bz.namePh')} maxLength={100} />
     <Select label={t('bz.kind')} value={form.kind} options={businessKinds.map(([k]) => [k, t(`bk.${k}`)])} onChange={kind => set({ kind })} />
-    <View style={{ flexDirection: 'row', gap: 8 }}>
+    <View style={pairRow}>
       <Field style={{ flex: 1 }} label={t('bz.staff')} value={form.employees} onChangeText={digits('employees')} keyboardType="number-pad" placeholder="12" maxLength={4} />
       <Field style={{ flex: 1 }} label={t('bz.visitors')} value={form.visitors} onChangeText={digits('visitors')} keyboardType="number-pad" placeholder="40" maxLength={5} />
     </View>
-    <View style={{ flexDirection: 'row', gap: 8 }}>
+    <View style={pairRow}>
       <Field style={{ flex: 1 }} label={t('bz.floors')} value={form.floors} onChangeText={digits('floors')} keyboardType="number-pad" placeholder="1" maxLength={3} />
       <Field style={{ flex: 1 }} label={t('bz.needsHelp')} value={form.needsHelp} onChangeText={digits('needsHelp')} keyboardType="number-pad" placeholder="0" maxLength={4} />
     </View>

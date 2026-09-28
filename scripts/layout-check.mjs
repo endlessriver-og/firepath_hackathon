@@ -1,9 +1,9 @@
 // Small-phone layout check: every main screen in every language at 320 and 390 px wide. Reports a page
 // that scrolls sideways, sub-tab labels that overlap or outgrow their tab, and tab rows that have to
-// scroll. Usage: node scripts/layout-check.mjs [base-url] [text-scale: 1, 1.2 or 1.4]. Exits 1 on overflow or overlap.
+// scroll. Usage: node scripts/layout-check.mjs [base-url] [text-scale: 1, 1.2 or 1.4] [business]. Exits 1 on overflow or overlap.
 // Expected: the Armenian Profile tab row scrolls at 320 px (its labels need ~290 px at 11 px).
 import puppeteer from 'puppeteer-core';
-const BASE = process.argv[2] || 'https://firepath-ruddy.vercel.app', SCALE = process.argv[3] || '1';
+const BASE = process.argv[2] || 'https://firepath-ruddy.vercel.app', SCALE = process.argv[3] || '1', BUSINESS = process.argv[4] === 'business';
 const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, protocolTimeout: 240000 });
 const page = await browser.newPage(); page.setDefaultTimeout(180000);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -36,7 +36,14 @@ const inspect = () => page.evaluate(() => {
   return out;
 });
 await page.goto(`${BASE}/app/`, { waitUntil: 'networkidle2' });
-const token = await page.evaluate(async () => (await (await fetch('/api/demo/start', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).json()).token);
+// The demo household by default; with "business" as the third argument, a throwaway example.test business at City
+// Hall (generated password), deleted at the end.
+const password = (await import('node:crypto')).randomBytes(9).toString('hex');
+const post = (path, body, t) => page.evaluate(async (path, body, t) => (await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', ...(t ? { authorization: `Bearer ${t}` } : {}) }, body: JSON.stringify(body) })).json(), path, body, t);
+const token = BUSINESS
+  ? (await post('/api/account/signup', { type: 'business', email: `layout-${Date.now()}@example.test`, password, name: 'Layout Test', businessName: 'Layout Test Cafe', businessKind: 'restaurant' })).token
+  : (await post('/api/demo/start', {})).token;
+if (BUSINESS) await post('/api/me/address', { address: '613 E Broadway, Glendale, CA 91206' }, token);
 let failed = false;
 for (const width of [320, 390]) for (const lang of ['en', 'es', 'hy', 'ko']) {
   await page.setViewport({ width, height: 700 });
@@ -71,5 +78,6 @@ for (const width of [320, 390]) for (const lang of ['en', 'es', 'hy', 'ko']) {
   if (unique.some(x => !x.includes('note:'))) failed = true;
   console.log(`${width} ${lang} ×${SCALE}  ${unique.length ? '\n    ' + unique.join('\n    ') : 'ok'}`);
 }
+if (BUSINESS) { await page.goto(`${BASE}/app/`); console.log('delete test account:', (await post('/api/account/delete', { password }, token)).ok ? 'ok' : 'FAILED'); }
 await browser.close();
 process.exitCode = failed ? 1 : 0;
