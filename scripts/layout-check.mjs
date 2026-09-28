@@ -18,6 +18,16 @@ const inspect = () => page.evaluate(() => {
     const scroller = list.parentElement?.parentElement;
     if (scroller && scroller.scrollWidth > scroller.clientWidth + 1) out.push(`note: tab row scrolls (${tabs.map(t => t.innerText).join(' · ')})`);
   }
+  // A single long word (Armenian especially) cannot wrap and spills out of its tile or card.
+  for (const el of document.querySelectorAll('main *')) {
+    if (el.children.length || !el.textContent.trim()) continue;
+    // Measure against the tile or button that holds the text: a long word can widen its own box past the tile.
+    const holder = el.closest('[role=button],[role=link],[role=checkbox]') || el;
+    const box = holder.getBoundingClientRect(); if (!box.width || getComputedStyle(el).overflow !== 'visible') continue; // clipped on purpose (one-line summaries)
+    const r = document.createRange(); r.selectNodeContents(el);
+    // Ignore space-sized boxes: pre-wrap leaves the trailing space of a wrapped line hanging past the edge.
+    if ([...r.getClientRects()].some(x => x.width > 6 && (x.left < box.left - 1 || x.right > box.right + 1))) out.push(`text wider than its box: "${el.textContent.trim().slice(0, 40)}"`);
+  }
   return out;
 });
 await page.goto(`${BASE}/app/`, { waitUntil: 'networkidle2' });
