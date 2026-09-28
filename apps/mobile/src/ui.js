@@ -8,10 +8,17 @@ import { LANGS, translateError, useI18n } from './i18n';
 export const color = { bg: '#F5F6F1', ink: '#17372E', green: '#1D5B4D', muted: '#53655E', line: '#E2E8E1', soft: '#E6EFE9', warm: '#B4502B', warmBg: '#FFF9F5', warmLine: '#E9C2AE', gold: '#8A5A12', goldBg: '#F6E6C8', blue: '#2E5A88', blueBg: '#EAF1F8' };
 
 // Page titles shrink on a narrow phone with large text, so a long word (Armenian especially) is not split mid-word.
-export function Title({ children, style }) {
+// Heading size for the room left after text zoom: full size on a phone at normal text, smaller when large text
+// leaves under 300 px (and under 250 px), so long words (Armenian especially) are not split mid-word.
+export function useHeadingSize(base) {
   const { scale } = useI18n();
   const room = useWindowDimensions().width / (scale || 1);
-  return <Text role="heading" aria-level={1} style={[s.title, room < 300 && { fontSize: room < 250 ? 19 : 22, lineHeight: room < 250 ? 25 : 28 }, style]}>{children}</Text>;
+  const size = Math.round(base * (room < 250 ? 0.7 : room < 300 ? 0.82 : 1));
+  return { fontSize: size, lineHeight: Math.round(size * 1.22) };
+}
+export function Title({ children, style }) {
+  const size = useHeadingSize(27);
+  return <Text role="heading" aria-level={1} style={[s.title, size, style]}>{children}</Text>;
 }
 export const Section = ({ children }) => <Text style={s.section}>{children}</Text>;
 export const Muted = ({ children, style, ...rest }) => <Text {...rest} style={[s.muted, style]}>{children}</Text>;

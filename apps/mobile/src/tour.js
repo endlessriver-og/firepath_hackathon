@@ -2,17 +2,18 @@ import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { criteria, partnership, TOUR_STEPS, walkthroughIntro } from './walkthrough';
 import { useState } from 'react';
-import { Button, Caption, Link, Muted, Section, color } from './ui';
+import { Button, Caption, Link, Muted, Section, color, useHeadingSize } from './ui';
 import { HeroIllustration } from './illustration';
 import { useI18n } from './i18n';
 
 // Hub: the one-minute version and the door into the guided tour. `closing` shows the final chapter.
 export function WalkthroughHub({ onStart, onClose, busy, error, closing }) {
   const { t } = useI18n();
+  const heading = useHeadingSize(30);
   return <>
     {onClose && <Link style={{ marginTop: 0 }} onPress={onClose}>{t('tour.back')}</Link>}
     <HeroIllustration height={150} dark={closing} />
-    <Text style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 12 }}>{closing ? t('tour.t.What comes next') : t('tour.hubTitle')}</Text>
+    <Text role="heading" aria-level={1} style={[{ fontWeight: '800', color: color.ink, marginTop: 12 }, heading]}>{closing ? t('tour.t.What comes next') : t('tour.hubTitle')}</Text>
     <Muted style={{ marginTop: 10, fontSize: 16, lineHeight: 24 }}>{closing ? 'See what works today and what needs a City partnership.' : t('tour.hubSub')}</Muted>
     {!closing && <>
       {[t('tour.i1'), t('tour.i2'), t('tour.i3'), t('tour.i4'), t('tour.i5')].map(item => <Text key={item} style={{ color: color.ink, marginTop: 9, fontSize: 15 }}>✓  {item}</Text>)}

@@ -6,7 +6,7 @@ import { Auth, AddressSearch } from './onboarding';
 import { Resources, shortTaskTitles } from './tabs';
 import { hazardViewers } from './resources';
 import { Linking } from 'react-native';
-import { Button, Caption, Card, Collapsible, ErrorText, LanguageBar, Link, Muted, Section, SeverityBadge, Tag, color } from './ui';
+import { Button, Caption, Card, Collapsible, ErrorText, LanguageBar, Link, Muted, Section, SeverityBadge, Tag, color, useHeadingSize } from './ui';
 import { taskTitles, useI18n } from './i18n';
 import { formatDate } from './dates';
 import { HeroIllustration } from './illustration';
@@ -93,6 +93,7 @@ export function Landing({ onSignedIn, onEmergency, onWalkthrough }) {
   const { t, lang, scale } = useI18n();
   // Large text on a narrow phone: drop the wordmark so the Emergency button keeps its full width.
   const narrow = useWindowDimensions().width / (scale || 1) < 300;
+  const heading = useHeadingSize(30);
   const [result, setResult] = useState(null);
   const [signup, setSignup] = useState(null); // null | { type, mode }
   const [languageOpen, setLanguageOpen] = useState(false);
@@ -108,7 +109,7 @@ export function Landing({ onSignedIn, onEmergency, onWalkthrough }) {
       <Pressable accessibilityRole="button" accessibilityLabel={t('mx.langSize')} onPress={() => setLanguageOpen(!languageOpen)}><Text style={{ color: color.green, fontSize: 20, padding: 5 }}>🌐</Text></Pressable>
       <Text accessibilityRole="button" onPress={onEmergency} numberOfLines={1} style={{ flexShrink: 0, backgroundColor: '#B3261A', color: '#FFF', fontWeight: '800', fontSize: 12, borderRadius: 10, paddingHorizontal: 11, paddingVertical: 8, overflow: 'hidden' }}>{t('head.emergency')}</Text></View>
     {languageOpen && <LanguageBar />}
-    <Text role="heading" aria-level={1} style={{ fontSize: 30, lineHeight: 36, fontWeight: '800', color: color.ink, marginTop: 22 }}>{t('land.title')}</Text>
+    <Text role="heading" aria-level={1} style={[{ fontWeight: '800', color: color.ink, marginTop: 22 }, heading]}>{t('land.title')}</Text>
     <Muted style={{ marginTop: 8, fontSize: 16 }}>{t('land.sub')}</Muted>
     <HeroIllustration height={112} />
     <AddressCheck onResult={setResult} onRegister={type => setSignup({ type, mode: 'signup' })} />
