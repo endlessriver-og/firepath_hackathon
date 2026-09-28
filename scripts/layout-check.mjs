@@ -45,39 +45,43 @@ const token = BUSINESS
   : (await post('/api/demo/start', {})).token;
 if (BUSINESS) await post('/api/me/address', { address: '613 E Broadway, Glendale, CA 91206' }, token);
 let failed = false;
-for (const width of [320, 390]) for (const lang of ['en', 'es', 'hy', 'ko']) {
-  await page.setViewport({ width, height: 700 });
-  await page.evaluate((t, l, s) => { localStorage.clear(); localStorage.setItem('firepath-session', t); localStorage.setItem('firepath-lang', l); localStorage.setItem('firepath-scale', s); }, token, lang, SCALE);
-  await page.reload({ waitUntil: 'networkidle2' }); await sleep(1500);
-  const found = [];
-  const note = async where => found.push(...(await inspect()).map(x => `${where}: ${x}`));
-  // Signed out first: the landing page (its header holds the Emergency button).
-  await page.evaluate(() => localStorage.removeItem('firepath-session')); await page.reload({ waitUntil: 'networkidle2' }); await sleep(1200);
-  await note('Landing');
-  await page.evaluate(t => localStorage.setItem('firepath-session', t), token); await page.reload({ waitUntil: 'networkidle2' }); await sleep(1500);
-  for (let i = 0; i < 5; i++) {
-    await page.evaluate(i => [...document.querySelectorAll('[role=navigation] [role=tab]')][i]?.click(), i); await sleep(1200);
-    const name = await page.evaluate(i => [...document.querySelectorAll('[role=navigation] [role=tab]')][i]?.innerText.trim(), i);
-    await note(name || `tab ${i}`);
-    const subs = await page.evaluate(() => document.querySelectorAll('main [role=tablist] [role=tab]').length);
-    for (let j = 1; j < subs; j++) { await page.evaluate(j => [...document.querySelectorAll('main [role=tablist] [role=tab]')][j]?.click(), j); await sleep(900); await note(`${name} › ${j}`); }
+try {
+  for (const width of [320, 390]) for (const lang of ['en', 'es', 'hy', 'ko']) {
+    await page.setViewport({ width, height: 700 });
+    await page.evaluate((t, l, s) => { localStorage.clear(); localStorage.setItem('firepath-session', t); localStorage.setItem('firepath-lang', l); localStorage.setItem('firepath-scale', s); }, token, lang, SCALE);
+    await page.reload({ waitUntil: 'networkidle2' }); await sleep(1500);
+    const found = [];
+    const note = async where => found.push(...(await inspect()).map(x => `${where}: ${x}`));
+    // Signed out first: the landing page (its header holds the Emergency button).
+    await page.evaluate(() => localStorage.removeItem('firepath-session')); await page.reload({ waitUntil: 'networkidle2' }); await sleep(1200);
+    await note('Landing');
+    await page.evaluate(t => localStorage.setItem('firepath-session', t), token); await page.reload({ waitUntil: 'networkidle2' }); await sleep(1500);
+    for (let i = 0; i < 5; i++) {
+      await page.evaluate(i => [...document.querySelectorAll('[role=navigation] [role=tab]')][i]?.click(), i); await sleep(1200);
+      const name = await page.evaluate(i => [...document.querySelectorAll('[role=navigation] [role=tab]')][i]?.innerText.trim(), i);
+      await note(name || `tab ${i}`);
+      const subs = await page.evaluate(() => document.querySelectorAll('main [role=tablist] [role=tab]').length);
+      for (let j = 1; j < subs; j++) { await page.evaluate(j => [...document.querySelectorAll('main [role=tablist] [role=tab]')][j]?.click(), j); await sleep(900); await note(`${name} › ${j}`); }
+    }
+    await page.evaluate(() => document.querySelectorAll('[aria-label]')[1]?.click()); await sleep(1200); await note('Profile');
+    const profileSubs = await page.evaluate(() => document.querySelectorAll('main [role=tablist] [role=tab]').length);
+    for (let j = 1; j < profileSubs; j++) {
+      await page.evaluate(j => [...document.querySelectorAll('main [role=tablist] [role=tab]')][j]?.click(), j); await sleep(900);
+      // Open every collapsed section (privacy note, delete account, city-data cards) before measuring.
+      await page.evaluate(() => [...document.querySelectorAll('main [role=button][aria-expanded=false]')].forEach(e => e.click())); await sleep(700);
+      await note(`Profile › ${j}`);
+    }
+    await page.evaluate(() => document.querySelectorAll('[aria-label]')[0]?.click()); await sleep(800); await note('Emergency');
+    // Below ~250 px of room (320 px at the largest text size) some Armenian words are longer than any line; a clean
+    // break is the accepted outcome there, so those are notes rather than failures.
+    const tight = width / Number(SCALE) < 250;
+    const unique = [...new Set(found)].map(x => tight && x.includes('word split') ? x.replace(': word split', ': note: word split') : x);
+    if (unique.some(x => !x.includes('note:'))) failed = true;
+    console.log(`${width} ${lang} ×${SCALE}  ${unique.length ? '\n    ' + unique.join('\n    ') : 'ok'}`);
   }
-  await page.evaluate(() => document.querySelectorAll('[aria-label]')[1]?.click()); await sleep(1200); await note('Profile');
-  const profileSubs = await page.evaluate(() => document.querySelectorAll('main [role=tablist] [role=tab]').length);
-  for (let j = 1; j < profileSubs; j++) {
-    await page.evaluate(j => [...document.querySelectorAll('main [role=tablist] [role=tab]')][j]?.click(), j); await sleep(900);
-    // Open every collapsed section (privacy note, delete account, city-data cards) before measuring.
-    await page.evaluate(() => [...document.querySelectorAll('main [role=button][aria-expanded=false]')].forEach(e => e.click())); await sleep(700);
-    await note(`Profile › ${j}`);
-  }
-  await page.evaluate(() => document.querySelectorAll('[aria-label]')[0]?.click()); await sleep(800); await note('Emergency');
-  // Below ~250 px of room (320 px at the largest text size) some Armenian words are longer than any line; a clean
-  // break is the accepted outcome there, so those are notes rather than failures.
-  const tight = width / Number(SCALE) < 250;
-  const unique = [...new Set(found)].map(x => tight && x.includes('word split') ? x.replace(': word split', ': note: word split') : x);
-  if (unique.some(x => !x.includes('note:'))) failed = true;
-  console.log(`${width} ${lang} ×${SCALE}  ${unique.length ? '\n    ' + unique.join('\n    ') : 'ok'}`);
+} finally {
+  // Delete the throwaway business even if a step above threw.
+  if (BUSINESS) { await page.goto(`${BASE}/app/`).catch(() => {}); console.log('delete test account:', (await post('/api/account/delete', { password }, token).catch(() => ({}))).ok ? 'ok' : 'FAILED'); }
 }
-if (BUSINESS) { await page.goto(`${BASE}/app/`); console.log('delete test account:', (await post('/api/account/delete', { password }, token)).ok ? 'ok' : 'FAILED'); }
 await browser.close();
 process.exitCode = failed ? 1 : 0;
