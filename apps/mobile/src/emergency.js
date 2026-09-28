@@ -22,7 +22,12 @@ export function EmergencyNow({ me, onClose }) {
   const [hasVoice, setHasVoice] = useState(true);
   useEffect(() => {
     if (lang === 'en') return setHasVoice(true);
-    Speech.getAvailableVoicesAsync().then(voices => setHasVoice(!voices?.length || voices.some(v => String(v.language || '').toLowerCase().startsWith(lang)))).catch(() => setHasVoice(true));
+    const check = () => Speech.getAvailableVoicesAsync().then(voices => setHasVoice(!voices?.length || voices.some(v => String(v.language || '').toLowerCase().startsWith(lang)))).catch(() => setHasVoice(true));
+    check();
+    // Browsers often load their voices after the page: check again when they arrive.
+    const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
+    synth?.addEventListener?.('voiceschanged', check);
+    return () => synth?.removeEventListener?.('voiceschanged', check);
   }, [lang]);
   const readAloud = () => {
     if (speaking) { Speech.stop(); setSpeaking(false); return; }
