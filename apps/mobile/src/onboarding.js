@@ -5,7 +5,7 @@ import { summarizePlace } from './preparedness';
 import { businessKinds, hazmatKinds } from './readiness';
 import MapPanel from './MapPanel';
 import { useI18n } from './i18n';
-import { Button, Caption, Card, CityDataCallout, Collapsible, ErrorText, Field, Link, Muted, PrivacyNote, Section, Segment, Select, Step, Tag, Title, Toggle, color, s } from './ui';
+import { Button, Caption, Card, CityDataCallout, Collapsible, ErrorText, Field, Link, Muted, PrivacyNote, Section, Segment, Select, Step, Tag, Title, Toggle, color, s, useHeadingSize } from './ui';
 
 // Two fields side by side, stacked when large text leaves a narrow phone under 300 px (labels get too tight).
 function usePairRow() {
@@ -15,6 +15,7 @@ function usePairRow() {
 
 export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'resident' }) {
   const { t } = useI18n();
+  const heading = useHeadingSize(28);
   const [mode, setMode] = useState(initialMode);
   const [form, setForm] = useState({ name: '', email: '', password: '', type: initialType, businessName: '', businessKind: null });
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
@@ -30,7 +31,7 @@ export function Auth({ onSignedIn, initialMode = 'signup', initialType = 'reside
   }
   return <>
     <Text style={{ fontSize: 15, fontWeight: '900', letterSpacing: 2, color: color.green }}>FIREPATH</Text>
-    <Text style={{ fontSize: 28, lineHeight: 34, fontWeight: '800', color: color.ink, marginTop: 16, marginBottom: 6 }}>{t(mode === 'signup' ? 'au.create' : 'au.welcome')}</Text>
+    <Text style={[{ fontWeight: '800', color: color.ink, marginTop: 16, marginBottom: 6 }, heading]}>{t(mode === 'signup' ? 'au.create' : 'au.welcome')}</Text>
     <Muted>{t(mode === 'signup' ? 'au.createSub' : 'au.loginSub')}</Muted>
     {mode === 'signup' && <Select label={t('au.settingUp')} value={form.type} options={[['resident', t('au.myHome')], ['business', t('au.aBusiness')]]} onChange={type => set({ type })} />}
     {mode === 'signup' && form.type === 'business' && <>
