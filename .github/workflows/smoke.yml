@@ -35,3 +35,5 @@ jobs:
       - run: CHROME=$(command -v google-chrome) node scripts/installable-check.mjs https://firepath-ruddy.vercel.app
       # Every screen in all four languages at 320 and 390 px with the largest text: nothing spills out of its tile.
       - run: CHROME=$(command -v google-chrome) node scripts/layout-check.mjs https://firepath-ruddy.vercel.app 1.4
+      # The same as a business (a throwaway example.test account, deleted at the end).
+      - run: CHROME=$(command -v google-chrome) node scripts/layout-check.mjs https://firepath-ruddy.vercel.app 1.4 business
