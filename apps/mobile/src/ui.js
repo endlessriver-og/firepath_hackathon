@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import Svg, { Circle } from 'react-native-svg';
 import { cityData } from './city-data';
@@ -7,7 +7,12 @@ import { LANGS, translateError, useI18n } from './i18n';
 
 export const color = { bg: '#F5F6F1', ink: '#17372E', green: '#1D5B4D', muted: '#53655E', line: '#E2E8E1', soft: '#E6EFE9', warm: '#B4502B', warmBg: '#FFF9F5', warmLine: '#E9C2AE', gold: '#8A5A12', goldBg: '#F6E6C8', blue: '#2E5A88', blueBg: '#EAF1F8' };
 
-export const Title = ({ children, style }) => <Text role="heading" aria-level={1} style={[s.title, style]}>{children}</Text>;
+// Page titles shrink on a narrow phone with large text, so a long word (Armenian especially) is not split mid-word.
+export function Title({ children, style }) {
+  const { scale } = useI18n();
+  const room = useWindowDimensions().width / (scale || 1);
+  return <Text role="heading" aria-level={1} style={[s.title, room < 300 && { fontSize: room < 250 ? 19 : 22, lineHeight: room < 250 ? 25 : 28 }, style]}>{children}</Text>;
+}
 export const Section = ({ children }) => <Text style={s.section}>{children}</Text>;
 export const Muted = ({ children, style, ...rest }) => <Text {...rest} style={[s.muted, style]}>{children}</Text>;
 export const Caption = ({ children, style, ...rest }) => <Text {...rest} style={[s.caption, style]}>{children}</Text>;

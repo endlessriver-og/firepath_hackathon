@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Linking, Pressable, Text, View } from 'react-native';
+import { Linking, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import * as Speech from 'expo-speech';
 import { emergencyGuideIn, emergencySituations } from './playbooks';
 import { SPEECH_LANG, useI18n } from './i18n';
@@ -11,7 +11,9 @@ const LINK_KEYS = [['genasys', 'lnk.zone'], ['211la', 'lnk.211'], ['fire.ca.gov'
 
 export function EmergencyNow({ me, onClose }) {
   const [id, setId] = useState(null), [speaking, setSpeaking] = useState(false);
-  const { t, lang } = useI18n();
+  const { t, lang, scale } = useI18n();
+  // With large text on a narrow phone two tiles per row leave no room for a long word: use one.
+  const oneColumn = useWindowDimensions().width / (scale || 1) < 300;
   const ctx = me ? { type: me.user.type, household: me.household, business: me.business, hazards: me.hazards, done: me.done } : {};
   const guide = id ? emergencyGuideIn(lang, id, ctx) : null;
   // Read the steps aloud in the chosen language (device voices vary; Armenian may fall back to the default voice).
@@ -28,11 +30,11 @@ export function EmergencyNow({ me, onClose }) {
 
   if (!guide) return <>
     <Link style={{ marginTop: 0 }} onPress={onClose}>{t('em.back')}</Link>
-    <Text style={{ fontSize: 30, fontWeight: '800', color: color.ink, marginTop: 10 }}>{t('em.what')}</Text>
+    <Text style={{ fontSize: oneColumn ? 24 : 30, fontWeight: '800', color: color.ink, marginTop: 10 }}>{t('em.what')}</Text>
     <Muted style={{ fontSize: 16 }}>{t('em.pick')}</Muted>
     {call911}
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14 }}>
-      {emergencySituations.map(s => <Pressable key={s.id} accessibilityRole="button" onPress={() => setId(s.id)} style={{ width: '47%', flexGrow: 1, backgroundColor: '#FFF', borderWidth: 1.5, borderColor: color.line, borderRadius: 14, paddingVertical: 18, paddingHorizontal: 12, alignItems: 'center' }}>
+      {emergencySituations.map(s => <Pressable key={s.id} accessibilityRole="button" onPress={() => setId(s.id)} style={{ width: oneColumn ? '100%' : '47%', flexGrow: 1, backgroundColor: '#FFF', borderWidth: 1.5, borderColor: color.line, borderRadius: 14, paddingVertical: 18, paddingHorizontal: 12, alignItems: 'center' }}>
         <Text style={{ fontSize: 26, color: color.warm }}>{s.icon}</Text>
         <Text style={{ fontSize: 17, fontWeight: '800', color: color.ink, marginTop: 4, textAlign: 'center' }}>{t(`sit.${s.id}`)}</Text>
       </Pressable>)}
@@ -44,7 +46,7 @@ export function EmergencyNow({ me, onClose }) {
 
   return <>
     <Link style={{ marginTop: 0 }} onPress={() => { Speech.stop(); setId(null); }}>{t('em.else')}</Link>
-    <Text style={{ fontSize: 30, fontWeight: '800', color: color.ink, marginTop: 10 }}>{t(`sit.${guide.id}`)}</Text>
+    <Text style={{ fontSize: oneColumn ? 24 : 30, fontWeight: '800', color: color.ink, marginTop: 10 }}>{t(`sit.${guide.id}`)}</Text>
     {call911}
     <Pressable accessibilityRole="button" onPress={readAloud} style={{ marginTop: 10, borderWidth: 2, borderColor: color.green, borderRadius: 14, padding: 13, alignItems: 'center' }}><Text style={{ color: color.green, fontWeight: '900', fontSize: 16 }}>{speaking ? t('em.stop') : t('em.read')}</Text></Pressable>
     {!guide.translated && lang !== 'en' && <Caption>{t('em.englishOnly')}</Caption>}

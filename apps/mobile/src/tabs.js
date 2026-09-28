@@ -74,7 +74,7 @@ function HomeRecords({ me }) {
 
 export function Home({ me, onChange, go }) {
   const { t, scale } = useI18n();
-  const narrow = useWindowDimensions().width / scale < 275; // stack the progress card on small phones with large text
+  const narrow = useWindowDimensions().width / scale < 300; // stack the progress card on small phones with large text
   const r = me.readiness;
   const [busy, toggle] = useToggle(me, onChange);
   const place = me.hazards ? summarizePlace(me.hazards) : null;
@@ -503,7 +503,7 @@ export function Profile({ me, onChange, onSignOut, sub, setSub }) {
       <Muted style={{ marginTop: 12 }}>{t(sharing ? 'pr.shareOn' : 'pr.shareOff')}</Muted>
       <ErrorText>{briefError}</ErrorText>
       {brief && <Card><Tag>{t('pr.preview')}</Tag><Caption style={{ marginTop: 0 }}>{t('pz.briefDraft')}</Caption>{briefRows(brief.brief).map(([label, value], i) => <View key={i} style={{ flexDirection: 'row', gap: 10, paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: color.line }}>
-        <Text style={{ width: 104, color: color.muted, fontSize: 13, fontWeight: '700' }}>{t(`br.${label}`) === `br.${label}` ? label : t(`br.${label}`)}</Text><Text selectable style={{ flex: 1, color: color.ink, fontSize: 14, lineHeight: 20 }}>{value}</Text>
+        <Text style={{ minWidth: 104, maxWidth: '45%', flexShrink: 0, color: color.muted, fontSize: 13, fontWeight: '700' }}>{t(`br.${label}`) === `br.${label}` ? label : t(`br.${label}`)}</Text><Text selectable style={{ flex: 1, color: color.ink, fontSize: 14, lineHeight: 20 }}>{value}</Text>
       </View>)}</Card>}
       <CityDataCallout id="cad" />
     </>}

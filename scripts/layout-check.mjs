@@ -24,9 +24,14 @@ const inspect = () => page.evaluate(() => {
     // Measure against the tile or button that holds the text: a long word can widen its own box past the tile.
     const holder = el.closest('[role=button],[role=link],[role=checkbox]') || el;
     const box = holder.getBoundingClientRect(); if (!box.width || getComputedStyle(el).overflow !== 'visible') continue; // clipped on purpose (one-line summaries)
-    const r = document.createRange(); r.selectNodeContents(el);
-    // Ignore space-sized boxes: pre-wrap leaves the trailing space of a wrapped line hanging past the edge.
-    if ([...r.getClientRects()].some(x => x.width > 6 && (x.left < box.left - 1 || x.right > box.right + 1))) out.push(`text wider than its box: "${el.textContent.trim().slice(0, 40)}"`);
+    // Measure each word on its own: spaces left hanging at a wrapped line's end are not overflow.
+    const node = el.firstChild; if (!node || node.nodeType !== 3) continue;
+    for (const m of node.data.matchAll(/\S+/g)) {
+      const r = document.createRange(); r.setStart(node, m.index); r.setEnd(node, m.index + m[0].length);
+      if ([...r.getClientRects()].some(x => x.left < box.left - 1 || x.right > box.right + 1)) { out.push(`text wider than its box: "${el.textContent.trim().slice(0, 40)}"`); break; }
+      // A word split across two lines ("կատարվու / մ") fits the box but reads badly: the font is too big for the space.
+      if (!/[-·/]/.test(m[0]) && new Set([...r.getClientRects()].map(x => Math.round(x.top))).size > 1) { out.push(`word split across lines: "${m[0]}"`); break; }
+    }
   }
   return out;
 });
@@ -55,7 +60,10 @@ for (const width of [320, 390]) for (const lang of ['en', 'es', 'hy', 'ko']) {
     await note(`Profile › ${j}`);
   }
   await page.evaluate(() => document.querySelectorAll('[aria-label]')[0]?.click()); await sleep(800); await note('Emergency');
-  const unique = [...new Set(found)];
+  // Below ~250 px of room (320 px at the largest text size) some Armenian words are longer than any line; a clean
+  // break is the accepted outcome there, so those are notes rather than failures.
+  const tight = width / Number(SCALE) < 250;
+  const unique = [...new Set(found)].map(x => tight && x.includes('word split') ? x.replace(': word split', ': note: word split') : x);
   if (unique.some(x => !x.includes('note:'))) failed = true;
   console.log(`${width} ${lang} ×${SCALE}  ${unique.length ? '\n    ' + unique.join('\n    ') : 'ok'}`);
 }
