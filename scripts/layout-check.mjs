@@ -44,6 +44,10 @@ for (const width of [320, 390]) for (const lang of ['en', 'es', 'hy', 'ko']) {
   await page.reload({ waitUntil: 'networkidle2' }); await sleep(1500);
   const found = [];
   const note = async where => found.push(...(await inspect()).map(x => `${where}: ${x}`));
+  // Signed out first: the landing page (its header holds the Emergency button).
+  await page.evaluate(() => localStorage.removeItem('firepath-session')); await page.reload({ waitUntil: 'networkidle2' }); await sleep(1200);
+  await note('Landing');
+  await page.evaluate(t => localStorage.setItem('firepath-session', t), token); await page.reload({ waitUntil: 'networkidle2' }); await sleep(1500);
   for (let i = 0; i < 5; i++) {
     await page.evaluate(i => [...document.querySelectorAll('[role=navigation] [role=tab]')][i]?.click(), i); await sleep(1200);
     const name = await page.evaluate(i => [...document.querySelectorAll('[role=navigation] [role=tab]')][i]?.innerText.trim(), i);
