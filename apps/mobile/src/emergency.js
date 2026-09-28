@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Linking, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import * as Speech from 'expo-speech';
 import { emergencyGuideIn, emergencySituations } from './playbooks';
@@ -16,7 +16,14 @@ export function EmergencyNow({ me, onClose }) {
   const oneColumn = useWindowDimensions().width / (scale || 1) < 300;
   const ctx = me ? { type: me.user.type, household: me.household, business: me.business, hazards: me.hazards, done: me.done } : {};
   const guide = id ? emergencyGuideIn(lang, id, ctx) : null;
-  // Read the steps aloud in the chosen language (device voices vary; Armenian may fall back to the default voice).
+  // Read the steps aloud in the chosen language. Without a voice for it, the device would read Armenian (say) with an
+  // English voice, which is worse than nothing, so the button hides when the voice list says none is installed.
+  // An empty list (voices not loaded yet, or not reported) keeps the button.
+  const [hasVoice, setHasVoice] = useState(true);
+  useEffect(() => {
+    if (lang === 'en') return setHasVoice(true);
+    Speech.getAvailableVoicesAsync().then(voices => setHasVoice(!voices?.length || voices.some(v => String(v.language || '').toLowerCase().startsWith(lang)))).catch(() => setHasVoice(true));
+  }, [lang]);
   const readAloud = () => {
     if (speaking) { Speech.stop(); setSpeaking(false); return; }
     const words = [t(`sit.${guide.id}`), t('em.call') + '.', ...guide.steps.map((step, i) => `${i + 1}. ${step.text}`)].join(' ');
@@ -48,7 +55,7 @@ export function EmergencyNow({ me, onClose }) {
     <Link style={{ marginTop: 0 }} onPress={() => { Speech.stop(); setId(null); }}>{t('em.else')}</Link>
     <Text style={{ fontSize: oneColumn ? 24 : 30, fontWeight: '800', color: color.ink, marginTop: 10 }}>{t(`sit.${guide.id}`)}</Text>
     {call911}
-    <Pressable accessibilityRole="button" onPress={readAloud} style={{ marginTop: 10, borderWidth: 2, borderColor: color.green, borderRadius: 14, padding: 13, alignItems: 'center' }}><Text style={{ color: color.green, fontWeight: '900', fontSize: 16 }}>{speaking ? t('em.stop') : t('em.read')}</Text></Pressable>
+    {(hasVoice || !guide.translated) && <Pressable accessibilityRole="button" onPress={readAloud} style={{ marginTop: 10, borderWidth: 2, borderColor: color.green, borderRadius: 14, padding: 13, alignItems: 'center' }}><Text style={{ color: color.green, fontWeight: '900', fontSize: 16 }}>{speaking ? t('em.stop') : t('em.read')}</Text></Pressable>}
     {!guide.translated && lang !== 'en' && <Caption>{t('em.englishOnly')}</Caption>}
     {guide.translated && lang !== 'en' && <Caption>{t('set.unreviewed')}</Caption>}
     <View style={{ marginTop: 10 }}>
