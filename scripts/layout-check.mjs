@@ -55,6 +55,9 @@ try {
     // Signed out first: the landing page (its header holds the Emergency button).
     await page.evaluate(() => localStorage.removeItem('firepath-session')); await page.reload({ waitUntil: 'networkidle2' }); await sleep(1200);
     await note('Landing');
+  // The tour's intro (the first thing judges see): its button is the landing page's dark call to action.
+  const tour = await page.evaluate(() => { const b = [...document.querySelectorAll('main [role=button]')].find(e => e.innerText.startsWith('▶')); b?.click(); return !!b; }); await sleep(1000);
+  if (tour) await note('Tour intro'); else found.push('Landing: tour button not found (Tour intro not checked)');
     await page.evaluate(t => localStorage.setItem('firepath-session', t), token); await page.reload({ waitUntil: 'networkidle2' }); await sleep(1500);
     for (let i = 0; i < 5; i++) {
       await page.evaluate(i => [...document.querySelectorAll('[role=navigation] [role=tab]')][i]?.click(), i); await sleep(1200);
